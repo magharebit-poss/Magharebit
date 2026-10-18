@@ -7,7 +7,6 @@ import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
 import ProofBar from '@/components/landing/ProofBar';
 import ProductsSection from '@/components/landing/ProductsSection';
-import ComparisonTable from '@/components/landing/ComparisonTable';
 import HowItWorks from '@/components/landing/HowItWorks';
 
 // ─── below-the-fold: dynamic imports (code splitting) ─────────────────────────
@@ -20,7 +19,6 @@ const WasteTracker            = dynamic(() => import('@/components/landing/Waste
 const LoyverseCounter         = dynamic(() => import('@/components/landing/LoyverseCounter'));
 const DifferentiatorBand      = dynamic(() => import('@/components/landing/DifferentiatorBand'));
 const WhatsAppReportPreview   = dynamic(() => import('@/components/landing/WhatsAppReportPreview'));
-const TrustTicker        = dynamic(() => import('@/components/landing/TrustTicker'));
 const SectorsPreview     = dynamic(() => import('@/components/landing/SectorsPreview'));
 const PricingSection     = dynamic(() => import('@/components/landing/PricingSection'));
 const PricingCalculator  = dynamic(() => import('@/components/landing/PricingCalculator'));
@@ -76,9 +74,7 @@ export default function LandingPage() {
         <WasteTracker />
         <WhyNotCompetitors />
         <LoyverseCounter />
-        <TrustTicker />
         <ProductsSection />
-        <ComparisonTable />
         <DifferentiatorBand />
         <WhatsAppReportPreview />
         <HowItWorks />

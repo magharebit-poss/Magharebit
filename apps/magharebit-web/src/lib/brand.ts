@@ -1,6 +1,6 @@
 export const BRAND = {
   contact: {
-    email: 'contact@magharebit.ma',
+    email: 'contact@magharebit.com',
     whatsapp: '+212 705 576 952',
     waLink: 'https://wa.me/212619522487',
   },

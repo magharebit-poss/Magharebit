@@ -43,8 +43,6 @@ const METRICS: Metric[] = [
   },
 ];
 
-const MEDIA = ['TelQuel', "L'Économiste", 'Médias24', 'LeSiteInfo', 'Hespress'];
-
 const COUNT_DURATION = 1800; // ms
 
 // ─── single counter ───────────────────────────────────────────────────────────
@@ -228,51 +226,6 @@ export default function MetricsSection() {
           ))}
         </div>
 
-        {/* Media logos row */}
-        <div style={{ textAlign: 'center' }}>
-          <p
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              color: 'rgba(255,255,255,0.35)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              marginBottom: '20px',
-              fontFamily: 'Inter, sans-serif',
-            }}
-          >
-            {locale === 'ar' ? 'ذُكر في' : locale === 'fr' ? 'Mentionné dans' : 'As seen in'}
-          </p>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '12px',
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            {MEDIA.map((name) => (
-              <span
-                key={name}
-                style={{
-                  display: 'inline-block',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.10)',
-                  borderRadius: '8px',
-                  padding: '8px 20px',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  color: 'rgba(255,255,255,0.45)',
-                  fontFamily: 'Plus Jakarta Sans, Inter, sans-serif',
-                  letterSpacing: '0.02em',
-                }}
-              >
-                {name}
-              </span>
-            ))}
-          </div>
-        </div>
       </div>
     </section>
   );

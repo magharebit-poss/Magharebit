@@ -13,8 +13,8 @@ interface Cell {
 interface Row {
   metric: string;
   magharebit: Cell;
-  macaisse: Cell;
-  inyad: Cell;
+  traditional: Cell;
+  other: Cell;
 }
 
 interface Copy {
@@ -24,14 +24,18 @@ interface Copy {
   caption: string;
   featureCol: string;
   designedForMorocco: string;
+  /** Column headers for the two anonymized competitor groups. */
+  competitorNames: readonly [string, string];
   statusLabel: Record<Status, string>;
   rows: Row[];
 }
 
 /**
  * Competitor cells below are product/marketing claims about third parties.
- * TODO(verify before launch): confirm every MaCaisse / Inyad cell against their
- * current public plans. Cells marked `unknown` were not specified in the brief
+ * Competitors are intentionally anonymized (generic categories, no brand names).
+ * TODO(verify before launch): the claims in the `traditional` / `other` cells are
+ * still assertions about third-party products; confirm they hold for the
+ * categories described. Cells marked `unknown` were not specified in the brief
  * and render as an em dash until filled in.
  */
 const UNKNOWN: Cell = { status: 'unknown', text: '—' };
@@ -41,40 +45,41 @@ const COPY: Record<Lang, Copy> = {
     badge: 'مقارنة صريحة',
     title: 'لماذا مغاربيت؟',
     subtitle: 'الفروقات التقنية التي تهم تاجراً مغربياً في يومه العادي.',
-    caption: 'مقارنة بين مغاربيت وMaCaisse وInyad',
+    caption: 'مقارنة بين مغاربيت والأنظمة التقليدية والحلول الأخرى',
     featureCol: 'الميزة',
     designedForMorocco: 'صُمم للمغرب',
+    competitorNames: ['الأنظمة التقليدية', 'الحلول الأخرى'],
     statusLabel: { yes: 'متوفر', no: 'غير متوفر', partial: 'محدود', unknown: 'غير محدد' },
     rows: [
       {
         metric: 'الاستقرار بدون إنترنت',
         magharebit: { status: 'yes', text: 'طابور معاملات فعلي يعمل دون اتصال' },
-        macaisse: { status: 'no', text: 'يتطلب اتصالاً نشطاً' },
-        inyad: { status: 'no', text: 'يتطلب اتصالاً نشطاً' },
+        traditional: { status: 'no', text: 'يتطلب اتصالاً نشطاً' },
+        other: { status: 'no', text: 'يتطلب اتصالاً نشطاً' },
       },
       {
         metric: 'تتبع الهدر وانتهاء الصلاحية بالذكاء الاصطناعي',
         magharebit: { status: 'yes', text: 'توقعات مدمجة بالدرهم' },
-        macaisse: { status: 'partial', text: 'غير متوفر أو أساسي' },
-        inyad: { status: 'partial', text: 'غير متوفر أو أساسي' },
+        traditional: { status: 'partial', text: 'غير متوفر أو أساسي' },
+        other: { status: 'partial', text: 'غير متوفر أو أساسي' },
       },
       {
         metric: 'ربط الموازين الإلكترونية',
         magharebit: { status: 'yes', text: 'دعم أصلي لبروتوكولات DIBAL وCAS وBrecknell' },
-        macaisse: UNKNOWN,
-        inyad: UNKNOWN,
+        traditional: UNKNOWN,
+        other: UNKNOWN,
       },
       {
         metric: 'اللغة والدعم',
         magharebit: { status: 'yes', text: 'عربية وفرنسية ودارجة، مع دعم هاتفي وواتساب مباشر' },
-        macaisse: { status: 'partial', text: 'تذاكر بالفرنسية فقط' },
-        inyad: { status: 'partial', text: 'تذاكر بالفرنسية فقط' },
+        traditional: { status: 'partial', text: 'تذاكر بالفرنسية فقط' },
+        other: { status: 'partial', text: 'تذاكر بالفرنسية فقط' },
       },
       {
         metric: 'شفافية الأسعار',
         magharebit: { status: 'yes', text: '249 درهم/شهر شامل كل شيء' },
-        macaisse: { status: 'no', text: 'رسوم إضافية حسب الخيارات' },
-        inyad: { status: 'no', text: 'رسوم إضافية حسب الخيارات' },
+        traditional: { status: 'no', text: 'رسوم إضافية حسب الخيارات' },
+        other: { status: 'no', text: 'رسوم إضافية حسب الخيارات' },
       },
     ],
   },
@@ -82,40 +87,41 @@ const COPY: Record<Lang, Copy> = {
     badge: 'Comparaison franche',
     title: 'Pourquoi MAGHAREBIT ?',
     subtitle: 'Les écarts techniques qui comptent pour un commerçant marocain au quotidien.',
-    caption: 'Comparaison entre MAGHAREBIT, MaCaisse et Inyad',
+    caption: 'Comparaison entre MAGHAREBIT, les caisses traditionnelles et les autres solutions',
     featureCol: 'Critère',
     designedForMorocco: 'Conçu pour le Maroc',
+    competitorNames: ['Caisses traditionnelles', 'Autres solutions'],
     statusLabel: { yes: 'Oui', no: 'Non', partial: 'Limité', unknown: 'Non précisé' },
     rows: [
       {
         metric: 'Stabilité hors-ligne',
         magharebit: { status: 'yes', text: 'Vraie file de transactions hors-ligne' },
-        macaisse: { status: 'no', text: 'Connexion active requise' },
-        inyad: { status: 'no', text: 'Connexion active requise' },
+        traditional: { status: 'no', text: 'Connexion active requise' },
+        other: { status: 'no', text: 'Connexion active requise' },
       },
       {
         metric: 'Suivi IA des pertes et péremptions',
         magharebit: { status: 'yes', text: 'Prédiction intégrée, chiffrée en MAD' },
-        macaisse: { status: 'partial', text: 'Aucun ou basique' },
-        inyad: { status: 'partial', text: 'Aucun ou basique' },
+        traditional: { status: 'partial', text: 'Aucun ou basique' },
+        other: { status: 'partial', text: 'Aucun ou basique' },
       },
       {
         metric: 'Intégration des balances électroniques',
         magharebit: { status: 'yes', text: 'Protocoles natifs DIBAL, CAS et Brecknell' },
-        macaisse: UNKNOWN,
-        inyad: UNKNOWN,
+        traditional: UNKNOWN,
+        other: UNKNOWN,
       },
       {
         metric: 'Langues et support',
         magharebit: { status: 'yes', text: 'Arabe, français et darija, avec support téléphone / WhatsApp direct' },
-        macaisse: { status: 'partial', text: 'Tickets en français uniquement' },
-        inyad: { status: 'partial', text: 'Tickets en français uniquement' },
+        traditional: { status: 'partial', text: 'Tickets en français uniquement' },
+        other: { status: 'partial', text: 'Tickets en français uniquement' },
       },
       {
         metric: 'Transparence tarifaire',
         magharebit: { status: 'yes', text: '249 MAD/mois, tout compris' },
-        macaisse: { status: 'no', text: 'Frais additionnels selon les options' },
-        inyad: { status: 'no', text: 'Frais additionnels selon les options' },
+        traditional: { status: 'no', text: 'Frais additionnels selon les options' },
+        other: { status: 'no', text: 'Frais additionnels selon les options' },
       },
     ],
   },
@@ -123,40 +129,41 @@ const COPY: Record<Lang, Copy> = {
     badge: 'Straight comparison',
     title: 'Why MAGHAREBIT?',
     subtitle: 'The technical differences that matter to a Moroccan merchant day to day.',
-    caption: 'Comparison of MAGHAREBIT, MaCaisse and Inyad',
+    caption: 'Comparison of MAGHAREBIT, traditional POS systems and other platforms',
     featureCol: 'Feature',
     designedForMorocco: 'Designed for Morocco',
+    competitorNames: ['Traditional POS', 'Other Platforms'],
     statusLabel: { yes: 'Yes', no: 'No', partial: 'Limited', unknown: 'Not specified' },
     rows: [
       {
         metric: 'Offline-first stability',
         magharebit: { status: 'yes', text: 'True offline transaction queue' },
-        macaisse: { status: 'no', text: 'Requires an active connection' },
-        inyad: { status: 'no', text: 'Requires an active connection' },
+        traditional: { status: 'no', text: 'Requires an active connection' },
+        other: { status: 'no', text: 'Requires an active connection' },
       },
       {
         metric: 'AI waste & expiry tracking',
         magharebit: { status: 'yes', text: 'Built-in prediction, valued in MAD' },
-        macaisse: { status: 'partial', text: 'None or basic' },
-        inyad: { status: 'partial', text: 'None or basic' },
+        traditional: { status: 'partial', text: 'None or basic' },
+        other: { status: 'partial', text: 'None or basic' },
       },
       {
         metric: 'Electronic scale integration',
         magharebit: { status: 'yes', text: 'Native protocol support for DIBAL, CAS and Brecknell' },
-        macaisse: UNKNOWN,
-        inyad: UNKNOWN,
+        traditional: UNKNOWN,
+        other: UNKNOWN,
       },
       {
         metric: 'Language & support',
         magharebit: { status: 'yes', text: 'Arabic, French and Darija, with direct phone / WhatsApp support' },
-        macaisse: { status: 'partial', text: 'French tickets only' },
-        inyad: { status: 'partial', text: 'French tickets only' },
+        traditional: { status: 'partial', text: 'French tickets only' },
+        other: { status: 'partial', text: 'French tickets only' },
       },
       {
         metric: 'Pricing transparency',
         magharebit: { status: 'yes', text: 'All-inclusive 249 MAD/month' },
-        macaisse: { status: 'no', text: 'Add-on fee model' },
-        inyad: { status: 'no', text: 'Add-on fee model' },
+        traditional: { status: 'no', text: 'Add-on fee model' },
+        other: { status: 'no', text: 'Add-on fee model' },
       },
     ],
   },
@@ -187,7 +194,7 @@ export default function ComparisonSection() {
   const c = COPY[lang];
   const isRTL = lang === 'ar';
   const fontBody = isRTL ? 'font-arabic' : 'font-sans';
-  const competitors = ['MaCaisse', 'Inyad'] as const;
+  const competitors = c.competitorNames;
 
   return (
     <section
@@ -262,7 +269,7 @@ export default function ComparisonSection() {
                         <span>{row.magharebit.text}</span>
                       </div>
                     </td>
-                    {([row.macaisse, row.inyad] as const).map((cell, idx) => (
+                    {([row.traditional, row.other] as const).map((cell, idx) => (
                       <td key={idx} className={`p-4 align-top ${rowBorder}`}>
                         <div className="flex items-start justify-center gap-2 text-start text-sm text-white/65">
                           <Mark status={cell.status} label={c.statusLabel[cell.status]} />
@@ -296,8 +303,8 @@ export default function ComparisonSection() {
                   </div>
                 </div>
                 {([
-                  [competitors[0], row.macaisse],
-                  [competitors[1], row.inyad],
+                  [competitors[0], row.traditional],
+                  [competitors[1], row.other],
                 ] as const).map(([name, cell]) => (
                   <div key={name} className="rounded-xl border border-white/[0.06] p-3">
                     <span className="mb-1 block font-display text-xs font-bold text-white/50">{name}</span>
