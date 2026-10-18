@@ -1,7 +1,59 @@
 @import "tailwindcss";
 
+/* ── Fonts: bundled locally (@fontsource), zero requests to Google Fonts ──
+   The POS must work fully offline. Only the subsets/weights in use are loaded. */
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-500.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/plus-jakarta-sans/latin-700.css";
+@import "@fontsource/plus-jakarta-sans/latin-800.css";
+@import "@fontsource/cairo/arabic-400.css";
+@import "@fontsource/cairo/arabic-500.css";
+@import "@fontsource/cairo/arabic-600.css";
+@import "@fontsource/cairo/arabic-700.css";
+@import "@fontsource/cairo/arabic-800.css";
+@import "@fontsource/cairo/latin-400.css";
+@import "@fontsource/cairo/latin-500.css";
+@import "@fontsource/cairo/latin-600.css";
+@import "@fontsource/cairo/latin-700.css";
+@import "@fontsource/cairo/latin-800.css";
+@import "@fontsource/noto-naskh-arabic/arabic-400.css";
+
+/* ── MAGHAREBIT design tokens ──────────────────────────────────────────────
+   Source of truth: apps/magharebit-web/docs/brand-handoff/brand-tokens.json
+   Names match the web portal, so `bg-brand-950` means the same on both.
+   @theme exposes each token as a CSS variable (var(--color-brand-950)) AND as
+   Tailwind utilities (bg-brand-950, text-gold-400, ...). */
+@theme {
+  /* Deep Forest → Pine Green → greens */
+  --color-brand-950: #0A2318;   /* Deep Forest: dark shell background */
+  --color-brand-900: #0F3D2A;   /* Pine Green: cards/borders on dark */
+  --color-brand-700: #1A5C3A;   /* hover/pressed on dark */
+  --color-brand-600: #2E8B57;   /* legacy GreenGo green, still in the scale */
+  --color-brand-500: #3DAA6B;
+  --color-brand-400: #5EC485;   /* success / checkmarks on dark */
+  --color-brand-100: #E8F5EE;
+  --color-brand-50:  #F0FDF6;   /* Surface Mint */
+
+  /* Moroccan Gold (NOT Tailwind amber-400). Text on gold must be brand-950. */
+  --color-gold-400: #F0B429;    /* primary action/accent on dark */
+  --color-gold-500: #D4A017;    /* hover on gold */
+  --color-gold-600: #B8860B;    /* Deep Ochre: accent on light surfaces */
+  --color-gold-100: #FEF3C7;
+
+  --color-ink:       #111827;   /* text primary */
+  --color-ink-muted: #6B7280;   /* text secondary */
+  --color-surface-light: #F8F9FA;
+
+  /* Typography */
+  --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-arabic-display: 'Cairo', system-ui, sans-serif;
+  --font-arabic-body: 'Noto Naskh Arabic', 'Cairo', system-ui, serif;
+  --font-ui: 'Inter', 'Cairo', system-ui, sans-serif;
+}
+
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-ui);
   background: #F8FAFC;
   color: #0F172A;
   -webkit-font-smoothing: antialiased;
@@ -10,7 +62,7 @@ body {
 }
 
 [dir="rtl"], .ar, .font-cairo {
-  font-family: 'Cairo', sans-serif;
+  font-family: var(--font-arabic-display);
 }
 
 html, body {
