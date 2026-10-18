@@ -9,7 +9,7 @@ const ADDITIONS = {
   ar: {
     hero: {
       mockup: {
-        url: 'app.magharebit.ma/pos',
+        url: 'app.magharebit.com/pos',
         search: 'ابحث عن منتج...',
         categories: ['الكل', 'مشروبات', 'مخبزة', 'حلويات'],
         currency: 'د',
@@ -130,7 +130,7 @@ const ADDITIONS = {
   fr: {
     hero: {
       mockup: {
-        url: 'app.magharebit.ma/pos',
+        url: 'app.magharebit.com/pos',
         search: 'Rechercher un produit...',
         categories: ['Tout', 'Boissons', 'Boulangerie', 'Pâtisserie'],
         currency: 'MAD',
@@ -251,7 +251,7 @@ const ADDITIONS = {
   en: {
     hero: {
       mockup: {
-        url: 'app.magharebit.ma/pos',
+        url: 'app.magharebit.com/pos',
         search: 'Search for a product...',
         categories: ['All', 'Drinks', 'Bakery', 'Pastry'],
         currency: 'MAD',

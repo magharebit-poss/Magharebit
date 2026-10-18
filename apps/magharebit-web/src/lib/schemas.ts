@@ -34,7 +34,7 @@ export function softwareApplicationSchema(locale: string) {
     },
     description: descriptions[locale] ?? descriptions.fr,
     inLanguage: ['ar', 'fr', 'en'],
-    url: `https://magharebit.ma/${locale}`,
+    url: `https://magharebit.com/${locale}`,
   }
 }
 
@@ -43,8 +43,8 @@ export function organizationSchema() {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'MAGHAREBIT',
-    url: 'https://magharebit.ma',
-    logo: 'https://magharebit.ma/icon.svg',
+    url: 'https://magharebit.com',
+    logo: 'https://magharebit.com/icon.svg',
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: '+212619522487',
@@ -71,10 +71,10 @@ export function localBusinessSchema(
   return {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    '@id': `https://magharebit.ma/${locale}/caisse-enregistreuse-${citySlug}`,
+    '@id': `https://magharebit.com/${locale}/caisse-enregistreuse-${citySlug}`,
     name: 'MAGHAREBIT',
     description,
-    url: `https://magharebit.ma/${locale}/caisse-enregistreuse-${citySlug}`,
+    url: `https://magharebit.com/${locale}/caisse-enregistreuse-${citySlug}`,
     telephone: '+212619522487',
     address: {
       '@type': 'PostalAddress',

@@ -38,7 +38,7 @@
     "stat2_label": "Uptime",
     "video_coming_soon": "Demo video coming soon",
     "mockup": {
-      "url": "app.magharebit.ma/pos",
+      "url": "app.magharebit.com/pos",
       "search": "Search for a product...",
       "categories": [
         "All",
@@ -697,7 +697,7 @@
     "mig_sub": "Fast transfer from any system — no data lost, no interruption",
     "mig_1_icon": "📦",
     "mig_1_title": "Import your data",
-    "mig_1_body": "We import your catalog from Excel, Loyverse or any other system",
+    "mig_1_body": "We import your catalog from Excel, a Generic International POS or any other system",
     "mig_2_icon": "⚡",
     "mig_2_title": "Setup in 1 hour",
     "mig_2_body": "Full environment ready in 1h — POS, inventory and sales tracking",
@@ -706,10 +706,10 @@
     "mig_3_body": "Your old system stays live until you are 100% confident"
   },
   "compare": {
-    "meta_title": "MAGHAREBIT vs Loyverse — Best POS Alternative for Morocco",
-    "meta_desc": "Detailed comparison of MAGHAREBIT vs Loyverse: Darija support, WhatsApp reports, native MAD currency. See why Moroccan merchants choose MAGHAREBIT as their Loyverse alternative.",
-    "badge": "MAGHAREBIT vs Loyverse",
-    "hero_title": "MAGHAREBIT vs Loyverse — Compare for yourself",
+    "meta_title": "MAGHAREBIT vs Generic International POS — Best POS Alternative for Morocco",
+    "meta_desc": "Detailed comparison of MAGHAREBIT vs Generic International POS: Darija support, WhatsApp reports, native MAD currency. See why Moroccan merchants choose MAGHAREBIT instead.",
+    "badge": "MAGHAREBIT vs Generic International POS",
+    "hero_title": "MAGHAREBIT vs Generic International POS — Compare for yourself",
     "hero_sub": "100% Moroccan POS vs a global app that doesn't understand the local market",
     "why_title": "Why us",
     "why1_title": "🇲🇦 Designed in Morocco, for Morocco",
@@ -854,7 +854,7 @@
       ]
     ],
     "col_local": "Local Competitor",
-    "footnote": "* Loyverse, iiko Light and similar. ** Indicative prices 2024."
+    "footnote": "* Generic International POS and similar. ** Indicative prices 2024."
   },
   "sectorsPreview": {
     "title": "For every sector",
@@ -1040,7 +1040,7 @@
   },
   "loyverse_counter": {
     "heading": "Why MAGHAREBIT beats free alternatives?",
-    "sub": "Loyverse looks free — but costs more in the long run",
+    "sub": "Generic International POS looks free — but costs more in the long run",
     "col1_title": "Full Arabic & Darija UI",
     "col1_body": "POS fully in Arabic and Moroccan Darija — no machine translations",
     "col2_title": "Data Hosted in Morocco",
@@ -1076,8 +1076,8 @@
     "a7": "Yes. We accept cash, bank transfer and card.",
     "q8": "Is a tax invoice provided?",
     "a8": "Yes. A Moroccan-format tax invoice is issued for every subscription, downloadable from the dashboard.",
-    "q9": "What is the difference between MAGHAREBIT and Loyverse?",
-    "a9": "Loyverse is free but global — no Darija, data abroad, no local support. MAGHAREBIT is built for the Moroccan merchant.",
+    "q9": "What is the difference between MAGHAREBIT and a Generic International POS?",
+    "a9": "A Generic International POS is built for a global market — no Darija, data abroad, no local support. MAGHAREBIT is built for the Moroccan merchant.",
     "q10": "What is the difference from a traditional Windows POS?",
     "a10": "A Windows POS needs manual maintenance. MAGHAREBIT is cloud with offline mode — automatic updates.",
     "q11": "Does it work on all devices?",
@@ -1091,7 +1091,7 @@
     "q15": "Do I need training to use MAGHAREBIT?",
     "a15": "No. Most merchants start selling within 5 minutes. A Darija video guide is available.",
     "q16": "Can I import data from another system?",
-    "a16": "Yes. Our team imports your catalog from Excel, CSV or Loyverse.",
+    "a16": "Yes. Our team imports your catalog from Excel, CSV or another POS.",
     "q17": "Where is my data hosted?",
     "a17": "Your data is hosted on servers in Morocco, compliant with Law 09-08.",
     "q18": "Is my data secure?",

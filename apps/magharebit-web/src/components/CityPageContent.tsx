@@ -47,7 +47,7 @@ export default async function CityPageContent({ locale, citySlug }: Props) {
       addressCountry: 'MA',
     },
     telephone: '+212619522487',
-    url: `https://magharebit.ma/${locale}/caisse-enregistreuse-${citySlug}`,
+    url: `https://magharebit.com/${locale}/caisse-enregistreuse-${citySlug}`,
     areaServed: {
       '@type': 'City',
       name: data.name,

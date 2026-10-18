@@ -442,56 +442,6 @@ export default async function AboutPage() {
           </div>
         </section>
 
-        {/* ── Press section ── */}
-        <section style={{ padding: '0 24px 80px' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr', textAlign: 'center' }}>
-            <h2
-              data-aos="fade-up"
-              className="font-arabic font-bold text-white"
-              style={{ fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)', marginBottom: '8px' }}
-            >
-              {t('press_title')}
-            </h2>
-            <p style={{ fontFamily: fontBody, fontSize: '15px', color: 'rgba(255,255,255,0.55)', marginBottom: '28px' }}>
-              {t('press_sub')}
-            </p>
-            <div
-              data-aos="fade-up"
-              data-aos-delay="80"
-              style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '12px', marginBottom: '20px' }}
-            >
-              {['TechMaroc', 'Startup Maroc', 'Medias24', "L'Économiste", 'Hespress'].map((media) => (
-                <span
-                  key={media}
-                  style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid rgba(255,255,255,0.10)',
-                    borderRadius: '999px',
-                    padding: '8px 20px',
-                    fontFamily: 'Plus Jakarta Sans, sans-serif',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: 'rgba(255,255,255,0.55)',
-                    letterSpacing: '0.01em',
-                  }}
-                >
-                  {media}
-                </span>
-              ))}
-            </div>
-            <p
-              style={{
-                fontFamily: fontBody,
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.30)',
-                fontStyle: 'italic',
-              }}
-            >
-              {t('press_note')}
-            </p>
-          </div>
-        </section>
-
         {/* ── Values (3 cards) ── */}
         <section style={{ padding: '0 24px 80px' }}>
           <div style={{ maxWidth: '1100px', margin: '0 auto' }}>

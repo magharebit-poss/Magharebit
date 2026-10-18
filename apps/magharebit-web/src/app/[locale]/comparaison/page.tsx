@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-// Format: [criterion, MAGHAREBIT, Loyverse Free, Loyverse + Add-ons, Caisse Classique]
+// Format: [criterion, MAGHAREBIT, Generic Intl POS (free), Generic Intl POS + add-ons, Caisse Classique]
 type Cell = string;
 type Row = [Cell, Cell, Cell, Cell, Cell];
 
@@ -120,7 +120,7 @@ export default async function ComparisonPage() {
           </div>
         </section>
 
-        {/* Loyverse migration callout — SEO: "alternative loyverse maroc" */}
+        {/* Migration callout (from a generic international POS) */}
         <section style={{ padding: '0 24px 32px' }}>
           <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
             <div
@@ -140,12 +140,12 @@ export default async function ComparisonPage() {
               <span style={{ fontSize: '28px', flexShrink: 0 }}>🔄</span>
               <div style={{ flex: 1, minWidth: '200px' }}>
                 <p style={{ fontFamily: fontBody, fontSize: '16px', fontWeight: 700, color: '#F0B429', margin: '0 0 4px' }}>
-                  {isRTL ? 'هل تستخدم Loyverse؟ الانتقال مجاني وسريع.' : 'Vous utilisez Loyverse ? Migration gratuite en 1 heure.'}
+                  {isRTL ? 'هل تستخدم أحد الأنظمة الأجنبية غير المعربة؟ الانتقال مجاني وسريع.' : 'Vous utilisez un POS international générique ? Migration gratuite en 1 heure.'}
                 </p>
                 <p style={{ fontFamily: fontBody, fontSize: '14px', color: 'rgba(255,255,255,0.65)', margin: 0, lineHeight: 1.6 }}>
                   {isRTL
-                    ? 'نستورد كتالوج منتجاتك من Loyverse مجاناً، مع الحفاظ على بياناتك.'
-                    : 'On importe votre catalogue depuis Loyverse gratuitement — aucune donnée perdue.'}
+                    ? 'نستورد كتالوج منتجاتك من أحد الأنظمة الأجنبية غير المعربة مجاناً، مع الحفاظ على بياناتك.'
+                    : 'On importe votre catalogue depuis votre POS international générique gratuitement — aucune donnée perdue.'}
                 </p>
               </div>
               <Link
@@ -185,10 +185,10 @@ export default async function ComparisonPage() {
                         MAGHAREBIT 🇲🇦
                       </th>
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        Loyverse Gratuit
+                        POS international générique (gratuit)
                       </th>
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                        Loyverse + Add-ons
+                        POS international générique + options
                       </th>
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '12px', fontWeight: 700, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Caisse Classique

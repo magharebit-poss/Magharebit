@@ -46,7 +46,11 @@ export default function LoyverseCounter() {
               marginBottom: '16px',
             }}
           >
-            vs Loyverse · Caisse Windows
+            {locale === 'ar'
+              ? 'مقابل الأنظمة الأجنبية غير المعربة'
+              : locale === 'fr'
+              ? 'vs POS international générique · Caisse Windows'
+              : 'vs Generic International POS · Windows POS'}
           </span>
           <h2
             style={{

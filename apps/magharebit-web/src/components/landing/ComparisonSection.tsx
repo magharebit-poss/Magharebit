@@ -53,9 +53,9 @@ const COPY: Record<Lang, Copy> = {
     rows: [
       {
         metric: 'الاستقرار بدون إنترنت',
-        magharebit: { status: 'yes', text: 'طابور معاملات فعلي يعمل دون اتصال' },
-        traditional: { status: 'no', text: 'يتطلب اتصالاً نشطاً' },
-        other: { status: 'no', text: 'يتطلب اتصالاً نشطاً' },
+        magharebit: { status: 'yes', text: 'Offline-First حقيقي مع مزامنة سحابية تلقائية لمتابعة متجرك من هاتفك' },
+        traditional: { status: 'partial', text: 'محبوس في جهاز المحل القديم بدون إمكانية المتابعة عن بعد من هاتفك وبدون ذكاء اصطناعي' },
+        other: { status: 'no', text: 'يتوقف عن العمل عند انقطاع الإنترنت' },
       },
       {
         metric: 'تتبع الهدر وانتهاء الصلاحية بالذكاء الاصطناعي',
@@ -95,9 +95,9 @@ const COPY: Record<Lang, Copy> = {
     rows: [
       {
         metric: 'Stabilité hors-ligne',
-        magharebit: { status: 'yes', text: 'Vraie file de transactions hors-ligne' },
-        traditional: { status: 'no', text: 'Connexion active requise' },
-        other: { status: 'no', text: 'Connexion active requise' },
+        magharebit: { status: 'yes', text: 'Vrai hors-ligne (offline-first) avec synchronisation cloud automatique pour suivre votre magasin depuis votre téléphone' },
+        traditional: { status: 'partial', text: 'Enfermé sur l’ancien poste du magasin : pas de suivi à distance depuis votre téléphone, pas d’IA' },
+        other: { status: 'no', text: 'S’arrête de fonctionner quand Internet est coupé' },
       },
       {
         metric: 'Suivi IA des pertes et péremptions',
@@ -137,9 +137,9 @@ const COPY: Record<Lang, Copy> = {
     rows: [
       {
         metric: 'Offline-first stability',
-        magharebit: { status: 'yes', text: 'True offline transaction queue' },
-        traditional: { status: 'no', text: 'Requires an active connection' },
-        other: { status: 'no', text: 'Requires an active connection' },
+        magharebit: { status: 'yes', text: 'True offline-first local database with automatic background cloud sync, so you can follow your store from your phone' },
+        traditional: { status: 'partial', text: 'Locked to the shop’s old machine: no remote monitoring from your phone, no AI' },
+        other: { status: 'no', text: 'Stops working when the internet drops' },
       },
       {
         metric: 'AI waste & expiry tracking',

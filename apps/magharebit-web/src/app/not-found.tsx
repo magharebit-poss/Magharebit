@@ -73,7 +73,7 @@ export default function GlobalNotFound() {
             marginBottom: '8px',
           }}
         >
-          ٤٠٤
+          404
         </div>
 
         {/* Divider */}

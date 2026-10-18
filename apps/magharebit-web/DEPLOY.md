@@ -93,7 +93,7 @@ Set the following in your hosting platform (Vercel / VPS `.env.production`).
 | `ADMIN_SECRET` | ✅ | Server-only secret for `/api/leads` and `/api/licenses` admin endpoints |
 | `NEXT_PUBLIC_ADMIN_PASSWORD` | ✅ | Password for the client-side admin UI gate — set equal to `ADMIN_SECRET` value in production |
 | `MONGODB_URI` | ✅ | MongoDB connection string (used by leads/licenses API routes) |
-| `NEXT_PUBLIC_SITE_URL` | optional | Canonical site URL for OG tags and sitemap (e.g. `https://magharebit.ma`) |
+| `NEXT_PUBLIC_SITE_URL` | optional | Canonical site URL for OG tags and sitemap (e.g. `https://magharebit.com`) |
 
 > ⚠️ **Security note:** `NEXT_PUBLIC_ADMIN_PASSWORD` is visible in the client JS bundle. The actual API is protected server-side by `ADMIN_SECRET`. Restrict admin page access at the network/CDN layer (IP allowlist) for additional security.
 

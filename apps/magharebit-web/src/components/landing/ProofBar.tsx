@@ -66,7 +66,7 @@ export default function ProofBar() {
 
         <div>
           <div className="font-display font-extrabold text-[2rem] text-gold-400 leading-none">
-            {toArabicNumerals(uptime, locale)}{locale === 'ar' ? '٪' : '%'}
+            {toArabicNumerals(uptime, locale)}%
           </div>
           <div className="font-arabic text-sm text-white/50 mt-1.5">{t('uptime_label')}</div>
         </div>

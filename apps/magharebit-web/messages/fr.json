@@ -38,7 +38,7 @@
     "stat2_label": "Disponibilité",
     "video_coming_soon": "Vidéo de démonstration bientôt disponible",
     "mockup": {
-      "url": "app.magharebit.ma/pos",
+      "url": "app.magharebit.com/pos",
       "search": "Rechercher un produit...",
       "categories": [
         "Tout",
@@ -697,7 +697,7 @@
     "mig_sub": "Transfert rapide depuis n'importe quel systeme — aucune donnee perdue",
     "mig_1_icon": "📦",
     "mig_1_title": "Import de vos donnees",
-    "mig_1_body": "On importe votre catalogue depuis Excel, Loyverse ou tout autre systeme",
+    "mig_1_body": "On importe votre catalogue depuis Excel, un POS international générique ou tout autre systeme",
     "mig_2_icon": "⚡",
     "mig_2_title": "Config en 1 heure",
     "mig_2_body": "L'environnement complet est pret en 1h — caisse, stock et suivi des ventes",
@@ -706,10 +706,10 @@
     "mig_3_body": "L'ancien systeme reste actif en parallele jusqu'a ce que vous soyez 100% sur"
   },
   "compare": {
-    "meta_title": "MAGHAREBIT vs Loyverse — Meilleure alternative POS au Maroc",
-    "meta_desc": "Comparaison détaillée MAGHAREBIT vs Loyverse : support Darija, rapports WhatsApp, MAD natif. Découvrez pourquoi les marchands marocains choisissent MAGHAREBIT comme alternative à Loyverse.",
-    "badge": "MAGHAREBIT vs Loyverse",
-    "hero_title": "MAGHAREBIT vs Loyverse — Comparez vous-même",
+    "meta_title": "MAGHAREBIT vs POS international générique — Meilleure alternative POS au Maroc",
+    "meta_desc": "Comparaison détaillée MAGHAREBIT vs POS international générique : support Darija, rapports WhatsApp, MAD natif. Découvrez pourquoi les marchands marocains choisissent MAGHAREBIT à la place.",
+    "badge": "MAGHAREBIT vs POS international générique",
+    "hero_title": "MAGHAREBIT vs POS international générique — Comparez vous-même",
     "hero_sub": "POS 100% marocain vs application mondiale qui ne comprend pas le marché local",
     "why_title": "Pourquoi nous",
     "why1_title": "🇲🇦 Conçu au Maroc, pour le Maroc",
@@ -854,7 +854,7 @@
       ]
     ],
     "col_local": "Concurrent Local",
-    "footnote": "* Loyverse, iiko Light et similaires. ** Prix indicatifs 2024."
+    "footnote": "* POS internationaux génériques et similaires. ** Prix indicatifs 2024."
   },
   "sectorsPreview": {
     "title": "Pour chaque secteur",
@@ -1040,7 +1040,7 @@
   },
   "loyverse_counter": {
     "heading": "Pourquoi MAGHAREBIT surpasse les solutions gratuites ?",
-    "sub": "Loyverse parait gratuit — mais il vous coute cher sur le long terme",
+    "sub": "Un POS international générique parait gratuit — mais il vous coute cher sur le long terme",
     "col1_title": "Interface arabe & darija",
     "col1_body": "Caisse 100% en arabe et darija marocaine — aucune traduction approximative",
     "col2_title": "Donnees hebergees au Maroc",
@@ -1076,8 +1076,8 @@
     "a7": "Oui. Nous acceptons especes, virement bancaire et carte.",
     "q8": "Une facture fiscale est-elle fournie ?",
     "a8": "Oui. Une facture fiscale au format marocain est emise pour chaque abonnement.",
-    "q9": "Quelle est la difference entre MAGHAREBIT et Loyverse ?",
-    "a9": "Loyverse est gratuit mais mondial — pas de darija, donnees hors Maroc, pas de support local. MAGHAREBIT est fait pour le commercant marocain.",
+    "q9": "Quelle est la difference entre MAGHAREBIT et un POS international générique ?",
+    "a9": "Un POS international générique est conçu pour le marché mondial — pas de darija, donnees hors Maroc, pas de support local. MAGHAREBIT est fait pour le commercant marocain.",
     "q10": "Quelle est la difference avec une caisse Windows traditionnelle ?",
     "a10": "Une caisse Windows necessite maintenance manuelle. MAGHAREBIT est cloud avec mode offline — mises a jour automatiques.",
     "q11": "Fonctionne-t-il sur tous les appareils ?",
@@ -1091,7 +1091,7 @@
     "q15": "Faut-il une formation pour utiliser MAGHAREBIT ?",
     "a15": "Non. Interface simple et intuitive. La plupart des commercants vendent en 5 minutes.",
     "q16": "Puis-je importer mes donnees depuis un autre systeme ?",
-    "a16": "Oui. Notre equipe vous aide a importer depuis Excel, CSV ou Loyverse.",
+    "a16": "Oui. Notre equipe vous aide a importer depuis Excel, CSV ou un autre POS.",
     "q17": "Ou mes donnees sont-elles hebergees ?",
     "a17": "Vos donnees sont hebergees sur des serveurs au Maroc, conformement a la loi 09-08.",
     "q18": "Mes donnees sont-elles securisees ?",

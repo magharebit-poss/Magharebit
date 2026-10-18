@@ -4,7 +4,7 @@ import Logo from '@/components/brand/Logo';
 
 const CONTENT = {
   ar: {
-    code: '٤٠٤',
+    code: '404',
     title: 'الصفحة غير موجودة',
     sub: 'عذراً، الصفحة التي تبحث عنها غير موجودة أو تم نقلها.',
     isRTL: true,

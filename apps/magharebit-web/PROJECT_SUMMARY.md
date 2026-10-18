@@ -176,7 +176,7 @@
 4. Set real Windows and Android download URLs
 5. Wire license generation to real key-validation backend
 6. Replace mock chart data with real sales history API endpoint
-7. Deploy to Vercel with `magharebit.ma` domain
+7. Deploy to Vercel with `magharebit.com` domain
 8. Submit sitemap to Google Search Console
 9. Replace placeholder testimonials with real merchant quotes and photos
 10. Record product demo video, set `NEXT_PUBLIC_DEMO_VIDEO_URL`
