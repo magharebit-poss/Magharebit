@@ -89,7 +89,7 @@ Set the following in your hosting platform (Vercel / VPS `.env.production`).
 
 | Variable | Required | Description |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | ✅ | Backend API base URL (e.g. `https://api.magharebit.ma`) |
+| `NEXT_PUBLIC_API_URL` | ✅ | Backend API base URL (e.g. `https://api.magharebit.com`) |
 | `ADMIN_SECRET` | ✅ | Server-only secret for `/api/leads` and `/api/licenses` admin endpoints |
 | `NEXT_PUBLIC_ADMIN_PASSWORD` | ✅ | Password for the client-side admin UI gate — set equal to `ADMIN_SECRET` value in production |
 | `MONGODB_URI` | ✅ | MongoDB connection string (used by leads/licenses API routes) |

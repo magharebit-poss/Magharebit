@@ -70,7 +70,7 @@ async function sendViaResend(
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return { success: false, error: 'RESEND_API_KEY not configured' }
 
-  const from = process.env.EMAIL_FROM ?? 'MAGHAREBIT <noreply@magharebit.ma>'
+  const from = process.env.EMAIL_FROM ?? 'MAGHAREBIT <contact@magharebit.com>'
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
