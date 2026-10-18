@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local runtime data: merchant leads, callbacks and license records (PII / keys)
+# top-level data/*.json only; data/posts/ (blog content) stays tracked
+/data/*.json
