@@ -1,0 +1,44 @@
+{
+  "$comment": "MAGHAREBIT identity tokens, as implemented in apps/magharebit-web (tailwind.config.ts). Names follow the design board (board_final.png).",
+  "color": {
+    "deepForest":   { "hex": "#0A2318", "web": "brand-950", "role": "Primary dark background, app chrome, theme/background color" },
+    "pineGreen":    { "hex": "#0F3D2A", "web": "brand-900", "role": "Cards and panels on dark; headings on light" },
+    "forest700":    { "hex": "#1A5C3A", "web": "brand-700", "role": "Hover/pressed on dark surfaces" },
+    "brandGreen":   { "hex": "#2E8B57", "web": "brand-600", "role": "Legacy GreenGo green. Still in the scale; no longer the dominant brand color" },
+    "green500":     { "hex": "#3DAA6B", "web": "brand-500" },
+    "green400":     { "hex": "#5EC485", "web": "brand-400", "role": "Success / checkmarks on dark" },
+    "green100":     { "hex": "#E8F5EE", "web": "brand-100" },
+    "surfaceMint":  { "hex": "#F0FDF6", "web": "brand-50",  "role": "Light surface tint" },
+    "moroccanGold": { "hex": "#F0B429", "web": "gold-400",  "role": "Primary accent / action on dark. NOT Tailwind amber-400 (#FBBF24)" },
+    "gold500":      { "hex": "#D4A017", "web": "gold-500",  "role": "Hover on gold" },
+    "deepOchre":    { "hex": "#B8860B", "web": "gold-600",  "role": "Accent on light backgrounds (gold-400 only measures 1.7:1 on white)" },
+    "gold100":      { "hex": "#FEF3C7", "web": "gold-100" },
+    "textPrimary":  { "hex": "#111827", "web": "text-primary" },
+    "textMuted":    { "hex": "#6B7280", "web": "text-muted" },
+    "white":        { "hex": "#FFFFFF" },
+    "surfaceLight": { "hex": "#F8F9FA", "role": "Light page/form background (used on the web portal login)" }
+  },
+  "typography": {
+    "latinDisplay": "Plus Jakarta Sans (ExtraBold 800 display, Bold 700 headings)",
+    "arabicDisplay": "Cairo (800 display, 700 headings)",
+    "arabicBody": "Noto Naskh Arabic (400)",
+    "uiSans": "Inter (400/500/600, captions and UI)",
+    "note": "Set Arabic ~10% larger than adjacent Latin with 1.75x line height. Western digits (0-9) everywhere, including Arabic UI."
+  },
+  "logoRules": {
+    "emblemOnDarkBackground": "assets/emblem-light.svg",
+    "emblemOnLightBackground": "assets/emblem-dark.svg",
+    "horizontalOnDarkBackground": "assets/logo-horizontal-dark.svg",
+    "horizontalOnLightBackground": "assets/logo-horizontal-light.svg",
+    "monochromeForWhitePaper": "assets/emblem-mono.svg",
+    "namingWarning": "Suffixes mean opposite things between families: emblem-light is for DARK backgrounds, logo-horizontal-dark is also for DARK backgrounds. Choose by the background, not the suffix.",
+    "aspectRatio": { "emblem": "240:280", "horizontal": "453:120" }
+  },
+  "zellige": {
+    "file": "assets/zellige-pattern.svg",
+    "tile": "368 x 506.7",
+    "stroke": "#0F3D2A (pine) - invisible on dark backgrounds, so on dark screens use it as a mask over gold",
+    "opacityRange": [0.04, 0.06],
+    "rule": "Behind content only, never over product UI or the emblem's star center"
+  }
+}
