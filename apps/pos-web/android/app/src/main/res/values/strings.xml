@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MAGHAREBIT POS</string>
+    <string name="title_activity_main">MAGHAREBIT POS</string>
+    <string name="package_name">ma.magharebit.pos</string>
+    <string name="custom_url_scheme">ma.magharebit.pos</string>
+</resources>

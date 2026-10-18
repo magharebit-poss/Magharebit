@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment / secrets — never commit real values
+.env
+.env.local
+.env.*.local
+
+# Local runtime state (device identity, etc.)
+data/

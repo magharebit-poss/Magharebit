@@ -1,0 +1,13 @@
+# Next.js
+/.next/
+/out/
+
+# Safety net: if a Tauri build is interrupted before postbuild:tauri restores
+# the (browser-only) route group, the hidden dir must not be committed.
+/src/app/_browser-only-hidden/
+
+# Code-signing material — NEVER commit certificates, keys, or the
+# machine-specific signing overlay.
+src-tauri/certs/
+*.pfx
+src-tauri/tauri.windows.conf.json

@@ -1,0 +1,10 @@
+{
+  "$comment": "Windows-only Tauri config overlay (auto-merged on Windows builds). Copy this file to `tauri.windows.conf.json` (which is gitignored) and replace REPLACE_WITH_THUMBPRINT with YOUR machine's code-signing certificate thumbprint (printed by the New-SelfSignedCertificate step in SIGNING.md). The thumbprint is machine-specific, so it is NOT committed. Never commit tauri.windows.conf.json.",
+  "bundle": {
+    "windows": {
+      "certificateThumbprint": "REPLACE_WITH_THUMBPRINT",
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.digicert.com"
+    }
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "name": "@greengo/pos-web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3003",
+    "build": "next build",
+    "prebuild:tauri": "node scripts/exclude-browser-routes.js hide",
+    "build:tauri": "cross-env TAURI_BUILD=true next build",
+    "postbuild:tauri": "node scripts/exclude-browser-routes.js restore",
+    "start": "next start -p 3003",
+    "lint": "next lint",
+    "tauri": "tauri",
+    "build:native": "cross-env NEXT_PUBLIC_IS_NATIVE=true next build",
+    "export": "next build",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android",
+    "cap:run": "npx cap run android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/network": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
+    "@tauri-apps/api": "^2.0.0",
+    "html5-qrcode": "^2.3.8",
+    "next": "^15.1.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^2.13.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "cross-env": "^10.1.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.6.0"
+  }
+}
