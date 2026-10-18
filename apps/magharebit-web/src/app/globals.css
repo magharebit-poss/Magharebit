@@ -1,0 +1,358 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------- brand/opacity fallbacks ---------- */
+.bg-brand-950 { background-color: #0A2318 !important; }
+.bg-brand-900 { background-color: #0F3D2A !important; }
+.bg-brand-600 { background-color: #2E8B57 !important; }
+.bg-brand-100 { background-color: #E8F5EE !important; }
+.bg-gold-400  { background-color: #F0B429 !important; }
+.text-brand-950 { color: #0A2318 !important; }
+.text-brand-600 { color: #2E8B57 !important; }
+.text-brand-400 { color: #5EC485 !important; }
+.text-gold-400  { color: #F0B429 !important; }
+.text-gold-500  { color: #D4A017 !important; }
+.text-white\/38 { color: rgba(255,255,255,0.38) !important; }
+.text-white\/65 { color: rgba(255,255,255,0.65) !important; }
+.text-white\/42 { color: rgba(255,255,255,0.42) !important; }
+.text-white\/88 { color: rgba(255,255,255,0.88) !important; }
+.text-white\/50 { color: rgba(255,255,255,0.5) !important; }
+.text-white\/55 { color: rgba(255,255,255,0.55) !important; }
+.text-white\/60 { color: rgba(255,255,255,0.6) !important; }
+.text-white\/70 { color: rgba(255,255,255,0.7) !important; }
+.text-white\/80 { color: rgba(255,255,255,0.8) !important; }
+.text-white\/45 { color: rgba(255,255,255,0.45) !important; }
+.text-white\/28 { color: rgba(255,255,255,0.28) !important; }
+.text-white\/22 { color: rgba(255,255,255,0.22) !important; }
+.border-white\/25 { border-color: rgba(255,255,255,0.25) !important; }
+.border-white\/30 { border-color: rgba(255,255,255,0.3) !important; }
+.border-white\/10 { border-color: rgba(255,255,255,0.1) !important; }
+.border-white\/8  { border-color: rgba(255,255,255,0.08) !important; }
+.bg-white\/5  { background-color: rgba(255,255,255,0.05) !important; }
+.bg-white\/10 { background-color: rgba(255,255,255,0.1) !important; }
+.bg-white\/8  { background-color: rgba(255,255,255,0.08) !important; }
+.bg-white\/12 { background-color: rgba(255,255,255,0.12) !important; }
+.bg-brand-950\/95 { background-color: rgba(10,35,24,0.95) !important; }
+.border-white\/\[0\.08\] { border-color: rgba(255,255,255,0.08) !important; }
+.border-gold-400\/50 { border-color: rgba(240,180,41,0.5) !important; }
+.text-white\/35 { color: rgba(255,255,255,0.35) !important; }
+.text-white\/30 { color: rgba(255,255,255,0.30) !important; }
+
+/* ---------- keyframes (not in config) ---------- */
+@keyframes shimmer {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+
+@keyframes wa-pulse {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60%  { transform: translateX(-6px); }
+  40%, 80%  { transform: translateX(6px); }
+}
+
+@keyframes ping {
+  75%, 100% { transform: scale(1.8); opacity: 0; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes portal-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 0.90; }
+}
+
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ---------- custom utilities ---------- */
+@layer utilities {
+  .text-shimmer {
+    background: linear-gradient(90deg, #F0B429 0%, #FFFFFF 50%, #F0B429 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 4s linear infinite;
+  }
+
+  .card-hover {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  }
+
+  .wa-ring {
+    animation: wa-pulse 2s ease-out infinite;
+  }
+
+  .wa-ring-2 {
+    animation: wa-pulse 2s ease-out 1s infinite;
+  }
+
+  .animate-ping {
+    animation: ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 60s linear infinite;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .direction-rtl {
+    direction: rtl;
+  }
+
+  /* Card hover — border gold + lift (used by features & sectors pages) */
+  .card-feature-hover {
+    transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .card-feature-hover:hover {
+    border-color: rgba(240, 180, 41, 0.35) !important;
+    transform: translateY(-4px);
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.25);
+  }
+
+  /* "Learn more" nudge arrow — LTR nudges right, RTL nudges left */
+  .card-learn-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: gap 0.2s ease;
+  }
+
+  .card-feature-hover:hover .card-learn-more {
+    gap: 8px;
+  }
+
+  /* Primary gold CTA button — enhanced glow on hover */
+  .cta-primary-btn {
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+  }
+
+  .cta-primary-btn:hover {
+    box-shadow: 0 12px 40px rgba(240,180,41,0.55) !important;
+  }
+
+  /* WhatsApp CTA button — green glow on hover */
+  .cta-wa-btn {
+    transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease !important;
+  }
+
+  .cta-wa-btn:hover {
+    border-color: #25D366 !important;
+    color: #25D366 !important;
+    box-shadow: 0 0 16px rgba(37, 211, 102, 0.25) !important;
+  }
+
+  /* Sector card micro-CTA hover (server component — CSS-only) */
+  .sector-demo-cta {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.45);
+    text-decoration: none;
+    display: block;
+    transition: color 0.2s ease;
+  }
+
+  .sector-demo-cta:hover {
+    color: rgba(240, 180, 41, 0.8);
+  }
+
+  /* Skeleton shimmer — for loading placeholders */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.04) 0%,
+      rgba(255,255,255,0.10) 40%,
+      rgba(255,255,255,0.04) 80%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* Floating element animation */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  /* Animated gradient text */
+  .text-gradient-animated {
+    background: linear-gradient(270deg, #F0B429, #5EC485, #F0B429);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradient-shift 5s ease infinite;
+  }
+
+  /* Stagger delays for entrance animations */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.10s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.20s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.30s; }
+
+  /* Standardised section badge pill */
+  .badge-pill {
+    display: inline-block;
+    border: 1px solid rgba(240, 180, 41, 0.5);
+    color: #F0B429;
+    background: transparent;
+    font-size: 0.875rem;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 999px;
+    margin-bottom: 1rem;
+  }
+}
+
+/* ---------- focus-visible global styles ---------- */
+:focus-visible {
+  outline: 2px solid #F0B429;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Skip-to-main link (screen readers + keyboard) */
+.skip-to-main {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #F0B429;
+  color: #0A2318;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 10px 20px;
+  border-radius: 0 0 8px 8px;
+  text-decoration: none;
+  z-index: 9999;
+  transition: top 0.2s ease;
+}
+
+.skip-to-main:focus {
+  top: 0;
+  outline: none;
+}
+
+/* ---------- base reset ---------- */
+html {
+  scroll-behavior: smooth;
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+  background: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ---------- trust ticker animation ---------- */
+@keyframes ticker-ltr {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+@keyframes ticker-rtl {
+  from { transform: translateX(0); }
+  to   { transform: translateX(50%); }
+}
+
+/* Pause ticker on hover */
+.trust-ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+/* ---------- comparison table row entrance ---------- */
+@keyframes row-fade-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.comparison-row {
+  opacity: 0;
+}
+
+.comparison-row.visible {
+  animation: row-fade-in 0.4s ease forwards;
+}
+
+/* ---------- pricing featured card — animated gold glow ---------- */
+@keyframes pricing-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240,180,41,0), 0 24px 48px rgba(10,35,24,0.3); }
+  50%       { box-shadow: 0 0 32px 4px rgba(240,180,41,0.18), 0 24px 48px rgba(10,35,24,0.3); }
+}
+
+.pricing-featured-glow {
+  animation: pricing-glow 3s ease-in-out infinite;
+}
+
+/* ---------- sector pill base + hover ---------- */
+.sector-pill {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.80);
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.sector-pill:hover {
+  border-color: #F0B429 !important;
+  color: #F0B429 !important;
+  background: rgba(240,180,41,0.08) !important;
+}
