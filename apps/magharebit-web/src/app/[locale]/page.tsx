@@ -11,6 +11,8 @@ import ComparisonTable from '@/components/landing/ComparisonTable';
 import HowItWorks from '@/components/landing/HowItWorks';
 
 // ─── below-the-fold: dynamic imports (code splitting) ─────────────────────────
+const WasteCalculator    = dynamic(() => import('@/components/landing/WasteCalculator'));
+const ComparisonSection  = dynamic(() => import('@/components/landing/ComparisonSection'));
 const SalesFlowDiagram   = dynamic(() => import('@/components/landing/SalesFlowDiagram'));
 const RoiTeaser          = dynamic(() => import('@/components/landing/RoiTeaser'));
 const WhyNotCompetitors       = dynamic(() => import('@/components/landing/WhyNotCompetitors'));
@@ -66,6 +68,8 @@ export default function LandingPage() {
       <Navbar />
       <main id="main-content">
         <HeroSection />
+        <WasteCalculator />
+        <ComparisonSection />
         <SalesFlowDiagram />
         <ProofBar />
         <RoiTeaser />
