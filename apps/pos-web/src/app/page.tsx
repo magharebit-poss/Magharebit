@@ -8,6 +8,8 @@ import { LANGS } from '../lib/i18n';
 import { apiFetch, setToken } from '../lib/api';
 import { getMerchantBranding } from '../lib/branding';
 import { pickName } from '../lib/names';
+import { BrandEmblem } from '../components/brand/BrandEmblem';
+import { ZelligeBackdrop } from '../components/brand/ZelligeBackdrop';
 
 export default function ShiftOpenPage() {
   const router = useRouter();
@@ -20,7 +22,7 @@ export default function ShiftOpenPage() {
   // below immediately hydrates from the sessionStorage cache on the client so
   // returning users see their store name without waiting for the license fetch.
   // Using getMerchantBranding() directly in the lazy initializer caused a
-  // hydration mismatch: server → 'Magharebit', client → 'GreenGo Dev Store'.
+  // hydration mismatch: server → 'Magharebit', client → 'Dev Store'.
   const [merchantName, setMerchantName] = useState<string>('Magharebit');
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,21 +151,25 @@ export default function ShiftOpenPage() {
   if (licenseBlockedStatus !== null) {
     const supportContact = process.env.NEXT_PUBLIC_SUPPORT_CONTACT ?? 'support@example.com';
     return (
-      <main className="min-h-screen flex items-center justify-center p-6 bg-[#F8FAFC]">
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-[#E2E8F0] p-8 text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-5">
+      <main className="relative overflow-hidden min-h-screen flex items-center justify-center p-6 bg-brand-950">
+        <ZelligeBackdrop />
+        <div className="relative z-10 w-full max-w-md bg-brand-900 rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.5)] border border-white/10 p-8 text-center">
+          <div className="flex justify-center mb-4">
+            <BrandEmblem variant="onDark" height={64} alt={t.brand.logoAlt} />
+          </div>
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-5">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-[#0F172A] mb-2">
+          <h1 className="text-xl font-bold text-white mb-2">
             {t.shift.licenseTitle}
           </h1>
-          <p className="text-sm text-[#475569] mb-4">
+          <p className="text-sm text-white/60 mb-4">
             {t.shift.licenseBody}
           </p>
-          <div className="text-xs text-[#94A3B8] font-mono border-t border-[#F1F5F9] pt-3">
+          <div className="text-xs text-white/40 font-mono border-t border-white/10 pt-3">
             <p>{t.shift.licenseSupport}: {supportContact}</p>
             <p className="mt-1">({licenseBlockedStatus})</p>
           </div>
@@ -173,16 +179,17 @@ export default function ShiftOpenPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-[#F8FAFC]">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-[#E2E8F0] p-8 relative">
+    <main className="relative overflow-hidden min-h-screen flex items-center justify-center p-6 bg-brand-950">
+      <ZelligeBackdrop />
+      <div className="relative z-10 w-full max-w-2xl bg-brand-900 rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.5)] border border-white/10 p-8">
         {/* Language toggle */}
-        <div className="absolute top-4 start-4 flex gap-1 bg-[#F8FAFC] p-1 rounded-lg border border-[#E2E8F0]">
+        <div className="absolute top-4 start-4 flex gap-1 bg-brand-950/60 p-1 rounded-lg border border-white/15">
           {LANGS.map((l) => (
             <button
               key={l.code}
               onClick={() => setLang(l.code)}
               className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
-                lang === l.code ? 'bg-white text-[#2E8B57] shadow-sm' : 'text-[#64748B] hover:text-[#0F172A]'
+                lang === l.code ? 'bg-gold-400 text-brand-950' : 'text-white/70 hover:text-white'
               }`}
             >
               {l.code.toUpperCase()}
@@ -190,32 +197,35 @@ export default function ShiftOpenPage() {
           ))}
         </div>
 
-        <h1 className="text-3xl font-bold text-center mb-1 text-[#2E8B57]">{merchantName}</h1>
-        <p className="text-sm text-[#64748B] text-center mb-8">{t.shift.subtitle}</p>
+        <div className="flex justify-center mb-4">
+          <BrandEmblem variant="onDark" height={84} glow alt={t.brand.logoAlt} />
+        </div>
+        <h1 className="text-3xl font-bold text-center mb-1 text-white">{merchantName}</h1>
+        <p className="text-sm text-white/60 text-center mb-8">{t.shift.subtitle}</p>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 text-center">
+          <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-400/30 text-sm text-red-300 text-center">
             {error}
           </div>
         )}
 
-        {loading && <p className="text-center text-[#94A3B8]">{t.shift.loading}</p>}
+        {loading && <p className="text-center text-white/50">{t.shift.loading}</p>}
 
         {!loading && !selectedStaff && (
           <>
-            <p className="text-sm font-semibold text-[#0F172A] mb-3">{t.shift.selectCashier}</p>
+            <p className="text-sm font-semibold text-white mb-3">{t.shift.selectCashier}</p>
             <div className="grid grid-cols-2 gap-3">
               {staff.map((s) => (
                 <button
                   key={s.staff_id}
                   onClick={() => setSelectedStaff(s)}
-                  className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-start hover:border-[#2E8B57] hover:shadow-md transition-all"
+                  className="bg-brand-950/60 border border-white/10 rounded-xl p-4 text-start hover:border-gold-400 hover:shadow-md transition-all"
                 >
-                  <div className="font-semibold text-[#0F172A]">{cashierName(s)}</div>
-                  <div className="text-xs text-[#64748B] mt-0.5">
+                  <div className="font-semibold text-white">{cashierName(s)}</div>
+                  <div className="text-xs text-white/60 mt-0.5">
                     {lang === 'ar' ? s.name_fr : s.name_ar}
                   </div>
-                  <span className="inline-block mt-2 text-[10px] font-medium bg-[#F0FDF4] text-[#2E8B57] px-2 py-0.5 rounded-full">
+                  <span className="inline-block mt-2 text-[10px] font-medium bg-gold-400/15 text-gold-400 px-2 py-0.5 rounded-full">
                     {t.shift.role[s.role as 'CASHIER' | 'MANAGER' | 'SUPERVISOR'] ?? s.role}
                   </span>
                 </button>
@@ -228,24 +238,24 @@ export default function ShiftOpenPage() {
           <>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <p className="text-xs text-[#64748B]">{t.shift.cashierLabel}</p>
-                <p className="font-semibold text-[#0F172A]">{cashierName(selectedStaff)}</p>
+                <p className="text-xs text-white/60">{t.shift.cashierLabel}</p>
+                <p className="font-semibold text-white">{cashierName(selectedStaff)}</p>
               </div>
               <button
                 onClick={() => { setSelectedStaff(null); setPin(''); }}
-                className="text-xs text-[#64748B] hover:text-[#0F172A] underline"
+                className="text-xs text-white/60 hover:text-white underline"
               >
                 {t.shift.changeCashier}
               </button>
             </div>
 
-            <p className="text-sm font-semibold text-[#0F172A] text-center mb-4">{t.shift.enterPin}</p>
+            <p className="text-sm font-semibold text-white text-center mb-4">{t.shift.enterPin}</p>
 
             <div className="flex justify-center gap-3 mb-6">
               {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className={`w-4 h-4 rounded-full ${i < pin.length ? 'bg-[#2E8B57]' : 'bg-[#E2E8F0]'}`}
+                  className={`w-4 h-4 rounded-full ${i < pin.length ? 'bg-gold-400' : 'bg-white/20'}`}
                 />
               ))}
             </div>
@@ -255,26 +265,26 @@ export default function ShiftOpenPage() {
                 <button
                   key={k}
                   onClick={() => handleKey(k)}
-                  className="w-16 h-16 rounded-xl bg-white border border-[#E2E8F0] text-xl font-bold text-[#0F172A] hover:bg-[#F0FDF4] hover:border-[#2E8B57] transition-all duration-150 mx-auto"
+                  className="w-16 h-16 rounded-xl bg-brand-950/60 border border-white/15 text-xl font-bold text-white hover:bg-white/10 hover:border-gold-400 transition-all duration-150 mx-auto"
                 >
                   {k}
                 </button>
               ))}
               <button
                 onClick={() => handleKey('del')}
-                className="w-16 h-16 rounded-xl bg-white border border-[#E2E8F0] text-xl font-bold text-[#64748B] hover:bg-red-50 transition-all duration-150 mx-auto"
+                className="w-16 h-16 rounded-xl bg-brand-950/60 border border-white/15 text-xl font-bold text-white/70 hover:bg-red-500/20 transition-all duration-150 mx-auto"
               >
                 ⌫
               </button>
               <button
                 onClick={() => handleKey('0')}
-                className="w-16 h-16 rounded-xl bg-white border border-[#E2E8F0] text-xl font-bold text-[#0F172A] hover:bg-[#F0FDF4] hover:border-[#2E8B57] transition-all duration-150 mx-auto"
+                className="w-16 h-16 rounded-xl bg-brand-950/60 border border-white/15 text-xl font-bold text-white hover:bg-white/10 hover:border-gold-400 transition-all duration-150 mx-auto"
               >
                 0
               </button>
               <button
                 onClick={() => setPin('')}
-                className="w-16 h-16 rounded-xl bg-white border border-[#E2E8F0] text-sm font-medium text-[#64748B] hover:bg-red-50 transition-all duration-150 mx-auto"
+                className="w-16 h-16 rounded-xl bg-brand-950/60 border border-white/15 text-sm font-medium text-white/70 hover:bg-red-500/20 transition-all duration-150 mx-auto"
               >
                 {t.shift.clear}
               </button>
@@ -286,18 +296,18 @@ export default function ShiftOpenPage() {
           <>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <p className="text-xs text-[#64748B]">{t.shift.cashierLabel}</p>
-                <p className="font-semibold text-[#0F172A]">{cashierName(selectedStaff)}</p>
+                <p className="text-xs text-white/60">{t.shift.cashierLabel}</p>
+                <p className="font-semibold text-white">{cashierName(selectedStaff)}</p>
               </div>
               <button
                 onClick={() => { setPin(''); setPinReady(false); }}
-                className="text-xs text-[#64748B] hover:text-[#0F172A] underline"
+                className="text-xs text-white/60 hover:text-white underline"
               >
                 {t.shift.editPin}
               </button>
             </div>
 
-            <label className="block text-sm font-semibold text-[#0F172A] mb-2">{t.shift.openingFloat}</label>
+            <label className="block text-sm font-semibold text-white mb-2">{t.shift.openingFloat}</label>
             <div className="relative mb-6">
               <input
                 type="number"
@@ -306,15 +316,15 @@ export default function ShiftOpenPage() {
                 value={openingFloat}
                 onChange={(e) => setOpeningFloat(e.target.value)}
                 placeholder="0.00"
-                className="w-full h-12 px-4 rounded-xl border border-[#E2E8F0] focus:outline-none focus:ring-2 focus:ring-[#2E8B57] focus:border-transparent text-lg font-mono"
+                className="w-full h-12 px-4 rounded-xl bg-brand-950/60 border border-white/15 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-gold-400 focus:border-transparent text-lg font-mono"
               />
-              <span className="absolute end-4 top-1/2 -translate-y-1/2 text-sm text-[#64748B] pointer-events-none">MAD</span>
+              <span className="absolute end-4 top-1/2 -translate-y-1/2 text-sm text-white/60 pointer-events-none">MAD</span>
             </div>
 
             <button
               onClick={handleStartShift}
               disabled={submitting}
-              className="w-full bg-[#2E8B57] hover:bg-[#1A5C3A] text-white font-semibold py-3.5 rounded-xl text-lg transition-colors duration-150 disabled:opacity-50"
+              className="w-full bg-gold-400 hover:bg-gold-500 text-brand-950 font-bold py-3.5 rounded-xl text-lg transition-colors duration-150 disabled:opacity-50"
             >
               {submitting ? t.shift.starting : t.shift.startShift}
             </button>
