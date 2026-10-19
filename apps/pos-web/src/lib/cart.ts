@@ -300,7 +300,7 @@ export function findProductByCode(code: string, products: Product[]): Product | 
   const byPlu = products.find((p) => p.plu_code != null && p.plu_code === code);
   if (byPlu) return byPlu;
 
-  // Tier 3: GreenGo QR JSON { id, b }
+  // Tier 3: product QR JSON { id, b }
   try {
     const parsed = JSON.parse(code) as { id?: string; b?: string };
     if (parsed?.id) {

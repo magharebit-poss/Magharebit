@@ -56,7 +56,7 @@ export default function ZReport({ summary, onDone }: ZReportProps) {
       <div className="z-report-print max-w-xs mx-auto bg-white font-mono text-sm p-4 shadow-sm">
         {/* Header */}
         <div className="text-center">
-          <p className="font-bold text-base">🌿 GreenGo POS</p>
+          <p className="font-bold text-base">{t.brand.name}</p>
           <p className="text-sm">{t.zReport.title}</p>
           <p>{DIVIDER}</p>
         </div>

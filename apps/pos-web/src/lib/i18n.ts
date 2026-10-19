@@ -1,4 +1,4 @@
-// i18n translations for GreenGo POS web cashier interface
+// i18n translations for MAGHAREBIT POS web cashier interface
 // Three languages: ar (default), fr, en
 
 export type Lang = 'ar' | 'fr' | 'en';
@@ -105,6 +105,11 @@ export interface Translations {
     imageInvalidType: string;
     imageUploading: string;
     margin: string;
+  };
+  brand: {
+    name: string;
+    logoAlt: string;
+    copyright: string;
   };
   shift: {
     title: string;
@@ -965,8 +970,13 @@ export interface Translations {
 
 export const TRANSLATIONS: Record<Lang, Translations> = {
   ar: {
+    brand: {
+      name: 'MAGHAREBIT POS',
+      logoAlt: 'شعار MAGHAREBIT',
+      copyright: '© 2026 MAGHAREBIT — Wayloz Group',
+    },
     shift: {
-      title: '🌿 GreenGo POS',
+      title: 'MAGHAREBIT POS',
       subtitle: 'فتح وردية جديدة',
       selectCashier: 'اختر الكاشير',
       cashierLabel: 'الكاشير',
@@ -1099,7 +1109,7 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       colQty: 'الكمية',
       colTotal: 'الإجمالي',
       tendersHeading: 'تفصيل وسائل الدفع',
-      footer: 'شكراً — GreenGo POS',
+      footer: 'شكراً — MAGHAREBIT POS',
       print: 'طباعة',
       done: 'تم',
       splitPayment: 'دفع مقسّم',
@@ -1953,8 +1963,13 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
     },
   },
   fr: {
+    brand: {
+      name: 'MAGHAREBIT POS',
+      logoAlt: 'Logo MAGHAREBIT',
+      copyright: '© 2026 MAGHAREBIT — Wayloz Group',
+    },
     shift: {
-      title: '🌿 GreenGo POS',
+      title: 'MAGHAREBIT POS',
       subtitle: 'Ouvrir un nouveau service',
       selectCashier: 'Sélectionner le caissier',
       cashierLabel: 'Caissier',
@@ -2087,7 +2102,7 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       colQty: 'Qté',
       colTotal: 'Total',
       tendersHeading: 'Détail des modes de paiement',
-      footer: 'Merci — GreenGo POS',
+      footer: 'Merci — MAGHAREBIT POS',
       print: 'Imprimer',
       done: 'Terminer',
       splitPayment: 'Paiement mixte',
@@ -2941,8 +2956,13 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
     },
   },
   en: {
+    brand: {
+      name: 'MAGHAREBIT POS',
+      logoAlt: 'MAGHAREBIT logo',
+      copyright: '© 2026 MAGHAREBIT — Wayloz Group',
+    },
     shift: {
-      title: '🌿 GreenGo POS',
+      title: 'MAGHAREBIT POS',
       subtitle: 'Open a new shift',
       selectCashier: 'Select cashier',
       cashierLabel: 'Cashier',
@@ -3075,7 +3095,7 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       colQty: 'Qty',
       colTotal: 'Total',
       tendersHeading: 'Payment method breakdown',
-      footer: 'Thank you — GreenGo POS',
+      footer: 'Thank you — MAGHAREBIT POS',
       print: 'Print',
       done: 'Done',
       splitPayment: 'Split payment',

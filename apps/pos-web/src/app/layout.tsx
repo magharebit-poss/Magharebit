@@ -4,8 +4,8 @@ import { LanguageProvider } from '../context/LanguageContext';
 import { ActivationGate } from '../components/ActivationGate';
 
 export const metadata: Metadata = {
-  title: 'GreenGo POS',
-  description: 'GreenGo POS — Cashier Web Interface',
+  title: 'MAGHAREBIT POS',
+  description: 'MAGHAREBIT POS — Cashier Web Interface',
 };
 
 export default function RootLayout({

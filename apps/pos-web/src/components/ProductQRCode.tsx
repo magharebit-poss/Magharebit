@@ -38,7 +38,7 @@ export default function ProductQRCode({ product, onClose }: ProductQRCodeProps) 
     if (!qrDataUrl) return;
     const a = document.createElement('a');
     a.href = qrDataUrl;
-    a.download = `greengo-qr-${product.plu_code ?? product.product_id.slice(0, 8)}.png`;
+    a.download = `magharebit-qr-${product.plu_code ?? product.product_id.slice(0, 8)}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
