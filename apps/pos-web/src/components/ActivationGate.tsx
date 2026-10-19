@@ -9,6 +9,8 @@ import {
 } from '@/lib/license/cache';
 import { getMachineId } from '@/lib/license/machine-id';
 import { useLanguage } from '../context/LanguageContext';
+import { BrandEmblem } from './brand/BrandEmblem';
+import { ZelligeBackdrop } from './brand/ZelligeBackdrop';
 
 interface Props {
   children: React.ReactNode;
@@ -94,13 +96,16 @@ export function ActivationGate({ children }: Props) {
   if (status === 'checking') {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0A2318',
+        position: 'relative', overflow: 'hidden',
+        minHeight: '100vh', background: 'var(--color-brand-950)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
+        <ZelligeBackdrop />
         <div style={{
+          position: 'relative', zIndex: 1,
           width: '36px', height: '36px',
           border: '3px solid rgba(240,180,41,0.2)',
-          borderTop: '3px solid #F0B429',
+          borderTop: '3px solid var(--color-gold-400)',
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite',
         }} />
@@ -116,14 +121,20 @@ export function ActivationGate({ children }: Props) {
   if (status === 'revoked') {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0A2318',
+        position: 'relative', overflow: 'hidden',
+        minHeight: '100vh', background: 'var(--color-brand-950)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
+        <ZelligeBackdrop />
         <div style={{
-          background: '#0F3D2A', borderRadius: '20px',
+          position: 'relative', zIndex: 1,
+          background: 'var(--color-brand-900)', borderRadius: '20px',
           padding: '2.5rem', maxWidth: '400px', textAlign: 'center',
           border: '1px solid rgba(239,68,68,0.3)',
         }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <BrandEmblem variant="onDark" height={64} alt={t.brand.logoAlt} />
+          </div>
           <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🔒</div>
           <h2 style={{ color: '#FCA5A5', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.5rem' }}>
             {tl.revokedTitle}
@@ -148,14 +159,20 @@ export function ActivationGate({ children }: Props) {
   if (status === 'expired') {
     return (
       <div style={{
-        minHeight: '100vh', background: '#0A2318',
+        position: 'relative', overflow: 'hidden',
+        minHeight: '100vh', background: 'var(--color-brand-950)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
+        <ZelligeBackdrop />
         <div style={{
-          background: '#0F3D2A', borderRadius: '20px',
+          position: 'relative', zIndex: 1,
+          background: 'var(--color-brand-900)', borderRadius: '20px',
           padding: '2.5rem', maxWidth: '400px', textAlign: 'center',
           border: '1px solid rgba(240,180,41,0.3)',
         }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <BrandEmblem variant="onDark" height={64} alt={t.brand.logoAlt} />
+          </div>
           <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⏰</div>
           <h2 style={{ color: '#F0B429', fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.5rem' }}>
             {tl.expiredTitle}

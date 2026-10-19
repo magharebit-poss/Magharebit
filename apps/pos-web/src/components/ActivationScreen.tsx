@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { getMachineId } from '@/lib/license/machine-id';
 import { saveLicense, type LicenseCache } from '@/lib/license/cache';
 import { useLanguage } from '../context/LanguageContext';
+import { BrandEmblem } from './brand/BrandEmblem';
+import { ZelligeBackdrop } from './brand/ZelligeBackdrop';
 
 interface Props {
   onActivated: () => void;
@@ -88,14 +90,15 @@ export function ActivationScreen({ onActivated }: Props) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0,
-      background: '#0A2318',
+      position: 'fixed', inset: 0, overflow: 'hidden',
+      background: 'var(--color-brand-950)',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       gap: '1rem',
       zIndex: 9999,
-      fontFamily: 'system-ui, sans-serif',
+      fontFamily: 'inherit',
     }}>
-      <div dir="ltr" style={{ display: 'flex', gap: '0.4rem' }}>
+      <ZelligeBackdrop />
+      <div dir="ltr" style={{ display: 'flex', gap: '0.4rem', position: 'relative', zIndex: 1 }}>
         {(['ar', 'fr', 'en'] as const).map((code) => (
           <button
             key={code}
@@ -105,9 +108,9 @@ export function ActivationScreen({ onActivated }: Props) {
             style={{
               fontSize: '0.75rem', fontWeight: 700,
               padding: '0.3rem 0.75rem', borderRadius: '8px', cursor: 'pointer',
-              background: lang === code ? '#F0B429' : 'transparent',
-              color: lang === code ? '#0A2318' : '#ffffff',
-              border: lang === code ? '1px solid #F0B429' : '1px solid rgba(255,255,255,0.25)',
+              background: lang === code ? 'var(--color-gold-400)' : 'transparent',
+              color: lang === code ? 'var(--color-brand-950)' : '#ffffff',
+              border: lang === code ? '1px solid var(--color-gold-400)' : '1px solid rgba(255,255,255,0.25)',
             }}
           >
             {code.toUpperCase()}
@@ -115,8 +118,9 @@ export function ActivationScreen({ onActivated }: Props) {
         ))}
       </div>
       <div style={{
+        position: 'relative', zIndex: 1,
         width: '100%', maxWidth: '440px',
-        background: '#0F3D2A',
+        background: 'var(--color-brand-900)',
         borderRadius: '24px',
         padding: '2.5rem',
         border: '1px solid rgba(255,255,255,0.08)',
@@ -125,19 +129,15 @@ export function ActivationScreen({ onActivated }: Props) {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
-            display: 'inline-flex', alignItems: 'center',
-            gap: '0.6rem', marginBottom: '0.4rem',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: '0.9rem', marginBottom: '0.6rem',
           }}>
-            <div style={{
-              width: '44px', height: '44px',
-              background: '#F0B429', borderRadius: '12px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.4rem', fontWeight: 900, color: '#0A2318',
-            }}>م</div>
+            <BrandEmblem variant="onDark" height={84} glow alt={t.brand.logoAlt} />
             <span style={{
+              fontFamily: 'var(--font-display)',
               fontSize: '1.5rem', fontWeight: 800,
               color: '#ffffff', letterSpacing: '0.02em',
-            }}>MAGHAREBIT</span>
+            }}>{t.brand.name}</span>
           </div>
           <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.85rem', margin: 0 }}>
             {tl.activationTitle}
@@ -197,8 +197,8 @@ export function ActivationScreen({ onActivated }: Props) {
           disabled={loading}
           style={{
             width: '100%', marginTop: '1.25rem', padding: '0.9rem',
-            background: loading ? '#B8860B' : '#F0B429',
-            color: '#0A2318', fontWeight: 800, fontSize: '1rem',
+            background: loading ? 'var(--color-gold-600)' : 'var(--color-gold-400)',
+            color: 'var(--color-brand-950)', fontWeight: 800, fontSize: '1rem',
             border: 'none', borderRadius: '12px',
             cursor: loading ? 'not-allowed' : 'pointer',
             transition: 'background 0.15s', letterSpacing: '0.01em',
@@ -210,7 +210,7 @@ export function ActivationScreen({ onActivated }: Props) {
           textAlign: 'center', marginTop: '1.5rem',
           color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem',
         }}>
-          © 2026 MAGHAREBIT — Wayloz Group
+          {t.brand.copyright}
         </p>
       </div>
     </div>
