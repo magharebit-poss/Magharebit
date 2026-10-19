@@ -1,12 +1,10 @@
-// SECURITY NOTICE:
-// The current admin gate uses a client-side localStorage password check + server-side x-admin-secret header.
-// This is acceptable for current scale but MUST be replaced with proper auth (NextAuth, Clerk, or custom JWT)
-// before any production deployment with real merchant data.
-// Tracked in DEPLOY.md → "Pre-launch backend integration TODOs"
+// ADMIN AUTH: the password is verified server-side (POST /api/admin/login, compared to ADMIN_SECRET)
+// and the browser only holds an HttpOnly session cookie. No secret exists in client code.
+// Still a single shared password: replace with per-user auth before many admins use this.
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import AdminSystemStatus from '@/components/admin/AdminSystemStatus';
@@ -66,15 +64,15 @@ export default function AdminLeadsPage() {
   const [generatingKey, setGeneratingKey] = useState(false);
   const [copyToast, setCopyToast] = useState(false);
 
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? '';
-
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     setFetchError('');
     try {
-      const res = await fetch('/api/leads', {
-        headers: { 'x-admin-secret': adminPassword },
-      });
+      const res = await fetch('/api/leads');
+      if (res.status === 401) {
+        setAuthenticated(false); // session expired
+        return;
+      }
       if (!res.ok) {
         setFetchError('خطأ في الاتصال بالخادم');
         return;
@@ -87,15 +85,41 @@ export default function AdminLeadsPage() {
     } finally {
       setLoading(false);
     }
-  }, [adminPassword]);
+  }, []);
 
-  const login = () => {
-    if (password === adminPassword) {
-      setAuthenticated(true);
-      setAuthError('');
-      fetchLeads();
-    } else {
-      setAuthError('كلمة المرور غير صحيحة');
+  // Restore an existing admin session (HttpOnly cookie) after a reload.
+  useEffect(() => {
+    fetch('/api/admin/session')
+      .then((r) => {
+        if (r.ok) {
+          setAuthenticated(true);
+          void fetchLeads();
+        }
+      })
+      .catch(() => {});
+  }, [fetchLeads]);
+
+  const login = async () => {
+    setAuthError('');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        setPassword('');
+        setAuthenticated(true);
+        void fetchLeads();
+      } else if (res.status === 429) {
+        setAuthError('محاولات كثيرة، حاول لاحقاً');
+      } else if (res.status === 503) {
+        setAuthError('لوحة الإدارة غير مهيأة على الخادم');
+      } else {
+        setAuthError('كلمة المرور غير صحيحة');
+      }
+    } catch {
+      setAuthError('تعذّر الاتصال بالخادم');
     }
   };
 
@@ -103,10 +127,7 @@ export default function AdminLeadsPage() {
     try {
       await fetch(`/api/leads/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-secret': adminPassword,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, ...(licenseKey ? { licenseKey } : {}) }),
       });
       setLeads((prev) =>
@@ -569,7 +590,7 @@ export default function AdminLeadsPage() {
         </div>
 
         {/* System status — visible only to authenticated admin */}
-        <AdminSystemStatus adminSecret={adminPassword} />
+        <AdminSystemStatus />
 
         {/* Search + filter + sort bar */}
         <div

@@ -1,7 +1,7 @@
 /**
  * /api/licenses
  *
- * GET  — list all licenses (admin only, x-admin-secret)
+ * GET  — list all licenses (admin only: session cookie or x-admin-secret)
  * POST — create a license manually (admin only)
  *        Body: { merchantId, storeName, plan, durationMonths }
  *
@@ -12,11 +12,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { licensesRepo, LicensePlan } from '@/lib/repositories/licenses'
 import { isValidDuration } from '@/lib/license-key'
+import { isAdminRequest } from '@/lib/admin-auth'
 
 const VALID_PLANS: LicensePlan[] = ['Starter', 'Business', 'Enterprise']
 
 function isAdminAuthed(req: NextRequest): boolean {
-  return req.headers.get('x-admin-secret') === process.env.ADMIN_SECRET
+  return isAdminRequest(req)
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {

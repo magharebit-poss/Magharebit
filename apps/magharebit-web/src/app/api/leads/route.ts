@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { leadsRepo, Lead } from '@/lib/repositories/leads';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { isAdminRequest } from '@/lib/admin-auth';
 
 type LeadStatus = Lead['status'];
 
@@ -87,8 +88,7 @@ export async function POST(request: NextRequest) {
 
 // ── GET /api/leads — list all leads (admin only) ──────────────────────────────
 export async function GET(request: NextRequest) {
-  const secret = request.headers.get('x-admin-secret');
-  if (!secret || secret !== process.env.ADMIN_SECRET) {
+  if (!isAdminRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

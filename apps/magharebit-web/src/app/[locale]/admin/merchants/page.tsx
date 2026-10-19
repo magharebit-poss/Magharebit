@@ -1,6 +1,6 @@
-// SECURITY NOTICE:
-// Admin gate uses client-side password + server-side x-admin-secret header.
-// Replace with proper auth before production. See DEPLOY.md.
+// ADMIN AUTH: the password is verified server-side (POST /api/admin/login, compared to ADMIN_SECRET)
+// and the browser only holds an HttpOnly session cookie. No secret exists in client code.
+// Still a single shared password: replace with per-user auth before many admins use this.
 
 'use client'
 
@@ -111,12 +111,11 @@ function EmptyRow({ msg }: { msg: string }) {
 
 interface ApproveModalProps {
   merchant:     Merchant
-  adminSecret:  string
   onClose:      () => void
   onApproved:   (result: ApproveResult, merchant: Merchant) => void
 }
 
-function ApproveModal({ merchant, adminSecret, onClose, onApproved }: ApproveModalProps) {
+function ApproveModal({ merchant, onClose, onApproved }: ApproveModalProps) {
   const [plan, setPlan]         = useState<LicensePlan>('Business')
   const [months, setMonths]     = useState(12)
   const [loading, setLoading]   = useState(false)
@@ -127,7 +126,7 @@ function ApproveModal({ merchant, adminSecret, onClose, onApproved }: ApproveMod
     try {
       const res = await fetch(`/api/admin/merchants/${merchant.id}/approve`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-secret': adminSecret },
+        headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ plan, durationMonths: months }),
       })
       const data = await res.json()
@@ -309,12 +308,11 @@ function ApprovalResult({ result, onClose }: { result: ApproveResult; onClose: (
 
 interface RevokeConfirmProps {
   merchant:    Merchant
-  adminSecret: string
   onClose:     () => void
   onRevoked:   (id: string) => void
 }
 
-function RevokeConfirm({ merchant, adminSecret, onClose, onRevoked }: RevokeConfirmProps) {
+function RevokeConfirm({ merchant, onClose, onRevoked }: RevokeConfirmProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
@@ -323,7 +321,7 @@ function RevokeConfirm({ merchant, adminSecret, onClose, onRevoked }: RevokeConf
     try {
       const res = await fetch(`/api/admin/merchants/${merchant.id}/revoke`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-secret': adminSecret },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: 'admin_dashboard', notify: true }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'فشل'); return }
@@ -380,8 +378,6 @@ export default function AdminMerchantsPage() {
   const pathname = usePathname()
   const locale   = pathname.split('/')[1] ?? 'ar'
 
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? ''
-
   // ── Auth state ───────────────────────────────────────────────────────────────
   const [authenticated, setAuthenticated] = useState(false)
   const [password, setPassword]           = useState('')
@@ -403,9 +399,8 @@ export default function AdminMerchantsPage() {
   const fetchMerchants = useCallback(async () => {
     setLoading(true); setFetchError('')
     try {
-      const res = await fetch('/api/admin/merchants?limit=200', {
-        headers: { 'x-admin-secret': adminPassword },
-      })
+      const res = await fetch('/api/admin/merchants?limit=200')
+      if (res.status === 401) { setAuthenticated(false); return } // session expired
       if (!res.ok) { setFetchError('خطأ في الاتصال بالخادم'); return }
       const data = await res.json()
       setMerchants(data.merchants ?? [])
@@ -414,7 +409,19 @@ export default function AdminMerchantsPage() {
     } finally {
       setLoading(false)
     }
-  }, [adminPassword])
+  }, [])
+
+  // Restore an existing admin session (HttpOnly cookie) after a reload.
+  useEffect(() => {
+    fetch('/api/admin/session')
+      .then((r) => {
+        if (r.ok) {
+          setAuthenticated(true)
+          void fetchMerchants()
+        }
+      })
+      .catch(() => {})
+  }, [fetchMerchants])
 
   // Escape closes modals
   useEffect(() => {
@@ -426,12 +433,27 @@ export default function AdminMerchantsPage() {
     return () => window.removeEventListener('keydown', fn)
   }, [])
 
-  const login = () => {
-    if (password === adminPassword) {
-      setAuthenticated(true); setAuthError('')
-      void fetchMerchants()
-    } else {
-      setAuthError('كلمة المرور غير صحيحة')
+  const login = async () => {
+    setAuthError('')
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (res.ok) {
+        setPassword('')
+        setAuthenticated(true)
+        void fetchMerchants()
+      } else if (res.status === 429) {
+        setAuthError('محاولات كثيرة، حاول لاحقاً')
+      } else if (res.status === 503) {
+        setAuthError('لوحة الإدارة غير مهيأة على الخادم')
+      } else {
+        setAuthError('كلمة المرور غير صحيحة')
+      }
+    } catch {
+      setAuthError('تعذّر الاتصال بالخادم')
     }
   }
 
@@ -481,8 +503,8 @@ export default function AdminMerchantsPage() {
     <main style={{ minHeight: '100vh', background: '#F8F9FA', padding: '32px 24px', direction: 'rtl' }}>
 
       {/* Modals */}
-      {approving && <ApproveModal merchant={approving} adminSecret={adminPassword} onClose={() => setApproving(null)} onApproved={onApproved} />}
-      {revoking  && <RevokeConfirm merchant={revoking} adminSecret={adminPassword} onClose={() => setRevoking(null)} onRevoked={onRevoked} />}
+      {approving && <ApproveModal merchant={approving} onClose={() => setApproving(null)} onApproved={onApproved} />}
+      {revoking  && <RevokeConfirm merchant={revoking} onClose={() => setRevoking(null)} onRevoked={onRevoked} />}
       {lastResult && <ApprovalResult result={lastResult} onClose={() => setLastResult(null)} />}
 
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>

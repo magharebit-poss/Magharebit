@@ -25,6 +25,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { merchantsRepo } from '@/lib/repositories/merchants'
 import { licensesRepo } from '@/lib/repositories/licenses'
+import { isAdminRequest } from '@/lib/admin-auth'
 import { isValidDuration, durationLabelAr } from '@/lib/license-key'
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp'
 import type { LicensePlan } from '@/lib/license-key'
@@ -32,7 +33,7 @@ import type { LicensePlan } from '@/lib/license-key'
 const VALID_PLANS: LicensePlan[] = ['Starter', 'Business', 'Enterprise']
 
 function isAdminAuthed(req: NextRequest): boolean {
-  return req.headers.get('x-admin-secret') === process.env.ADMIN_SECRET
+  return isAdminRequest(req)
 }
 
 export async function POST(

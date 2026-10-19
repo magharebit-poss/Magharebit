@@ -2,7 +2,7 @@
  * GET /api/admin/merchants
  *
  * List merchants, optionally filtered by status.
- * Protected by x-admin-secret header.
+ * Admin only: session cookie (POST /api/admin/login) or x-admin-secret header.
  *
  * Query params:
  *   status  — "pending" | "approved" | "suspended" | "all"  (default: "all")
@@ -18,11 +18,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { merchantsRepo, MerchantStatus } from '@/lib/repositories/merchants'
 import { licensesRepo } from '@/lib/repositories/licenses'
+import { isAdminRequest } from '@/lib/admin-auth'
 
 const VALID_STATUSES: Array<MerchantStatus | 'all'> = ['pending', 'approved', 'suspended', 'all']
 
 function isAdminAuthed(req: NextRequest): boolean {
-  return req.headers.get('x-admin-secret') === process.env.ADMIN_SECRET
+  return isAdminRequest(req)
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {

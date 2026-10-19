@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkDbConnection } from '@/lib/db-check'
+import { isAdminRequest } from '@/lib/admin-auth'
 
 export async function GET(req: NextRequest) {
-  const adminSecret = req.headers.get('x-admin-secret')
-  if (adminSecret !== process.env.ADMIN_SECRET) {
+  if (!isAdminRequest(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
