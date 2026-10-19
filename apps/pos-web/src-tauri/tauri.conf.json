@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "GreenGo POS",
+  "productName": "MAGHAREBIT POS",
   "version": "0.0.1",
   "identifier": "ma.magharebit.greengo-pos",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "GreenGo POS",
+        "title": "MAGHAREBIT POS",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,

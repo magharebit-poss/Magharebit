@@ -46,7 +46,7 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
   // Header
   ep.align('center');
   ep.bold(true).doubleSize(true);
-  ep.line(data.storeName ?? 'GreenGo');
+  ep.line(data.storeName ?? 'MAGHAREBIT POS');
   ep.bold(false).doubleSize(false);
   if (data.storeAddress) ep.line(data.storeAddress);
   if (data.taxId) ep.line(`ICE: ${data.taxId}`);
@@ -117,7 +117,7 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
   ep.separator('=');
   ep.align('center');
   ep.line('شكراً لزيارتكم');
-  ep.line('GreenGo — مدعوم من MAGHAREBIT');
+  ep.line('MAGHAREBIT POS — مدعوم من MAGHAREBIT');
 
   ep.feedAndCut(4);
   return ep.build();
@@ -185,7 +185,7 @@ export function buildZReport(summary: ShiftSummary, cashierName: string): Uint8A
   ep.bold(true).doubleSize(true);
   ep.line('تقرير إغلاق الوردية');
   ep.bold(false).doubleSize(false);
-  ep.line(`GreenGo — Z-Report`);
+  ep.line(`MAGHAREBIT POS — Z-Report`);
   ep.separator('=');
 
   ep.align('right');
