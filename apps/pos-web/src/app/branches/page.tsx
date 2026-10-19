@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../context/LanguageContext';
+import { BrandLockup } from '../../components/brand/BrandLockup';
 import { pickName } from '../../lib/names';
 import { formatMoney } from '../../lib/format';
 
@@ -189,6 +190,7 @@ export default function BranchesPage() {
               cursor: 'pointer', fontSize: '0.82rem',
             }}
           >← POS</button>
+          <BrandLockup height={32} alt={t.brand.logoAlt} />
           <h1 style={{ color: '#F0B429', fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>🏪 {tb.title}</h1>
         </div>
         <button

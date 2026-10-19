@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../context/LanguageContext';
+import { BrandLockup } from '../../components/brand/BrandLockup';
 
 const ROLES = ['CASHIER', 'SENIOR_CASHIER', 'INVENTORY', 'MANAGER', 'SUPERVISOR'] as const;
 type RoleKey = (typeof ROLES)[number];
@@ -138,6 +139,7 @@ export default function StaffPage() {
               cursor: 'pointer', fontSize: '0.82rem',
             }}
           >← POS</button>
+          <BrandLockup height={32} alt={t.brand.logoAlt} />
           <h1 style={{ color: '#F0B429', fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>
             👥 {ts.title}
           </h1>
