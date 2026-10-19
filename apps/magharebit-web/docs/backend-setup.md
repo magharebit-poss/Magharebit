@@ -156,8 +156,8 @@ GREEN_API_BASE_URL=https://api.green-api.com
 GREEN_API_INSTANCE_ID=...
 GREEN_API_API_TOKEN=...
 WHATSAPP_BUSINESS_NUMBER=212619522487
-ADMIN_SECRET=...
-NEXT_PUBLIC_ADMIN_PASSWORD=...  (same value as ADMIN_SECRET)
+ADMIN_SECRET=...      (server-only; also the admin login password)
+NEXTAUTH_SECRET=...   (signs the admin session cookie)
 NEXT_PUBLIC_APP_URL=https://magharebit.com
 ```
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { leadsRepo, Lead } from '@/lib/repositories/leads';
+import { isAdminRequest } from '@/lib/admin-auth';
 
 type LeadStatus = Lead['status'];
 const VALID_STATUSES: LeadStatus[] = ['new', 'contacted', 'converted', 'rejected', 'activated'];
@@ -9,8 +10,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const secret = request.headers.get('x-admin-secret');
-  if (!secret || secret !== process.env.ADMIN_SECRET) {
+  if (!isAdminRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

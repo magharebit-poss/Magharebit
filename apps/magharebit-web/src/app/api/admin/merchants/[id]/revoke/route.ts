@@ -19,10 +19,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { merchantsRepo } from '@/lib/repositories/merchants'
 import { licensesRepo } from '@/lib/repositories/licenses'
+import { isAdminRequest } from '@/lib/admin-auth'
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp'
 
 function isAdminAuthed(req: NextRequest): boolean {
-  return req.headers.get('x-admin-secret') === process.env.ADMIN_SECRET
+  return isAdminRequest(req)
 }
 
 export async function POST(

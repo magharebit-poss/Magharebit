@@ -8,7 +8,7 @@
 
 | Component | Status | Implementation |
 |---|---|---|
-| Lead storage | ✅ **MongoDB Atlas ACTIVE** (`magharebit.tftevc8.mongodb.net`) + JSON fallback on connection failure | `lib/repositories/leads.ts` |
+| Lead storage | ✅ **MongoDB Atlas ACTIVE** (cluster host is configured through `MONGODB_URI`, not documented here) + JSON fallback on connection failure | `lib/repositories/leads.ts` |
 | Newsletter storage | ✅ **MongoDB Atlas ACTIVE** + JSON fallback on connection failure | `lib/repositories/subscribers.ts` |
 | MongoDB connection layer | ✅ Hardened — 5s timeout, catches failures and falls back to JSON instead of throwing 500s; public DNS resolvers (`8.8.8.8`/`1.1.1.1`) wired at module load for SRV reliability across networks | `lib/mongodb.ts` |
 | Instrumentation hook | ✅ Sets DNS resolvers at server startup for non-MongoDB SRV lookups | `src/instrumentation.ts` |
@@ -21,7 +21,7 @@
 | OTP storage | ✅ MongoDB `otp_sessions` collection, SHA-256 hashed, 5-min TTL index | `app/api/auth/verify-otp/route.ts` |
 | Session management | ✅ MongoDB `auth_sessions` + signed HttpOnly cookie `mgh_session` | `lib/otp.ts` → `createSessionToken()` |
 | License system | NOT INTEGRATED — defers to software/superadmin side | `data/licenses.json` (stub) |
-| Admin auth system | STUB — `ADMIN_SECRET` header + localStorage password | Pre-production TODO |
+| Admin auth system | ✅ Server-side: `POST /api/admin/login` checks the password against `ADMIN_SECRET` and sets a signed HttpOnly cookie (8 h). Single shared password; no secret in client code | `lib/admin-auth.ts` (per-user auth is a post-launch TODO) |
 | Download URLs | NOT READY — software not built yet | `NEXT_PUBLIC_DOWNLOAD_*` env (empty) |
 
 ## Pre-launch Backend Integration TODOs
@@ -29,8 +29,9 @@
 Before production deployment, complete these in order:
 
 1. **MongoDB Atlas connection — COMPLETE**
-   - [x] Provision production cluster (`magharebit.tftevc8.mongodb.net`)
-   - [x] Database user `magharebit_db_user` with `readWriteAnyDatabase` role
+   - [x] Provision production cluster (host: see the Atlas dashboard)
+   - [x] Create a dedicated database user for the app
+   - [ ] Scope that user to `readWrite` on the `magharebit` database only; avoid `readWriteAnyDatabase`
    - [x] Set `MONGODB_URI` in local `.env.local` — using explicit (non-SRV) form to bypass local DNS SRV-lookup refusal. The `mongodb+srv://` form is preferred on Vercel/cloud.
    - [x] Harden `lib/mongodb.ts` to fall back to JSON on connection failure (5s serverSelectionTimeout)
    - [x] Connection verified via `scripts/test-mongodb.ts` (Connect + Write + Cleanup)
@@ -42,16 +43,16 @@ Before production deployment, complete these in order:
 
    **Connection string format used locally** (explicit, no SRV):
    ```
-   mongodb://magharebit_db_user:<PASSWORD>@ac-bzvoijn-shard-00-00.tftevc8.mongodb.net:27017,ac-bzvoijn-shard-00-01.tftevc8.mongodb.net:27017,ac-bzvoijn-shard-00-02.tftevc8.mongodb.net:27017/magharebit?ssl=true&replicaSet=atlas-v67us9-shard-0&authSource=admin&retryWrites=true&w=majority&appName=magharebit
+   mongodb://<DB_USER>:<PASSWORD>@<shard-00-00-host>:27017,<shard-00-01-host>:27017,<shard-00-02-host>:27017/magharebit?ssl=true&replicaSet=<replica-set-name>&authSource=admin&retryWrites=true&w=majority&appName=magharebit
    ```
    **For Vercel** (cleaner SRV form, recommended):
    ```
-   mongodb+srv://magharebit_db_user:<PASSWORD>@magharebit.tftevc8.mongodb.net/magharebit?appName=magharebit&retryWrites=true&w=majority
+   mongodb+srv://<DB_USER>:<PASSWORD>@<cluster-host>/magharebit?appName=magharebit&retryWrites=true&w=majority
    ```
 
-2. **Green API WhatsApp credentials** (instance 7107643319 on 212619522487)
+2. **Green API WhatsApp credentials** (instance ID and token come from the greenapi.com dashboard)
    - [ ] Rotate `GREEN_API_API_TOKEN` in greenapi.com dashboard (previous token was exposed)
-   - [ ] Set `GREEN_API_INSTANCE_ID=7107643319` and new `GREEN_API_API_TOKEN` in `.env.local`
+   - [ ] Set `GREEN_API_INSTANCE_ID=<instance-id>` and new `GREEN_API_API_TOKEN` in `.env.local`
    - [ ] Test via `curl -X POST http://localhost:3004/api/whatsapp-test` in development
    - [ ] Verify lead confirmation and admin notification flows
    - [ ] Verify OTP delivery to merchant phones (test `/ar/auth/signup`)
@@ -66,9 +67,10 @@ Before production deployment, complete these in order:
    - [ ] End-to-end OTP smoke test once Green API credentials are active
 
 4. **Admin authentication upgrade** (post-launch)
-   - [ ] Replace localStorage password check with real auth provider
-   - [ ] Remove `NEXT_PUBLIC_ADMIN_PASSWORD` env var
-   - [ ] Migrate `ADMIN_SECRET` to proper API auth (consider NextAuth or Clerk)
+   - [x] Password is verified server-side (`POST /api/admin/login`); the browser only holds an HttpOnly session cookie
+   - [x] `NEXT_PUBLIC_ADMIN_PASSWORD` is no longer read anywhere in the code
+   - [ ] **Rotate `ADMIN_SECRET` and delete `NEXT_PUBLIC_ADMIN_PASSWORD` from every environment (Vercel, `.env.local`).** The old value was shipped in the browser bundle, so treat it as compromised
+   - [ ] Replace the single shared password with per-user auth (consider NextAuth or Clerk)
 
 5. **License system (from software team)**
    - [ ] Wait for software backend to expose license validation API
@@ -90,12 +92,12 @@ Set the following in your hosting platform (Vercel / VPS `.env.production`).
 | Variable | Required | Description |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | ✅ | Backend API base URL (e.g. `https://api.magharebit.com`) |
-| `ADMIN_SECRET` | ✅ | Server-only secret for `/api/leads` and `/api/licenses` admin endpoints |
-| `NEXT_PUBLIC_ADMIN_PASSWORD` | ✅ | Password for the client-side admin UI gate — set equal to `ADMIN_SECRET` value in production |
+| `ADMIN_SECRET` | ✅ | Server-only. The admin login password and the `x-admin-secret` header value for admin API routes. Never give it a `NEXT_PUBLIC_` prefix |
+| `NEXTAUTH_SECRET` | ✅ | Server-only. Signs the admin session cookie (and portal/OTP sessions); admin login returns 503 without it |
 | `MONGODB_URI` | ✅ | MongoDB connection string (used by leads/licenses API routes) |
 | `NEXT_PUBLIC_SITE_URL` | optional | Canonical site URL for OG tags and sitemap (e.g. `https://magharebit.com`) |
 
-> ⚠️ **Security note:** `NEXT_PUBLIC_ADMIN_PASSWORD` is visible in the client JS bundle. The actual API is protected server-side by `ADMIN_SECRET`. Restrict admin page access at the network/CDN layer (IP allowlist) for additional security.
+> ⚠️ **Security note:** the admin secret is server-only. Admin login is one shared password with an 8-hour HttpOnly cookie and a 10-attempts / 15-minute per-IP limit (in-memory, per server instance). Restrict `/admin` at the network/CDN layer (IP allowlist) and plan per-user auth.
 
 ---
 
@@ -118,8 +120,8 @@ npm run build
 
 - [ ] `ADMIN_SECRET` is set as a **server-only** env var (no `NEXT_PUBLIC_` prefix)
 - [ ] `/admin` is in `robots.ts` disallow list ✅ (already done)
-- [ ] `/api/leads` requires `x-admin-secret` header matching `ADMIN_SECRET` ✅
-- [ ] `/api/licenses` requires `x-admin-secret` header ✅
+- [ ] `/api/leads` and `/api/licenses` require an admin session cookie or an `x-admin-secret` header matching `ADMIN_SECRET` ✅
+- [ ] `NEXT_PUBLIC_ADMIN_PASSWORD` is absent from every environment
 - [ ] No secrets hardcoded in source code
 - [ ] `NEXT_PUBLIC_API_URL` points to HTTPS endpoint
 - [ ] CORS is configured on the backend to allow only the production domain

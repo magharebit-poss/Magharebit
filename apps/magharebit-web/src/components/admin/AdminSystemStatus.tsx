@@ -8,22 +8,17 @@ interface HealthData {
   environment: string
 }
 
-interface Props {
-  adminSecret: string
-}
-
-export default function AdminSystemStatus({ adminSecret }: Props) {
+// Authenticated by the HttpOnly admin session cookie; render only inside the
+// admin dashboard (after login). No secret is passed through props.
+export default function AdminSystemStatus() {
   const [health, setHealth] = useState<HealthData | null>(null)
 
   useEffect(() => {
-    if (!adminSecret) return
-    fetch('/api/admin/health', {
-      headers: { 'x-admin-secret': adminSecret },
-    })
+    fetch('/api/admin/health')
       .then(r => r.ok ? r.json() : null)
       .then(data => setHealth(data))
       .catch(() => null) // silent fail — admin context only
-  }, [adminSecret])
+  }, [])
 
   if (!health) return null
 

@@ -1,8 +1,6 @@
-// SECURITY NOTICE:
-// The current admin gate uses a client-side localStorage password check + server-side x-admin-secret header.
-// This is acceptable for current scale but MUST be replaced with proper auth (NextAuth, Clerk, or custom JWT)
-// before any production deployment with real merchant data.
-// Tracked in DEPLOY.md → "Pre-launch backend integration TODOs"
+// ADMIN AUTH: the password is verified server-side (POST /api/admin/login, compared to ADMIN_SECRET)
+// and the browser only holds an HttpOnly session cookie. No secret exists in client code.
+// Still a single shared password: replace with per-user auth before many admins use this.
 
 'use client';
 
@@ -61,15 +59,12 @@ export default function AdminLicensesPage() {
   const [creating, setCreating] = useState(false);
   const [createToast, setCreateToast] = useState(false);
 
-  const adminPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? '';
-
   const fetchLicenses = useCallback(async () => {
     setLoading(true);
     setFetchError('');
     try {
-      const res = await fetch('/api/licenses', {
-        headers: { 'x-admin-secret': adminPassword },
-      });
+      const res = await fetch('/api/licenses');
+      if (res.status === 401) { setAuthenticated(false); return; } // session expired
       if (!res.ok) { setFetchError('خطأ في الاتصال بالخادم'); return; }
       const data = await res.json();
       setLicenses(data.licenses ?? []);
@@ -78,7 +73,19 @@ export default function AdminLicensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [adminPassword]);
+  }, []);
+
+  // Restore an existing admin session (HttpOnly cookie) after a reload.
+  useEffect(() => {
+    fetch('/api/admin/session')
+      .then((r) => {
+        if (r.ok) {
+          setAuthenticated(true);
+          void fetchLicenses();
+        }
+      })
+      .catch(() => {});
+  }, [fetchLicenses]);
 
   // Close modal on Escape
   useEffect(() => {
@@ -95,13 +102,27 @@ export default function AdminLicensesPage() {
     return () => clearTimeout(id);
   }, [createToast]);
 
-  const login = () => {
-    if (password === adminPassword) {
-      setAuthenticated(true);
-      setAuthError('');
-      fetchLicenses();
-    } else {
-      setAuthError('كلمة المرور غير صحيحة');
+  const login = async () => {
+    setAuthError('');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        setPassword('');
+        setAuthenticated(true);
+        void fetchLicenses();
+      } else if (res.status === 429) {
+        setAuthError('محاولات كثيرة، حاول لاحقاً');
+      } else if (res.status === 503) {
+        setAuthError('لوحة الإدارة غير مهيأة على الخادم');
+      } else {
+        setAuthError('كلمة المرور غير صحيحة');
+      }
+    } catch {
+      setAuthError('تعذّر الاتصال بالخادم');
     }
   };
 
@@ -111,10 +132,7 @@ export default function AdminLicensesPage() {
     try {
       const res = await fetch('/api/licenses', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-secret': adminPassword,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ store: newStore, plan: newPlan }),
       });
       if (res.ok) {
