@@ -7,7 +7,6 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import TrustBarConditional from '@/components/TrustBarConditional';
 import HtmlLangDir from '@/components/HtmlLangDir';
 import TrustRibbon from '@/components/TrustRibbon';
-import ExitIntentModal from '@/components/landing/ExitIntentModal';
 import { organizationSchema } from '@/lib/schemas';
 
 export default async function LocaleLayout({
@@ -28,7 +27,8 @@ export default async function LocaleLayout({
 
   // ── Site-wide SoftwareApplication structured data ──────────────────────────
   // Renders as a JSON-LD script in <head> so Google can show rich snippets
-  // (price range, rating, app category) in SERPs.
+  // (price range, app category) in SERPs. No review/rating markup until real,
+  // verifiable reviews exist.
   const softwareSchema = {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
@@ -45,12 +45,6 @@ export default async function LocaleLayout({
         priceCurrency: 'MAD',
         billingDuration: 'P1M',
       },
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      ratingCount: '500',
-      bestRating: '5',
     },
     description:
       locale === 'ar'
@@ -77,7 +71,6 @@ export default async function LocaleLayout({
       <TrustRibbon />
       <WhatsAppButton />
       <TrustBarConditional />
-      <ExitIntentModal />
     </NextIntlClientProvider>
   );
 }

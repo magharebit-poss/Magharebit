@@ -25,13 +25,6 @@ export function softwareApplicationSchema(locale: string) {
         billingDuration: 'P1M',
       },
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.9',
-      ratingCount: '500',
-      bestRating: '5',
-      worstRating: '1',
-    },
     description: descriptions[locale] ?? descriptions.fr,
     inLanguage: ['ar', 'fr', 'en'],
     url: `https://magharebit.com/${locale}`,

@@ -356,3 +356,67 @@ a { color: inherit; text-decoration: none; }
   color: #F0B429 !important;
   background: rgba(240,180,41,0.08) !important;
 }
+
+/* ---------- offline demo (landing feature story): 3 states cross-fade ---------- */
+@keyframes offline-fade {
+  /* Each state fades out (29→36%) while the next, offset by a third of the cycle, fades in,
+     so the frame is never left blank between states. */
+  0%       { opacity: 0; }
+  5%, 29%  { opacity: 1; }
+  36%, 100%{ opacity: 0; }
+}
+
+.offline-demo__state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0;
+  animation: offline-fade 9s ease-in-out infinite;
+}
+
+.offline-demo__state:nth-child(2) { animation-delay: 3s; }
+.offline-demo__state:nth-child(3) { animation-delay: 6s; }
+
+/* ---------- reduced motion ----------
+   Honour the visitor's OS setting site-wide: no entrance animations, no infinite
+   loops, no smooth scrolling. Content must stay fully visible and readable. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* AOS hides elements until they animate in: force them visible */
+  [data-aos] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .reveal { opacity: 1; transform: none; }
+  .comparison-row { opacity: 1; }
+
+  .text-shimmer,
+  .text-gradient-animated { animation: none; background-position: 0 center; }
+
+  .trust-ticker .ticker-track { animation: none; }
+
+  /* Offline demo: show only the final "synced" state, statically */
+  .offline-demo__state { animation: none; opacity: 0; }
+  .offline-demo__state:nth-child(3) { opacity: 1; }
+}
+
+/* ---------- hero mockup: newly added cart row ---------- */
+@keyframes fade-in-row {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}

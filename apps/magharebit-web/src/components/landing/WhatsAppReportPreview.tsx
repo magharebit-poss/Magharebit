@@ -68,7 +68,9 @@ export default function WhatsAppReportPreview() {
 
   return (
     <section
+      id="reports"
       style={{
+        scrollMarginTop: 80,
         padding: '80px 24px',
         background: '#0A2318',
         borderTop: '1px solid rgba(255,255,255,0.06)',

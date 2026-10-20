@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import VideoModal from '@/components/VideoModal';
+import Logo from '@/components/brand/Logo';
 import { toArabicNumerals, currencySymbol } from '@/lib/formatters';
 
 interface MockupProduct {
@@ -10,18 +11,76 @@ interface MockupProduct {
   price: string;
   emoji: string;
 }
-interface MockupBasketItem {
-  name: string;
-  qty: string;
-  price: string;
-}
+
+// Functional value propositions only — no merchant counts or uptime figures
+// until they can be evidenced.
+const PROOF = {
+  ar: {
+    pill: 'دعم فني محلي',
+    stat1: { value: 'المغرب', label: 'مصمم للتجارة المغربية' },
+    stat2: { value: 'أوفلاين', label: 'يعمل بدون انقطاع الإنترنت' },
+  },
+  fr: {
+    pill: 'Support technique local',
+    stat1: { value: 'Maroc', label: 'Conçu pour le commerce marocain' },
+    stat2: { value: 'Hors ligne', label: 'Fonctionne sans coupure internet' },
+  },
+  en: {
+    pill: 'Local technical support',
+    stat1: { value: 'Morocco', label: 'Designed for Moroccan retail' },
+    stat2: { value: 'Offline', label: 'Keeps working without internet' },
+  },
+} as const;
+
+// Items the hero mockup "rings up" one by one. Prices are illustrative demo
+// values for the mockup, not a price list.
+const DEMO_ITEMS = [
+  { emoji: '🍵', price: 8, name: { ar: 'أتاي', fr: 'Atay', en: 'Atay (mint tea)' } },
+  { emoji: '🥐', price: 8, name: { ar: 'كرواسان', fr: 'Croissant', en: 'Croissant' } },
+  { emoji: '☕', price: 10, name: { ar: 'قهوة', fr: 'Café', en: 'Coffee' } },
+] as const;
+const DEMO_INTERVAL_MS = 3000;
 
 export default function HeroSection() {
   const t = useTranslations('hero');
   const tMock = useTranslations('hero.mockup');
   const locale = useLocale();
   const isRTL = locale === 'ar';
+  const lang = locale === 'ar' || locale === 'fr' ? locale : 'en';
+  const proof = PROOF[lang];
   const [videoOpen, setVideoOpen] = useState(false);
+
+  // Live cart simulation: one demo item is added every 3 s, then the cart
+  // resets. Reduced-motion visitors get the completed cart and no timer, and
+  // everyone gets a pause control (WCAG 2.2.2).
+  const [demoCount, setDemoCount] = useState(0);
+  const [demoPaused, setDemoPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => setReducedMotion(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+  useEffect(() => {
+    if (reducedMotion || demoPaused) return;
+    const id = window.setInterval(() => {
+      // 0 → 1 → 2 → 3 items, hold on the full cart for one beat, then reset.
+      setDemoCount((c) => (c > DEMO_ITEMS.length ? 0 : c + 1));
+    }, DEMO_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [reducedMotion, demoPaused]);
+  const shownCount = reducedMotion ? DEMO_ITEMS.length : Math.min(demoCount, DEMO_ITEMS.length);
+  const lastAdded = shownCount > 0 && !reducedMotion ? shownCount - 1 : -1;
+  const cartItems = DEMO_ITEMS.slice(0, shownCount);
+  const demoTotal = cartItems.reduce((sum, item) => sum + item.price, 0);
+  const demoPauseLabel =
+    lang === 'ar'
+      ? demoPaused ? 'تشغيل العرض التوضيحي' : 'إيقاف العرض التوضيحي'
+      : lang === 'fr'
+      ? demoPaused ? 'Reprendre la démo' : 'Mettre la démo en pause'
+      : demoPaused ? 'Resume demo' : 'Pause demo';
 
   // Localized mockup data
   const mockupUrl = tMock('url');
@@ -34,14 +93,13 @@ export default function HeroSection() {
   const mockupCheckoutBtn = tMock('checkout_btn');
   const mockupCategories = tMock.raw('categories') as string[];
   const mockupProducts = tMock.raw('products') as MockupProduct[];
-  const mockupBasketItems = tMock.raw('basket_items') as MockupBasketItem[];
 
-  // Basket total — sum of basket_items, formatted to Arabic-Indic numerals when ar
-  const basketTotalRaw = mockupBasketItems
-    .reduce((sum, item) => sum + parseFloat(item.price), 0)
-    .toFixed(2);
-  const basketTotal = toArabicNumerals(basketTotalRaw, locale);
-  const basketCount = toArabicNumerals(mockupBasketItems.length, locale);
+  // Product grid: the three demo items first (so the one being "tapped" is
+  // always visible), then the remaining catalogue tiles to fill six slots.
+  const gridTiles: { emoji: string; name: string; price: string }[] = [
+    ...DEMO_ITEMS.map((d) => ({ emoji: d.emoji, name: d.name[lang], price: String(d.price) })),
+    ...mockupProducts.filter((p) => !DEMO_ITEMS.some((d) => d.emoji === p.emoji)),
+  ].slice(0, 6);
 
   return (
     <section
@@ -51,6 +109,28 @@ export default function HeroSection() {
 
       {/* Background layers */}
       <div className="absolute inset-0 pointer-events-none">
+        {/* A1 ambient backdrop: Moroccan counter still (AI draft, decorative only).
+            Kept under a Pine Green wash so text contrast and the brand tint hold;
+            every sign, screen and logo is drawn in code on top, never in the image. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            backgroundImage: "url('/media/a1-hero.webp')",
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 65%',
+            opacity: 0.32,
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(10,35,24,0.78) 0%, rgba(10,35,24,0.62) 45%, #0A2318 100%)',
+            mixBlendMode: 'multiply',
+          }}
+        />
         <div className="absolute inset-0" style={{
           background: 'radial-gradient(ellipse 65% 55% at 50% 100%, rgba(46,139,87,0.28) 0%, transparent 70%)'
         }} />
@@ -117,13 +197,7 @@ export default function HeroSection() {
             }}
           >
             <span style={{ color: '#22C55E', fontSize: '10px', lineHeight: 1 }}>●</span>
-            <span>
-              {locale === 'ar'
-                ? '23 تاجر يستخدم النظام الآن'
-                : locale === 'fr'
-                ? '23 commerçants utilisent le système maintenant'
-                : '23 merchants using the system now'}
-            </span>
+            <span>{proof.pill}</span>
           </div>
         </div>
 
@@ -229,32 +303,6 @@ export default function HeroSection() {
           </button>
         </div>
 
-        {/* YouTube demo link */}
-        <div data-aos="fade-up" data-aos-delay="270" style={{ marginTop: '16px' }}>
-          <a
-            href="https://www.youtube.com/channel/UCsFWs7PYax6j70XYrJYKjUg"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontSize: 13,
-              color: 'rgba(255,255,255,0.50)',
-              textDecoration: 'underline',
-              textUnderlineOffset: 4,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontFamily: isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif',
-            }}
-          >
-            📺{' '}
-            {locale === 'ar'
-              ? 'شاهد العرض على YouTube'
-              : locale === 'fr'
-              ? 'Voir notre démo sur YouTube'
-              : 'Watch our demo on YouTube'}
-          </a>
-        </div>
-
         {/* Trust row */}
         <div
           data-aos="fade-up"
@@ -338,6 +386,32 @@ export default function HeroSection() {
               </div>
             </div>
 
+            {/* App top bar: native brand lockup (vector), never AI-drawn */}
+            <div
+              className="flex items-center justify-between px-3"
+              style={{
+                height: '34px',
+                background: '#0A2318',
+                direction: isRTL ? 'rtl' : 'ltr',
+                borderBottom: '1px solid rgba(240,180,41,0.35)',
+              }}
+            >
+              <Logo variant="horizontal" on="dark" height={20} alt="MAGHAREBIT" />
+              {!reducedMotion && (
+                <button
+                  type="button"
+                  onClick={() => setDemoPaused((p) => !p)}
+                  aria-pressed={demoPaused}
+                  aria-label={demoPauseLabel}
+                  title={demoPauseLabel}
+                  className="flex items-center justify-center rounded-full text-[10px] text-white/80 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-400"
+                  style={{ width: '24px', height: '24px', border: '1px solid rgba(255,255,255,0.25)' }}
+                >
+                  <span aria-hidden="true">{demoPaused ? '▶' : '❚❚'}</span>
+                </button>
+              )}
+            </div>
+
             {/* Screen — locale-aware POS mockup */}
             <div
               className="bg-white h-[280px] overflow-hidden grid"
@@ -359,26 +433,32 @@ export default function HeroSection() {
                   style={{ fontFamily: isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif' }}
                 >
                   <span className="bg-[#F0B429] text-[#0A2318] text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {basketCount}
+                    {shownCount}
                   </span>
                   <span>{mockupBasketTitle}</span>
                 </div>
-                {mockupBasketItems.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="text-[10px] text-[#374151] flex justify-between py-1.5 border-b border-[#F1F5F9]"
-                    style={{ fontFamily: isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif' }}
-                  >
-                    <span className="font-bold">{toArabicNumerals(item.price, locale)}</span>
-                    <span>{item.name} {toArabicNumerals(item.qty, locale)}</span>
-                  </div>
-                ))}
+                {/* Announced politely so assistive tech hears the total, not each tick */}
+                <div aria-live="off" className="flex flex-col gap-1.5">
+                  {cartItems.map((item, idx) => (
+                    <div
+                      key={item.emoji}
+                      className="text-[10px] text-[#374151] flex justify-between py-1.5 border-b border-[#F1F5F9]"
+                      style={{
+                        fontFamily: isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif',
+                        animation: idx === lastAdded ? 'fade-in-row 0.4s ease-out' : undefined,
+                      }}
+                    >
+                      <span className="font-bold">{item.price.toFixed(2)} {mockupCurrency}</span>
+                      <span>{item.name[lang]} × 1</span>
+                    </div>
+                  ))}
+                </div>
                 <div className="mt-auto pt-2 border-t-2 border-[#0F3D2A]">
                   <div
                     className="flex justify-between font-bold text-[11px] mb-1.5"
                     style={{ fontFamily: isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif' }}
                   >
-                    <span className="text-[#F0B429]">{basketTotal} {mockupCurrency}</span>
+                    <span className="text-[#B8860B]">{demoTotal.toFixed(2)} {mockupCurrency}</span>
                     <span>{mockupTotalLabel}</span>
                   </div>
                   <div
@@ -428,10 +508,15 @@ export default function HeroSection() {
                   ))}
                 </div>
                 <div className="grid grid-cols-3 gap-1.5 flex-1">
-                  {mockupProducts.map((p, idx) => (
+                  {gridTiles.map((p, idx) => (
                     <div
                       key={idx}
-                      className="bg-white border border-[#E2E8F0] rounded-lg p-1.5 text-center flex flex-col items-center justify-center gap-0.5 transition-all hover:border-[#0F3D2A] hover:shadow-sm"
+                      className="bg-white border rounded-lg p-1.5 text-center flex flex-col items-center justify-center gap-0.5 transition-all hover:border-[#0F3D2A] hover:shadow-sm"
+                      style={
+                        idx === lastAdded
+                          ? { borderColor: '#B8860B', boxShadow: '0 0 0 2px rgba(240,180,41,0.55)' }
+                          : { borderColor: '#E2E8F0' }
+                      }
                     >
                       <div className="text-[20px] leading-none">{p.emoji}</div>
                       <span
@@ -477,7 +562,7 @@ export default function HeroSection() {
               color: '#F0B429',
               lineHeight: 1,
             }}>
-              {t('stat1_value')}
+              {proof.stat1.value}
             </span>
             <span style={{
               fontFamily: isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif',
@@ -485,7 +570,7 @@ export default function HeroSection() {
               color: 'rgba(255,255,255,0.6)',
               marginTop: '4px',
             }}>
-              {t('stat1_label')}
+              {proof.stat1.label}
             </span>
           </div>
 
@@ -516,7 +601,7 @@ export default function HeroSection() {
               color: '#F0B429',
               lineHeight: 1,
             }}>
-              {t('stat2_value')}
+              {proof.stat2.value}
             </span>
             <span style={{
               fontFamily: isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif',
@@ -524,7 +609,7 @@ export default function HeroSection() {
               color: 'rgba(255,255,255,0.6)',
               marginTop: '4px',
             }}>
-              {t('stat2_label')}
+              {proof.stat2.label}
             </span>
           </div>
 
@@ -536,8 +621,8 @@ export default function HeroSection() {
           style={{ direction: isRTL ? 'rtl' : 'ltr' }}
         >
           {[
-            { value: t('stat1_value'), label: t('stat1_label') },
-            { value: t('stat2_value'), label: t('stat2_label') },
+            { value: proof.stat1.value, label: proof.stat1.label },
+            { value: proof.stat2.value, label: proof.stat2.label },
           ].map((stat) => (
             <div
               key={stat.label}

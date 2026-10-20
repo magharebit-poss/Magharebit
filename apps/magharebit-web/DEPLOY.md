@@ -94,8 +94,17 @@ Set the following in your hosting platform (Vercel / VPS `.env.production`).
 | `NEXT_PUBLIC_API_URL` | ✅ | Backend API base URL (e.g. `https://api.magharebit.com`) |
 | `ADMIN_SECRET` | ✅ | Server-only. The admin login password and the `x-admin-secret` header value for admin API routes. Never give it a `NEXT_PUBLIC_` prefix |
 | `NEXTAUTH_SECRET` | ✅ | Server-only. Signs the admin session cookie (and portal/OTP sessions); admin login returns 503 without it |
-| `MONGODB_URI` | ✅ | MongoDB connection string (used by leads/licenses API routes) |
-| `NEXT_PUBLIC_SITE_URL` | optional | Canonical site URL for OG tags and sitemap (e.g. `https://magharebit.com`) |
+| `MONGODB_URI` | ✅ | MongoDB connection string. Required for OTP, sign-up, login, the merchant portal and admin merchants (no fallback: those routes return 503 without it) |
+| `NEXT_PUBLIC_BASE_URL` | optional | Canonical site URL for sitemap and robots (e.g. `https://magharebit.com`) |
+
+`ADMIN_SECRET` and `NEXTAUTH_SECRET` are **required server-only variables**: admin login returns 503 until both are set to strong random values (generate each with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`). A tracked template with the full list is in `.env.example`.
+
+### Deprecated / removed variables: purge from production
+
+| Variable | Status | Action |
+|---|---|---|
+| `NEXT_PUBLIC_ADMIN_PASSWORD` | **REMOVED.** It was embedded in the browser bundle and exposed the admin secret to every visitor. The code no longer reads it | Delete it from Vercel (all environments), `.env.local`, `.env.production` and CI. **Rotate `ADMIN_SECRET`**: the previously deployed value was public |
+| `NEXT_PUBLIC_SITE_URL` | **Not read** by the code (an older version of this document listed it) | Use `NEXT_PUBLIC_BASE_URL` instead; delete the old variable |
 
 > ⚠️ **Security note:** the admin secret is server-only. Admin login is one shared password with an 8-hour HttpOnly cookie and a 10-attempts / 15-minute per-IP limit (in-memory, per server instance). Restrict `/admin` at the network/CDN layer (IP allowlist) and plan per-user auth.
 

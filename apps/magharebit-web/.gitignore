@@ -31,7 +31,9 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
+# Real env files stay ignored; only the placeholder template is tracked.
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -43,3 +45,6 @@ next-env.d.ts
 # local runtime data: merchant leads, callbacks and license records (PII / keys)
 # top-level data/*.json only; data/posts/ (blog content) stays tracked
 /data/*.json
+
+# Large AI draft renders (review only; optimised assets live in public/media)
+docs/phase2-drafts/

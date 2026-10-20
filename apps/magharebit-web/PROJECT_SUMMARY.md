@@ -81,7 +81,6 @@
 - HowItWorks — 3-step illustrated flow with connector lines
 - SectorsPreview — 6 animated sector pills → sector pages
 - PricingSection — monthly/annual toggle, 3 plan cards, most-popular badge
-- PricingCalculator — interactive ROI estimate (MAD/month saved)
 - DemoForm — validated form, posts to `/api/leads` with CSRF-safe fetch
 - Testimonial — quote card with avatar and star rating
 - HomeFaqSection — accordion (10 items) with smooth expand/collapse

@@ -5,30 +5,21 @@ import dynamic from 'next/dynamic';
 import AOSInit from '@/components/AOSInit';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
-import ProofBar from '@/components/landing/ProofBar';
-import ProductsSection from '@/components/landing/ProductsSection';
-import HowItWorks from '@/components/landing/HowItWorks';
+import ProofStrip from '@/components/landing/ProofStrip';
+import IntentCards from '@/components/landing/IntentCards';
 
 // ─── below-the-fold: dynamic imports (code splitting) ─────────────────────────
-const WasteCalculator    = dynamic(() => import('@/components/landing/WasteCalculator'));
-const ComparisonSection  = dynamic(() => import('@/components/landing/ComparisonSection'));
-const SalesFlowDiagram   = dynamic(() => import('@/components/landing/SalesFlowDiagram'));
-const RoiTeaser          = dynamic(() => import('@/components/landing/RoiTeaser'));
-const WhyNotCompetitors       = dynamic(() => import('@/components/landing/WhyNotCompetitors'));
-const WasteTracker            = dynamic(() => import('@/components/landing/WasteTracker'));
-const LoyverseCounter         = dynamic(() => import('@/components/landing/LoyverseCounter'));
-const DifferentiatorBand      = dynamic(() => import('@/components/landing/DifferentiatorBand'));
-const WhatsAppReportPreview   = dynamic(() => import('@/components/landing/WhatsAppReportPreview'));
-const SectorsPreview     = dynamic(() => import('@/components/landing/SectorsPreview'));
-const PricingSection     = dynamic(() => import('@/components/landing/PricingSection'));
-const PricingCalculator  = dynamic(() => import('@/components/landing/PricingCalculator'));
-const DemoForm           = dynamic(() => import('@/components/landing/DemoForm'));
-const Testimonial        = dynamic(() => import('@/components/landing/Testimonial'));
-const MetricsSection     = dynamic(() => import('@/components/landing/MetricsSection'));
-const HomeFaqSection     = dynamic(() => import('@/components/landing/HomeFaqSection'));
-const CTASection         = dynamic(() => import('@/components/landing/CTASection'));
-const Footer             = dynamic(() => import('@/components/landing/Footer'));
-const StickyCtaBar       = dynamic(() => import('@/components/landing/StickyCtaBar'));
+const FeatureStories        = dynamic(() => import('@/components/landing/FeatureStories'));
+const HardwareShowcase      = dynamic(() => import('@/components/landing/HardwareShowcase'));
+const ComparisonSection     = dynamic(() => import('@/components/landing/ComparisonSection'));
+const WhatsAppReportPreview = dynamic(() => import('@/components/landing/WhatsAppReportPreview'));
+const WasteCalculator       = dynamic(() => import('@/components/landing/WasteCalculator'));
+const PricingSection        = dynamic(() => import('@/components/landing/PricingSection'));
+const Testimonial           = dynamic(() => import('@/components/landing/Testimonial'));
+const HomeFaqSection        = dynamic(() => import('@/components/landing/HomeFaqSection'));
+const DemoForm              = dynamic(() => import('@/components/landing/DemoForm'));
+const Footer                = dynamic(() => import('@/components/landing/Footer'));
+const StickyCtaBar          = dynamic(() => import('@/components/landing/StickyCtaBar'));
 
 export async function generateMetadata({
   params,
@@ -66,26 +57,17 @@ export default function LandingPage() {
       <Navbar />
       <main id="main-content">
         <HeroSection />
-        <WasteCalculator />
+        <ProofStrip />
+        <IntentCards />
+        <FeatureStories />
+        <HardwareShowcase />
         <ComparisonSection />
-        <SalesFlowDiagram />
-        <ProofBar />
-        <RoiTeaser />
-        <WasteTracker />
-        <WhyNotCompetitors />
-        <LoyverseCounter />
-        <ProductsSection />
-        <DifferentiatorBand />
         <WhatsAppReportPreview />
-        <HowItWorks />
-        <SectorsPreview />
+        <WasteCalculator />
         <PricingSection />
-        <PricingCalculator />
-        <DemoForm />
         <Testimonial />
-        <MetricsSection />
         <HomeFaqSection />
-        <CTASection />
+        <DemoForm />
       </main>
       <Footer />
       <StickyCtaBar />
