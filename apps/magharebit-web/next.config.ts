@@ -40,8 +40,13 @@ const nextConfig: NextConfig = {
     return [
       // Security on every route
       { source: '/(.*)',              headers: securityHeaders },
-      // Immutable cache for Next.js static chunks
-      { source: '/_next/static/(.*)', headers: immutableCache },
+      // Immutable cache for Next.js static chunks. Production only: dev chunks are
+      // NOT content-hashed (main-app.js, app/[locale]/page.js ...), so caching them
+      // as immutable makes the browser reuse stale chunks after a restart and
+      // crash with "Cannot read properties of undefined (reading 'call')".
+      ...(process.env.NODE_ENV === 'production'
+        ? [{ source: '/_next/static/(.*)', headers: immutableCache }]
+        : []),
       // Video range + cache headers
       {
         source: '/(.*)\\.mp4',
