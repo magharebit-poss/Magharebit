@@ -68,6 +68,8 @@ export interface AdminActor {
   id: string
   name: string
   role: AdminRole
+  /** Optional contact address; copied into audit entries ("Performed by …"). */
+  email?: string
 }
 
 /** Break-glass identity: signed in with ADMIN_SECRET and no username. */
@@ -82,7 +84,15 @@ const b64u = (s: string): string => Buffer.from(s, 'utf8').toString('base64url')
  * not configured. Format: base64url(JSON{sub,name,role,exp}).hmac-hex
  */
 export function createAdminSessionToken(actor: AdminActor, now: number = Date.now()): string | null {
-  const payload = b64u(JSON.stringify({ sub: actor.id, name: actor.name, role: actor.role, exp: now + SESSION_TTL_MS }))
+  const payload = b64u(
+    JSON.stringify({
+      sub: actor.id,
+      name: actor.name,
+      role: actor.role,
+      ...(actor.email ? { email: actor.email } : {}),
+      exp: now + SESSION_TTL_MS,
+    })
+  )
   const sig = sign(payload)
   return sig ? `${payload}.${sig}` : null
 }
@@ -97,12 +107,18 @@ function parseAdminSessionToken(token: string, now: number = Date.now()): AdminA
       sub?: unknown
       name?: unknown
       role?: unknown
+      email?: unknown
       exp?: unknown
     }
     if (typeof data.exp !== 'number' || data.exp < now) return null
     if (typeof data.sub !== 'string' || typeof data.name !== 'string') return null
     if (data.role !== 'owner' && data.role !== 'operator' && data.role !== 'viewer') return null
-    return { id: data.sub, name: data.name, role: data.role }
+    return {
+      id: data.sub,
+      name: data.name,
+      role: data.role,
+      ...(typeof data.email === 'string' && data.email ? { email: data.email } : {}),
+    }
   } catch {
     return null
   }
@@ -156,7 +172,12 @@ export async function authenticateAdmin(req: Request): Promise<AdminActor | null
   if (actor.id === OWNER_ACTOR.id || actor.id.startsWith('system:')) return actor
   const user = await adminUsersRepo.findById(actor.id)
   if (!user || user.disabledAt) return null
-  return { id: user.id, name: user.displayName || user.username, role: user.role }
+  return {
+    id: user.id,
+    name: user.displayName || user.username,
+    role: user.role,
+    ...(user.email ? { email: user.email } : {}),
+  }
 }
 
 /** operator and owner may change data; viewer is read-only. */

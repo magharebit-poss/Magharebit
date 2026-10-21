@@ -77,7 +77,7 @@ function collection(name) {
     },
     async insertOne(doc) {
       for (const f of uniques.get(name) ?? []) {
-        if (col(name).some((d) => d[f] === doc[f])) {
+        if (doc[f] !== undefined && col(name).some((d) => d[f] === doc[f])) {
           const e = new Error('E11000 duplicate key'); e.code = 11000; throw e
         }
       }

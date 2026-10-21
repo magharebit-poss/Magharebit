@@ -15,6 +15,8 @@ export interface AdminUserDoc {
   id: string
   username: string
   displayName: string
+  /** Optional; unique (case-insensitive: stored lower-case) when present. */
+  email?: string
   role: AdminRole
   passwordHash: string
   createdAt: Date
@@ -27,11 +29,15 @@ export type AdminUserPublic = Omit<AdminUserDoc, 'passwordHash'>
 
 const COLLECTION = 'admin_users'
 export const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,31}$/
+/** Deliberately simple shape check; real validation is delivery of a message. */
+export const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/
 
 let indexesCreated = false
 async function ensureIndexes(db: Db) {
   if (indexesCreated) return
   await db.collection(COLLECTION).createIndex({ username: 1 }, { unique: true })
+  // sparse: accounts without an email do not collide with each other
+  await db.collection(COLLECTION).createIndex({ email: 1 }, { unique: true, sparse: true })
   indexesCreated = true
 }
 
@@ -74,6 +80,7 @@ export const adminUsersRepo = {
   async create(input: {
     username: string
     displayName: string
+    email?: string
     role: AdminRole
     password: string
     createdBy: string
@@ -85,6 +92,7 @@ export const adminUsersRepo = {
       id: `adm_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
       username: input.username.toLowerCase(),
       displayName: input.displayName.trim().slice(0, 80),
+      ...(input.email ? { email: input.email.trim().toLowerCase() } : {}),
       role: input.role,
       passwordHash: await hashPassword(input.password),
       createdAt: new Date(),

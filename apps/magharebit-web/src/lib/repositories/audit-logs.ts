@@ -28,6 +28,8 @@ export interface AuditLogEntry {
   ts: Date
   actorId: string
   actorName: string
+  /** Present when the acting admin has an email on file. */
+  actorEmail?: string
   actorRole: string
   action: AuditAction
   targetType: 'merchant' | 'license' | 'coupon' | 'notification' | 'admin' | 'session'
@@ -94,6 +96,7 @@ export async function recordAudit(input: {
       ts: new Date(),
       actorId: input.actor.id,
       actorName: input.actor.name,
+      ...(input.actor.email ? { actorEmail: input.actor.email } : {}),
       actorRole: input.actor.role,
       action: input.action,
       targetType: input.targetType,

@@ -57,7 +57,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const user = await adminUsersRepo.findByUsername(username)
     if (user && !user.disabledAt) {
       if (await verifyPassword(password, user.passwordHash)) {
-        actor = { id: user.id, name: user.displayName || user.username, role: user.role }
+        actor = {
+          id: user.id,
+          name: user.displayName || user.username,
+          role: user.role,
+          ...(user.email ? { email: user.email } : {}),
+        }
       }
     } else {
       await dummyVerify(password) // same cost whether or not the user exists
@@ -75,7 +80,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   await recordAudit({ actor, action: 'adminLogin', targetType: 'session', targetId: actor.id, ip })
 
-  const res = NextResponse.json({ ok: true, actor: { name: actor.name, role: actor.role } })
+  const res = NextResponse.json({
+    ok: true,
+    actor: { name: actor.name, role: actor.role, ...(actor.email ? { email: actor.email } : {}) },
+  })
   setAdminSessionCookie(res, token)
   return res
 }

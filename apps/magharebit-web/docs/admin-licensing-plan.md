@@ -82,5 +82,7 @@ Verify per phase: `tsc --noEmit`, ESLint, and tests for the crypto and audit mod
   - Session cookie now carries the actor (`sub`, `name`, `role`); old-format cookies stop working, so admins sign in once more.
   - `POST /api/admin/login` accepts `{ username?, password }` (no username = owner). `GET /api/admin/session` returns the actor. `GET|POST /api/admin/users`, `PATCH /api/admin/users/[id]` (owner only), `GET /api/admin/audit-logs`.
   - Approve, revoke and manual license creation now record audit entries, name the real actor in `approvedBy`, and refuse the read-only `viewer` role.
-  - Not yet covered by a database run: audit inserts, account create/login/disable (no MongoDB available locally). The login form still sends only a password (owner); a username field arrives with the admin UI shell.
+  - Optional admin `email` (lower-case, unique when present) is carried in the session and written to audit entries as `actorEmail`.
+  - Verified against **real MongoDB 7.0.45** (Docker): `scripts/admin-smoke` 41/41, indexes `username_1` unique and `email_1` unique + sparse confirmed. See `scripts/admin-smoke/README.md`.
+  - The login form still sends only a password (owner); a username field arrives with the admin UI shell.
 - Phases 2 to 5: not started.
