@@ -25,23 +25,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { merchantsRepo } from '@/lib/repositories/merchants'
 import { licensesRepo } from '@/lib/repositories/licenses'
-import { isAdminRequest } from '@/lib/admin-auth'
+import { authenticateAdmin, canWrite } from '@/lib/admin-auth'
+import { clientIp, recordAudit } from '@/lib/repositories/audit-logs'
 import { isValidDuration, durationLabelAr } from '@/lib/license-key'
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp'
 import type { LicensePlan } from '@/lib/license-key'
 
 const VALID_PLANS: LicensePlan[] = ['Starter', 'Business', 'Enterprise']
 
-function isAdminAuthed(req: NextRequest): boolean {
-  return isAdminRequest(req)
-}
-
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
-  if (!isAdminAuthed(req)) {
+  const actor = await authenticateAdmin(req)
+  if (!actor) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if (!canWrite(actor)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
   const { id } = await params
@@ -104,7 +105,7 @@ export async function POST(
   const updatedMerchant = await merchantsRepo.approve(id, {
     plan,
     subscriptionEndsAt: license.expiresAt,
-    approvedBy:         'admin',
+    approvedBy:         actor.name,
   })
 
   if (!updatedMerchant) {
@@ -117,6 +118,14 @@ export async function POST(
       { status: 409 }
     )
   }
+
+  // ── Audit trail (approval + the license it generated) ───────────────────────
+  const ip = clientIp(req)
+  const auditMeta = { plan, durationMonths, licenseId: license.id, expiresAt: license.expiresAt.toISOString() }
+  const [auditApprove, auditLicense] = await Promise.all([
+    recordAudit({ actor, action: 'approveMerchant', targetType: 'merchant', targetId: merchant.phone, meta: auditMeta, ip }),
+    recordAudit({ actor, action: 'generateLicense', targetType: 'license', targetId: license.id, meta: { ...auditMeta, merchantId: merchant.phone }, ip }),
+  ])
 
   // ── Send license key via WhatsApp ───────────────────────────────────────────
   // Use merchant's preferred locale for the message language.
@@ -137,6 +146,7 @@ export async function POST(
     {
       merchant:  updatedMerchant,
       license,
+      auditRecorded: auditApprove && auditLicense,
       whatsapp: {
         sent:      waResult.success,
         messageId: waResult.messageId,

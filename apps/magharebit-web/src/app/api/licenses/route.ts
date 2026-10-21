@@ -12,16 +12,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { licensesRepo, LicensePlan } from '@/lib/repositories/licenses'
 import { isValidDuration } from '@/lib/license-key'
-import { isAdminRequest } from '@/lib/admin-auth'
+import { authenticateAdmin, canWrite } from '@/lib/admin-auth'
+import { clientIp, recordAudit } from '@/lib/repositories/audit-logs'
 
 const VALID_PLANS: LicensePlan[] = ['Starter', 'Business', 'Enterprise']
 
-function isAdminAuthed(req: NextRequest): boolean {
-  return isAdminRequest(req)
-}
-
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  if (!isAdminAuthed(req)) {
+  if (!(await authenticateAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -45,8 +42,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  if (!isAdminAuthed(req)) {
+  const actor = await authenticateAdmin(req)
+  if (!actor) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if (!canWrite(actor)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
   let body: {
@@ -89,7 +90,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       plan,
       durationMonths,
     })
-    return NextResponse.json({ license }, { status: 201 })
+    const auditRecorded = await recordAudit({
+      actor, action: 'generateLicense', targetType: 'license', targetId: license.id,
+      meta: { merchantId, plan, durationMonths, expiresAt: license.expiresAt.toISOString(), manual: true },
+      ip: clientIp(req),
+    })
+    return NextResponse.json({ license, auditRecorded }, { status: 201 })
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'internal_error'
     return NextResponse.json({ error: msg }, { status: 503 })

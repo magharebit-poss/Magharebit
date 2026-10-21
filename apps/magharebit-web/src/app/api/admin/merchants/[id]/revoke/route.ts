@@ -19,19 +19,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { merchantsRepo } from '@/lib/repositories/merchants'
 import { licensesRepo } from '@/lib/repositories/licenses'
-import { isAdminRequest } from '@/lib/admin-auth'
+import { authenticateAdmin, canWrite } from '@/lib/admin-auth'
+import { clientIp, recordAudit } from '@/lib/repositories/audit-logs'
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp'
-
-function isAdminAuthed(req: NextRequest): boolean {
-  return isAdminRequest(req)
-}
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
-  if (!isAdminAuthed(req)) {
+  const actor = await authenticateAdmin(req)
+  if (!actor) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if (!canWrite(actor)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
   const { id } = await params
@@ -62,14 +63,24 @@ export async function POST(
     status:     'active',
   })
 
+  const ip = clientIp(req)
   let revokedCount = 0
+  let auditOk = true
   for (const lic of activeLicenses) {
     await licensesRepo.revoke(lic.id, reason)
     revokedCount++
+    auditOk = (await recordAudit({
+      actor, action: 'revokeKey', targetType: 'license', targetId: lic.id,
+      meta: { reason, merchantId: merchant.phone }, ip,
+    })) && auditOk
   }
 
   // ── Suspend merchant record ─────────────────────────────────────────────────
   const suspended = await merchantsRepo.suspend(id, reason)
+  auditOk = (await recordAudit({
+    actor, action: 'suspendMerchant', targetType: 'merchant', targetId: merchant.phone,
+    meta: { reason, revokedCount }, ip,
+  })) && auditOk
 
   // ── Optional WhatsApp notification ─────────────────────────────────────────
   let waResult: { sent: boolean; messageId?: string; error?: string } | null = null
@@ -85,5 +96,6 @@ export async function POST(
     merchant:     suspended,
     revokedCount,
     whatsapp:     waResult,
+    auditRecorded: auditOk,
   })
 }

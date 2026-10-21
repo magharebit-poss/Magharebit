@@ -69,8 +69,18 @@ Verify per phase: `tsc --noEmit`, ESLint, and tests for the crypto and audit mod
 - **Brute force:** `validate` and `activate` need real rate limiting. The current in-memory limiter does not work across serverless instances, so a shared store or an edge rule is needed.
 - **Migration:** v1 keys keep working. No bulk re-issue.
 
-## 6. Decisions needed
-- **D1 Trials:** keep the automatic 14-day trial at signup (current behaviour, matches the marketing promise), or put every signup in PENDING until an admin issues a key (as the brief says)?
-- **D2 Key model:** hybrid (typable key + signed entitlement, recommended) or a single long self-contained signed key?
-- **D3 Wayloz layout:** I cannot see it. Please share screenshots or a Figma link, or confirm the sidebar-plus-tables description is enough.
-- **D4 Admin identity:** per-admin accounts (recommended; the owner is bootstrapped from `ADMIN_SECRET`), or keep one shared password plus a typed operator name?
+## 6. Decisions
+- **D1 Trials: DECIDED, keep the automatic 14-day trial** at signup. PENDING + admin-generated key applies to paid activation only.
+- **D2 Key model: DECIDED, hybrid** (typable key + signed entitlement).
+- **D3 Wayloz layout: OPEN.** I cannot see it. Please share screenshots or a Figma link, or confirm the sidebar-plus-tables description is enough before phase 3.
+- **D4 Admin identity: DECIDED, per-admin accounts** (the owner is the break-glass `ADMIN_SECRET` identity).
+
+## 7. Progress
+- **Phase 1 (foundations): implemented, awaiting review.**
+  - License key and checksum now fail closed without `NEXTAUTH_SECRET` (the `'fallback-dev-secret'` is gone). Deployments that never set it will stop validating keys that were signed with the fallback; set the secret first.
+  - `admin_users` (scrypt) and append-only `audit_logs` repositories; `recordAudit()` never throws and routes report `auditRecorded`.
+  - Session cookie now carries the actor (`sub`, `name`, `role`); old-format cookies stop working, so admins sign in once more.
+  - `POST /api/admin/login` accepts `{ username?, password }` (no username = owner). `GET /api/admin/session` returns the actor. `GET|POST /api/admin/users`, `PATCH /api/admin/users/[id]` (owner only), `GET /api/admin/audit-logs`.
+  - Approve, revoke and manual license creation now record audit entries, name the real actor in `approvedBy`, and refuse the read-only `viewer` role.
+  - Not yet covered by a database run: audit inserts, account create/login/disable (no MongoDB available locally). The login form still sends only a password (owner); a username field arrives with the admin UI shell.
+- Phases 2 to 5: not started.

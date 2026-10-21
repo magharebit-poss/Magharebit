@@ -68,7 +68,9 @@ export interface Merchant {
  * Returns the full key string including checksum.
  */
 export function generateLicenseKey(issuedAt: Date = new Date()): string {
-  const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-dev-secret'
+  // Fail closed: a missing secret must never fall back to a guessable one.
+  const secret = process.env.NEXTAUTH_SECRET
+  if (!secret) throw new Error('NEXTAUTH_SECRET is not set: refusing to issue a license key')
 
   const year  = issuedAt.getUTCFullYear()
   const month = String(issuedAt.getUTCMonth() + 1).padStart(2, '0')
@@ -89,7 +91,8 @@ export function generateLicenseKey(issuedAt: Date = new Date()): string {
  * Does NOT check expiry or revocation — that requires a DB lookup.
  */
 export function verifyKeyChecksum(key: string): boolean {
-  const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-dev-secret'
+  const secret = process.env.NEXTAUTH_SECRET
+  if (!secret) return false // fail closed: nothing validates without the secret
   const parts = key.trim().toUpperCase().split('-')
   // Expected: ["MGH", "YYYYMM", "XXXXXXXX", "XXXX", "CC"]
   if (parts.length !== 5) return false

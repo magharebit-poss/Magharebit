@@ -18,6 +18,7 @@
 
 import { createHash, createHmac, timingSafeEqual } from 'crypto'
 import { NextResponse } from 'next/server'
+import { adminUsersRepo } from './repositories/admin-users'
 
 export const ADMIN_COOKIE = 'mgh_admin'
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000 // 8 hours
@@ -58,18 +59,53 @@ export function checkAdminPassword(candidate: string): boolean {
   return secret !== null && safeEqual(candidate, secret)
 }
 
-/** Create a signed session token, or null if the server is not configured. */
-export function createAdminSessionToken(now: number = Date.now()): string | null {
-  const exp = String(now + SESSION_TTL_MS)
-  const sig = sign(exp)
-  return sig ? `${exp}.${sig}` : null
+// ── Identity ─────────────────────────────────────────────────────────────────
+
+export type AdminRole = 'owner' | 'operator' | 'viewer'
+
+/** Who is acting. Written into every audit entry. */
+export interface AdminActor {
+  id: string
+  name: string
+  role: AdminRole
 }
 
-function verifyAdminSessionToken(token: string, now: number = Date.now()): boolean {
-  const [exp, sig] = token.split('.')
-  if (!exp || !sig || !/^\d+$/.test(exp) || Number(exp) < now) return false
-  const expected = sign(exp)
-  return expected !== null && safeEqual(sig, expected)
+/** Break-glass identity: signed in with ADMIN_SECRET and no username. */
+export const OWNER_ACTOR: AdminActor = { id: 'owner', name: 'owner', role: 'owner' }
+/** Identity for scripts that send the x-admin-secret header. */
+export const SCRIPT_ACTOR: AdminActor = { id: 'system:script', name: 'script', role: 'owner' }
+
+const b64u = (s: string): string => Buffer.from(s, 'utf8').toString('base64url')
+
+/**
+ * Create a signed session token carrying the actor, or null if the server is
+ * not configured. Format: base64url(JSON{sub,name,role,exp}).hmac-hex
+ */
+export function createAdminSessionToken(actor: AdminActor, now: number = Date.now()): string | null {
+  const payload = b64u(JSON.stringify({ sub: actor.id, name: actor.name, role: actor.role, exp: now + SESSION_TTL_MS }))
+  const sig = sign(payload)
+  return sig ? `${payload}.${sig}` : null
+}
+
+function parseAdminSessionToken(token: string, now: number = Date.now()): AdminActor | null {
+  const [payload, sig] = token.split('.')
+  if (!payload || !sig) return null
+  const expected = sign(payload)
+  if (expected === null || !safeEqual(sig, expected)) return null
+  try {
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
+      sub?: unknown
+      name?: unknown
+      role?: unknown
+      exp?: unknown
+    }
+    if (typeof data.exp !== 'number' || data.exp < now) return null
+    if (typeof data.sub !== 'string' || typeof data.name !== 'string') return null
+    if (data.role !== 'owner' && data.role !== 'operator' && data.role !== 'viewer') return null
+    return { id: data.sub, name: data.name, role: data.role }
+  } catch {
+    return null
+  }
 }
 
 function readCookie(header: string | null, name: string): string | null {
@@ -89,18 +125,43 @@ function readCookie(header: string | null, name: string): string | null {
 }
 
 /**
- * Is this request made by an authenticated admin?
- * Accepts a valid session cookie or a correct `x-admin-secret` header.
+ * Who is making this request? Accepts a valid session cookie or a correct
+ * `x-admin-secret` header. Signature-only (no database): use
+ * authenticateAdmin() when a disabled account must be refused immediately.
  */
-export function isAdminRequest(req: Request): boolean {
+export function getAdminActor(req: Request): AdminActor | null {
   const secret = adminSecret()
-  if (!secret) return false
+  if (!secret) return null
 
   const header = req.headers.get('x-admin-secret')
-  if (header && safeEqual(header, secret)) return true
+  if (header && safeEqual(header, secret)) return SCRIPT_ACTOR
 
   const token = readCookie(req.headers.get('cookie'), ADMIN_COOKIE)
-  return token !== null && verifyAdminSessionToken(token)
+  return token !== null ? parseAdminSessionToken(token) : null
+}
+
+/** Is this request made by an authenticated admin? (signature check only) */
+export function isAdminRequest(req: Request): boolean {
+  return getAdminActor(req) !== null
+}
+
+/**
+ * Full check for write actions: the signed session, plus (for individual
+ * accounts) a database lookup so a disabled admin loses access at once and the
+ * role is always the current one, not the one frozen into the cookie.
+ */
+export async function authenticateAdmin(req: Request): Promise<AdminActor | null> {
+  const actor = getAdminActor(req)
+  if (!actor) return null
+  if (actor.id === OWNER_ACTOR.id || actor.id.startsWith('system:')) return actor
+  const user = await adminUsersRepo.findById(actor.id)
+  if (!user || user.disabledAt) return null
+  return { id: user.id, name: user.displayName || user.username, role: user.role }
+}
+
+/** operator and owner may change data; viewer is read-only. */
+export function canWrite(actor: AdminActor): boolean {
+  return actor.role === 'owner' || actor.role === 'operator'
 }
 
 export function setAdminSessionCookie(res: NextResponse, token: string): void {
