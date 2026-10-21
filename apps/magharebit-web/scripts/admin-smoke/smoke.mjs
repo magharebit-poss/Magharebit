@@ -1,4 +1,4 @@
-﻿// Admin API smoke test (accounts, roles, audit log, approve/revoke, POS validate).
+// Admin API smoke test (accounts, roles, audit log, approve/revoke, POS validate).
 // Runs against a dev server whose MongoDB is replaced by fake-mongo-patch.js, so it
 // needs no database and sends no WhatsApp messages. See fake-mongo-patch.js for the
 // start command. Run:  BASE=http://localhost:3020 ENV_FILE=./.env.local node scripts/admin-smoke/smoke.mjs

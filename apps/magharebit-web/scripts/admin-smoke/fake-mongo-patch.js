@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- standalone Node preload script (CommonJS) */
-﻿// Start the dev server with this stand-in (from apps/magharebit-web):
+// Start the dev server with this stand-in (from apps/magharebit-web):
 //   APP_DIR="$PWD" MONGODB_URI=mongodb://fake.invalid:27017/x \
-//   NODE_OPTIONS="--require $PWD/scripts/admin-smoke/fake-mongo-patch.js" npx next dev -p 3020
+//   NODE_OPTIONS="--require ./scripts/admin-smoke/fake-mongo-patch.js" npx next dev -p 3020
 // Test-only stand-in for MongoDB. Preloaded with NODE_OPTIONS=--require so the app's
 // real repositories and routes run against an in-memory store. Not Mongo semantics:
 // it implements only the operators the code under test uses.
