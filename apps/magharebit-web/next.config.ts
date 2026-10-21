@@ -25,6 +25,9 @@ const immutableCache = [
 ]
 
 const nextConfig: NextConfig = {
+  // Lets a second dev server (tests, review) run beside the main one without
+  // sharing and corrupting the same .next cache: NEXT_DIST_DIR=.next-test next dev -p 3020
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   poweredByHeader: false,
   compress: true,
 

@@ -48,3 +48,4 @@ next-env.d.ts
 
 # Large AI draft renders (review only; optimised assets live in public/media)
 docs/phase2-drafts/
+/.next-*/

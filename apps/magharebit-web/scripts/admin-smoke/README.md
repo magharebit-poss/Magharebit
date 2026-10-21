@@ -20,3 +20,12 @@ Last real-database result: 41 passed, 0 failed (MongoDB 7.0.45). The same run co
 `fake-mongo-patch.js` replaces the driver's connection with an in-memory store that implements only the operators the code uses (it is not MongoDB). Start command is in the file header (use the relative `--require` path: absolute paths with spaces break `NODE_OPTIONS`).
 
 Always start a **fresh server** before a run; the test creates accounts and licenses and is not repeatable on the same data. Never run two copies against one server at once.
+
+## UI check
+`ui-check.mjs` drives headless Chrome through the admin console (sign-in, audit table with "Performed by" name + email, action filter, Admins page, operator vs owner, 375 px layout, French and Arabic/RTL) and saves screenshots. Start the stand-in server on its own cache folder so it does not collide with another dev server:
+```bash
+NEXT_DIST_DIR=.next-test APP_DIR="$PWD" MONGODB_URI=mongodb://fake.invalid:27017/x NODE_OPTIONS="--require ./scripts/admin-smoke/fake-mongo-patch.js" npx next dev -p 3020
+# warm the pages first (first compile can take minutes on a slow machine), then:
+CHROME="C:/Program Files/Google/Chrome/Application/chrome.exe" PROFILE=/tmp/chrome-ui OUT=docs/admin-ui-review ENV_FILE=./.env.local node scripts/admin-smoke/ui-check.mjs
+```
+Last result: 27 passed, 0 failed.
