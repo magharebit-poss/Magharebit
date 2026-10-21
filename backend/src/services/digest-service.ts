@@ -1,7 +1,14 @@
 import type { Pool } from 'pg';
 import { buildDigestData } from './digest-query.js';
-import { formatDigest } from './digest-formatter.js';
+import { formatDigest, type DigestLanguage } from './digest-formatter.js';
 import { getWhatsAppProvider } from './whatsapp/provider-factory.js';
+
+/** The scheduler ticks every DIGEST_TICK_MINUTES; digest_time is floored to a tick. */
+export const DIGEST_TICK_MINUTES = 15;
+
+export function toDigestLanguage(raw: string | null | undefined): DigestLanguage {
+  return raw === 'fr' || raw === 'en' ? raw : 'ar';
+}
 
 export interface DigestSendResult {
   tenantId: string;
@@ -46,7 +53,7 @@ export async function sendDailyDigest(
   }
 
   const timezone = tenant.timezone ?? 'Africa/Casablanca';
-  const language = (tenant.digest_language ?? 'ar') as 'ar' | 'fr';
+  const language = toDigestLanguage(tenant.digest_language);
   const phone = tenant.whatsapp_phone;
   const maskedPhone = `****${phone.slice(-4)}`;
 
@@ -73,6 +80,65 @@ export async function sendDailyDigest(
     console.warn(`[digest] Error for tenant ${tenantId}: ${msg}`);
     return { tenantId, sent: false, skipped: false, error: msg };
   }
+}
+
+// ── Per-tenant send time ───────────────────────────────────────────────────────
+// The cron ticks every DIGEST_TICK_MINUTES. A tenant is "due" when its local clock
+// is inside the tick that contains its digest_time. `lastSentLocalDate` guards
+// against a double send within one process; it is in memory (no migration), so a
+// restart inside the same tick could resend once.
+const lastSentLocalDate = new Map<string, string>();
+
+function localClock(now: Date, timezone: string): { date: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone, hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  }).formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00';
+  const hour = parseInt(get('hour'), 10) % 24;
+  return { date: `${get('year')}-${get('month')}-${get('day')}`, minutes: hour * 60 + parseInt(get('minute'), 10) };
+}
+
+function tickStart(minutesOfDay: number): number {
+  return Math.floor(minutesOfDay / DIGEST_TICK_MINUTES) * DIGEST_TICK_MINUTES;
+}
+
+function parseDigestTime(value: string | null): number {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(value ?? '');
+  if (!m) return 7 * 60; // default 07:00
+  const mins = parseInt(m[1]!, 10) * 60 + parseInt(m[2]!, 10);
+  return mins >= 0 && mins < 24 * 60 ? mins : 7 * 60;
+}
+
+/** Send the digest to every enabled tenant whose send time falls in the current tick. */
+export async function sendDigestsDue(pg: Pool, now: Date = new Date()): Promise<DigestSendResult[]> {
+  const res = await pg.query<{ id: string; digest_time: string | null; timezone: string | null }>(
+    `SELECT id, digest_time, timezone
+     FROM tenants
+     WHERE digest_enabled = true AND whatsapp_phone IS NOT NULL`,
+  );
+
+  const results: DigestSendResult[] = [];
+  for (const row of res.rows) {
+    let clock: { date: string; minutes: number };
+    try {
+      clock = localClock(now, row.timezone ?? 'Africa/Casablanca');
+    } catch {
+      results.push({ tenantId: row.id, sent: false, skipped: true, skipReason: 'invalid_timezone' });
+      continue;
+    }
+    if (tickStart(clock.minutes) !== tickStart(parseDigestTime(row.digest_time))) continue;
+    if (lastSentLocalDate.get(row.id) === clock.date) continue;
+    lastSentLocalDate.set(row.id, clock.date);
+
+    try {
+      results.push(await sendDailyDigest(pg, row.id));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'unknown';
+      results.push({ tenantId: row.id, sent: false, skipped: false, error: msg });
+    }
+  }
+  return results;
 }
 
 export async function sendDigestToAllTenants(pg: Pool): Promise<DigestSendResult[]> {

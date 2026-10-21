@@ -52,7 +52,7 @@ import { productRoutes } from './api/products/product-routes.js';
 import { tenantRoutes } from './api/tenants/tenant-routes.js';
 import { syncRoutes } from './api/sync/sync-routes.js';
 import { digestRoutes } from './api/digest/digest-routes.js';
-import { sendDigestToAllTenants } from './services/digest-service.js';
+import { sendDigestsDue } from './services/digest-service.js';
 import { markdownRoutes } from './api/markdown/markdown-routes.js';
 import { computeMarkdowns } from './services/markdown-engine.js';
 import { analyticsChRoutes } from './api/analytics/analytics-ch-routes.js';
@@ -357,26 +357,30 @@ async function main() {
     await scope.register(mlRoutes);
   });
 
-  // Daily digest cron — fires at 06:00 UTC (07:00 Africa/Casablanca, UTC+1).
-  // Per-tenant scheduling (respecting individual digest_time) is Phase 2.
+  // Daily digest cron — ticks every 15 minutes (Africa/Casablanca clock) and sends
+  // to each enabled tenant whose own digest_time (tenant-local, default 07:00)
+  // falls inside the current 15-minute tick. The old fixed run was 06:00
+  // Africa/Casablanca (not "06:00 UTC / 07:00") because node-cron was given that
+  // timezone.
   if (process.env['NODE_ENV'] !== 'test') {
-    cron.schedule('0 6 * * *', async () => {
-      app.log.info('Running daily digest cron');
+    cron.schedule('*/15 * * * *', async () => {
       try {
-        const results = await sendDigestToAllTenants(app.pg);
-        app.log.info(
-          {
-            sent: results.filter((r) => r.sent).length,
-            skipped: results.filter((r) => r.skipped).length,
-            failed: results.filter((r) => !r.sent && !r.skipped).length,
-          },
-          'Daily digest complete',
-        );
+        const results = await sendDigestsDue(app.pg);
+        if (results.length > 0) {
+          app.log.info(
+            {
+              sent: results.filter((r) => r.sent).length,
+              skipped: results.filter((r) => r.skipped).length,
+              failed: results.filter((r) => !r.sent && !r.skipped).length,
+            },
+            'Daily digest tick complete',
+          );
+        }
       } catch (err) {
         app.log.error({ err }, 'Daily digest cron failed');
       }
     }, { timezone: 'Africa/Casablanca' });
-    app.log.info('Daily digest cron scheduled (06:00 UTC / 07:00 Africa/Casablanca)');
+    app.log.info('Daily digest cron scheduled (every 15 min; each tenant at its own digest_time, default 07:00 local)');
 
     // Hourly markdown cron — applies time-based markdown rules to all tenants.
     // Queries markdown_rules and product_lots to determine the correct discount
