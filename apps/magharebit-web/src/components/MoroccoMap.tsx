@@ -1,12 +1,11 @@
 /**
  * MoroccoMap — Premium interactive merchant distribution map
  *
- * Coordinate system (viewBox 0 0 500 620):
+ * Coordinate system (viewBox -8 -8 516 636, padded around 0 0 500 620):
  *   x = (lon + 18) × 29.4    (−18°W → x=0 ; −1°W → x=500)
  *   y = (36 − lat) × 40      (36°N → y=0  ; 20.5°N → y=620)
  *
- * Morocco boundary traced clockwise from Tanger:
- *   Mediterranean coast → Algeria border (south) → Southern border (west) → Atlantic coast (north)
+ * The outline of the complete Kingdom (down to Lagouira) is in ./morocco-outline.ts.
  *
  * No external map library — pure SVG + React.
  */
@@ -14,6 +13,7 @@
 
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { MOROCCO_PATH } from './morocco-outline'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ interface CityData {
 const MAX_COUNT = 187
 
 const CITIES: CityData[] = [
-  { id: 'casablanca', name: 'Casablanca',  cx: 306, cy: 96,  count: 187, region: 'Casablanca-Settat',            labelPos: 'right', slug: 'casablanca' },
+  { id: 'casablanca', name: 'Casablanca',  cx: 312, cy: 96,  count: 187, region: 'Casablanca-Settat',            labelPos: 'right', slug: 'casablanca' },
   { id: 'rabat',      name: 'Rabat',       cx: 329, cy: 80,  count: 92,  region: 'Rabat-Salé-Kénitra',          labelPos: 'right', slug: 'rabat'      },
   { id: 'marrakech',  name: 'Marrakech',   cx: 294, cy: 175, count: 64,  region: 'Marrakech-Safi',              labelPos: 'right', slug: 'marrakech'  },
   { id: 'tanger',     name: 'Tanger',      cx: 359, cy: 14,  count: 48,  region: 'Tanger-Tétouan-Al Hoceïma',  labelPos: 'below'                     },
@@ -49,47 +49,7 @@ const CITIES: CityData[] = [
 
 const TOTAL = CITIES.reduce((s, c) => s + c.count, 0)
 
-// Morocco outline — clockwise from Tanger (NW tip of Mediterranean opening)
-// Each node derived from lat/lon via the coordinate formula above.
-const MOROCCO_PATH = [
-  // ── Northern Mediterranean coast (east) ──────────────────────────────────
-  'M 359,10',
-  'Q 366,5 373,5',         // Cape Spartel → near Ceuta
-  'L 390,20',              // Tetouan area
-  'L 415,32',              // Al Hoceima
-  'L 444,32',              // Nador
-  // ── Algeria border (south) ───────────────────────────────────────────────
-  'C 460,33 470,40 473,52',// Oujda
-  'L 480,100',             // Algeria border mid-north
-  'L 490,158',             // Figuig area (easternmost point)
-  'C 490,185 480,218 472,240',// turns south-west
-  'L 460,310',
-  'L 456,380',             // SE corner – Algeria / W-Sahara
-  // ── Southern boundary (west toward Atlantic) ─────────────────────────────
-  'L 380,442',
-  'L 273,538',
-  'L 118,588',
-  'L 29,604',              // SW corner — Mauritania / Atlantic
-  // ── Atlantic coast (north) ───────────────────────────────────────────────
-  'C 31,582 45,528 60,494',// Dakhla area
-  'L 85,430',
-  'L 103,396',             // Cape Bojador
-  'L 132,340',
-  'L 168,304',
-  'L 203,300',             // Tan-Tan
-  'L 232,280',             // Guelmim
-  'L 248,252',             // Tiznit
-  'L 247,224',             // Agadir
-  'Q 244,202 241,180',     // smooth curve toward Essaouira
-  'L 259,148',             // Safi
-  'L 279,108',             // El Jadida
-  'L 306,96',              // Casablanca
-  'L 329,80',              // Rabat
-  'L 335,68',              // Kénitra
-  'L 350,32',              // Larache
-  'L 353,20',              // Asilah
-  'Z',                     // close → Tanger (359,10)
-].join(' ')
+
 
 // Dot radius proportional to merchant count
 function dotR(count: number): number {
@@ -140,12 +100,12 @@ export default function MoroccoMap() {
           }}
         >
           <svg
-            viewBox="0 0 500 620"
+            viewBox="-8 -8 516 636"
             width="100%"
             height="auto"
-            style={{ display: 'block', maxHeight: '500px', margin: '0 auto' }}
+            style={{ display: 'block', maxHeight: '640px', margin: '0 auto' }}
             role="img"
-            aria-label="Morocco merchants distribution map"
+            aria-label="Map of the Kingdom of Morocco with merchant distribution"
           >
             <defs>
               {/* ─ Morocco fill gradient ─ */}
