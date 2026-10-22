@@ -466,7 +466,7 @@ export default function Navbar() {
             >
               {t('login')}
             </a>
-            <CtaButton href={`/${locale}/demo`} fontBody={fontBody}>
+            <CtaButton href={`/${locale}/auth/signup`} fontBody={fontBody}>
               {t('cta')}
             </CtaButton>
           </div>
@@ -729,7 +729,7 @@ export default function Navbar() {
             {t('login')}
           </a>
           <a
-            href={`/${locale}/demo`}
+            href={`/${locale}/auth/signup`}
             onClick={() => setMobileOpen(false)}
             style={{
               ...fontBody,

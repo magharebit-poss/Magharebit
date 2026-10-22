@@ -266,7 +266,7 @@ export default function HeroSection() {
           }}
         >
           <a
-            href={`/${locale}/demo`}
+            href={`/${locale}/auth/signup`}
             className="font-arabic font-bold transition-all duration-200 hover:-translate-y-0.5"
             style={{
               display: 'inline-flex',

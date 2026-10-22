@@ -119,7 +119,7 @@ export default function StickyCtaBar() {
       {/* Right — CTA + close */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
         <Link
-          href={`/${locale}/demo`}
+          href={`/${locale}/auth/signup`}
           style={{
             background: '#F0B429',
             color: '#0A2318',

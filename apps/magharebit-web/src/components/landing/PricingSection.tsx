@@ -140,7 +140,7 @@ export default function PricingSection() {
               ))}
             </ul>
             <Link
-              href={`/${locale}/demo`}
+              href={`/${locale}/auth/signup`}
               className="w-full py-3 rounded-2xl font-arabic font-bold text-sm border border-white/20 bg-transparent text-white hover:border-gold-400 hover:text-gold-400 transition-all cursor-pointer"
               style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
             >
@@ -209,7 +209,7 @@ export default function PricingSection() {
                 ))}
               </ul>
               <Link
-                href={`/${locale}/demo`}
+                href={`/${locale}/auth/signup`}
                 className="w-full py-3 rounded-2xl font-arabic font-bold text-sm bg-gold-400 text-brand-950 hover:bg-gold-500 transition-all shadow-[0_4px_16px_rgba(240,180,41,0.4)] cursor-pointer"
                 style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}
               >

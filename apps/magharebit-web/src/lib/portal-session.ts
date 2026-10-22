@@ -10,7 +10,8 @@
  * scheme used by `mgh_session` (see otp.ts).
  */
 
-import { createHash } from 'crypto'
+import { createHash, timingSafeEqual } from 'crypto'
+import { getAuthSecret, requireAuthSecret } from './secret'
 import { NextRequest, NextResponse } from 'next/server'
 
 const COOKIE_NAME = 'portal_session'
@@ -19,7 +20,7 @@ const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 // ── Token signing (same algorithm as otp.ts mgh_session) ─────────────────────
 
 function sign(payload: Record<string, unknown>): string {
-  const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-dev-secret'
+  const secret = requireAuthSecret()
   const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url')
   const sig = createHash('sha256').update(`${encoded}:${secret}`).digest('hex')
   return `${encoded}.${sig}`
@@ -29,11 +30,14 @@ function verify(token: string): Record<string, unknown> | null {
   try {
     const [encoded, sig] = token.split('.')
     if (!encoded || !sig) return null
-    const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-dev-secret'
+    const secret = getAuthSecret()
+    if (!secret) return null
     const expected = createHash('sha256')
       .update(`${encoded}:${secret}`)
       .digest('hex')
-    if (sig !== expected) return null
+    const bs = Buffer.from(sig)
+    const be = Buffer.from(expected)
+    if (bs.length !== be.length || !timingSafeEqual(bs, be)) return null
     const payload = JSON.parse(
       Buffer.from(encoded, 'base64url').toString()
     ) as Record<string, unknown>

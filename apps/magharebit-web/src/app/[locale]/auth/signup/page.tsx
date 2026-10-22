@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
 // ── Sector / city options ─────────────────────────────────────────────────────
@@ -138,7 +138,6 @@ function StepDots({ current, total }: { current: number; total: number }) {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SignupPage() {
   const params = useParams()
-  const router = useRouter()
   const locale = (params?.locale as string) ?? 'fr'
   const isRTL  = locale === 'ar'
   const t      = useTranslations('auth')
@@ -164,6 +163,8 @@ export default function SignupPage() {
   const [error, setError]           = useState('')
   const [resendAllowed, setResendAllowed] = useState(false)
   const [smsAvailable, setSmsAvailable]   = useState(false)
+  // Filled once the account exists: drives the confirmation screen (step 3).
+  const [done, setDone] = useState<{ trialDays: number; exists: boolean } | null>(null)
 
   const resendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const smsTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -273,9 +274,11 @@ export default function SignupPage() {
         body: JSON.stringify({ ...identifierFields, storeName: storeName.trim(), sector, city, locale }),
       })
       if (!res.ok) { setError(t('signup_failed')); return }
-      router.push(`/${locale}/demo`)
+      const data = (await res.json().catch(() => ({}))) as { exists?: boolean; trialDays?: number }
+      setDone({ trialDays: data.trialDays ?? 14, exists: data.exists === true })
+      setStep(3)
     } finally { setLoading(false) }
-  }, [storeName, mode, phone, email, sector, city, locale, router, t])
+  }, [storeName, mode, phone, email, sector, city, locale, t])
 
   // ── SMS fallback (phone path only) ────────────────────────────────────────
   const sendSms = useCallback(async () => {
@@ -512,6 +515,51 @@ export default function SignupPage() {
           </p>
         </form>
       )}
+
+      {/* ── Step 3: confirmation ── */}
+      {step === 3 && done && (() => {
+        const lang = locale === 'ar' || locale === 'fr' ? locale : 'en'
+        const days = done.trialDays
+        const c = {
+          ar: {
+            title: done.exists ? 'لديك حساب بالفعل' : 'تم إنشاء حسابك',
+            body: done.exists
+              ? 'هذا الرقم أو البريد مسجّل مسبقاً. يمكنك الدخول إلى فضاء التاجر.'
+              : `بدأت تجربتك المجانية لمدة ${days} يوماً. حمّل التطبيق وادخل إلى فضاء التاجر لإعداد متجرك.`,
+            portal: 'الدخول إلى فضاء التاجر', download: 'تحميل التطبيق',
+          },
+          fr: {
+            title: done.exists ? 'Vous avez déjà un compte' : 'Votre compte est créé',
+            body: done.exists
+              ? 'Ce numéro ou cet e-mail est déjà enregistré. Vous pouvez accéder à votre espace commerçant.'
+              : `Votre essai gratuit de ${days} jours a commencé. Téléchargez l’application et ouvrez votre espace commerçant pour configurer votre boutique.`,
+            portal: 'Accéder à mon espace', download: 'Télécharger l’application',
+          },
+          en: {
+            title: done.exists ? 'You already have an account' : 'Your account is ready',
+            body: done.exists
+              ? 'This phone number or email is already registered. You can open your merchant portal.'
+              : `Your ${days}-day free trial has started. Download the app and open your merchant portal to set up your shop.`,
+            portal: 'Open my merchant portal', download: 'Download the app',
+          },
+        }[lang]
+        return (
+          <div role="status" style={{ textAlign: 'center' }}>
+            <div aria-hidden="true" style={{ fontSize: '2.4rem', marginBottom: '8px', color: '#F0B429' }}>✓</div>
+            <h1 style={{ ...titleStyle, textAlign: 'center' }}>{c.title}</h1>
+            <p style={{ ...subStyle, textAlign: 'center' }}>{c.body}</p>
+            <a href={`/${locale}/portal/login`} style={{ ...ctaStyle, display: 'block', textDecoration: 'none', boxSizing: 'border-box' }}>
+              {c.portal}
+            </a>
+            <a
+              href={`/${locale}/download`}
+              style={{ display: 'block', marginTop: '14px', color: 'rgba(255,255,255,0.65)', fontSize: '14px', textDecoration: 'underline' }}
+            >
+              {c.download}
+            </a>
+          </div>
+        )
+      })()}
     </div>
   )
 }

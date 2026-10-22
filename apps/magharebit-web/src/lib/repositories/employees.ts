@@ -10,6 +10,7 @@
  */
 
 import { createHash } from 'crypto'
+import { requireAuthSecret } from '../secret'
 import { Db, ObjectId } from 'mongodb'
 import { getDb } from '../mongodb'
 
@@ -54,7 +55,7 @@ async function ensureIndexes(db: Db) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function hashPin(pin: string): string {
-  const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-dev-secret'
+  const secret = requireAuthSecret()
   return createHash('sha256').update(`${pin}:${secret}`).digest('hex')
 }
 
