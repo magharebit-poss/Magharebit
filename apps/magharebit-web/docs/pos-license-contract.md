@@ -1,12 +1,12 @@
 # POS ↔ Central Admin: license contract
 
-**Contract version: 2.0 (specification FINAL, server implementation PENDING).**
+**Contract version: 2.0 (specification FINAL, server implementation DONE and tested; not yet deployed).**
 Audience: the POS Logiciel team. This file is read-only reference for them; it changes only through a reviewed PR.
 
 | | Status |
 |---|---|
 | **v1** (typable key + `POST /api/licenses/validate`) | **Live.** Section 2. Keep working until v2 is announced live. |
-| **v2** (signed license token, terminal limits, JWKS) | **Specified here, not yet implemented on the server.** Do not ship v2 verification against production until the server returns `"schema": 2` from `validate` (section 3.6). Build and test against the test vector in section 6 now. |
+| **v2** (signed license token, terminal limits, JWKS) | **Implemented on the server (branch `feat/magharebit-web`), 63 end-to-end checks passing on real MongoDB; becomes live when deployed with a signing key configured.** Do not ship v2 verification against production until `GET /api/licenses/jwks` answers 200 and `activate` returns a token (section 3.6). Build and test against the test vector in section 6 now. |
 
 Base URL: the site origin (e.g. `https://magharebit.com`). All bodies are JSON, UTF-8, `Content-Type: application/json`.
 
@@ -117,10 +117,15 @@ Let `now` be trusted time (see rollback guard), in seconds.
 - Enforcement of `maxBranches` and `features` is the POS's responsibility using the claims.
 
 ### 3.6 Rollout signal
-`validate` returns `"schema": 2` only when the server issues v2 tokens. Until then, use v1 only.
+Until the operator configures a signing key, `GET /api/licenses/jwks` and `POST /api/licenses/activate` answer **503** (`v2_not_configured`) and `validate` stays v1-only. When the key is set: `jwks` answers 200, `activate` returns tokens, and `validate` adds `"schema": 2` and a token for registered terminals. Use v1 only until then.
+
+Other server rules worth knowing:
+- `validate` and `activate` are rate limited per IP (120 and 60 requests per minute); a 429 means back off and keep the cached token.
+- Revoking one license, extending it, switching a merchant off (`suspended`) and freeing a terminal are all admin actions that take effect on the next refresh.
+- A suspended merchant is a reversible switch: the license is untouched and `validate`/`activate` answer `suspended` until the admin switches the merchant back on.
 
 ### 3.7 Key management (server side, for information)
-Private signing key lives only in the server secret store (`LICENSE_SIGNING_PRIVATE_KEY`); never in the repo or POS. Rotation: a new `kid` is added to the JWKS while the old one stays until its tokens expire. A compromised key is retired by removing its `kid`; the POS then rejects those tokens after the next JWKS refresh.
+Private signing key lives only in the server secret store (`LICENSE_SIGNING_PRIVATE_KEY`, with `LICENSE_SIGNING_KID`); never in the repo or POS. Generate one with `node scripts/gen-license-keypair.mjs <kid>` and copy the two printed lines into the secret store; the script prints the public JWK too. Rotation: a new `kid` is added to the JWKS while the old one stays until its tokens expire. A compromised key is retired by removing its `kid`; the POS then rejects those tokens after the next JWKS refresh.
 
 ## 4. Error handling summary
 | Situation | POS action |

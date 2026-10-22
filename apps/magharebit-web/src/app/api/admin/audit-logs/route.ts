@@ -12,7 +12,7 @@ import { auditLogsRepo, type AuditAction } from '@/lib/repositories/audit-logs'
 const ACTIONS: AuditAction[] = [
   'generateLicense', 'revokeKey', 'extendSubscription', 'approveMerchant', 'suspendMerchant',
   'reactivateMerchant', 'createCoupon', 'broadcastNotification', 'createAdmin', 'disableAdmin', 'adminLogin',
-  'activateLead', 'updateLeadStatus',
+  'activateLead', 'updateLeadStatus', 'releaseTerminal',
 ]
 
 function parseDate(v: string | null): Date | undefined {

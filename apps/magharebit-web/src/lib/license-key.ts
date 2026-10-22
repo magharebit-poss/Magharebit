@@ -43,6 +43,14 @@ export interface LicenseRecord {
   revokedAt?: Date
   revokedBy?: string
   notes?: string
+  /** Terminals registered through POST /api/licenses/activate (limit = plan maxRegisters). */
+  terminals?: LicenseTerminal[]
+}
+
+export interface LicenseTerminal {
+  machineId: string
+  firstSeenAt: Date
+  lastSeenAt: Date
 }
 
 export interface Merchant {

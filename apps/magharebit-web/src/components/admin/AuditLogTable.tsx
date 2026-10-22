@@ -22,7 +22,7 @@ type Lang = 'ar' | 'fr' | 'en';
 const ACTIONS = [
   'generateLicense', 'revokeKey', 'extendSubscription', 'approveMerchant', 'suspendMerchant',
   'reactivateMerchant', 'createCoupon', 'broadcastNotification', 'createAdmin', 'disableAdmin', 'adminLogin',
-  'activateLead', 'updateLeadStatus',
+  'activateLead', 'updateLeadStatus', 'releaseTerminal',
 ] as const;
 
 const ACTION_LABEL: Record<Lang, Record<string, string>> = {
@@ -31,21 +31,21 @@ const ACTION_LABEL: Record<Lang, Record<string, string>> = {
     approveMerchant: 'قبول تاجر', suspendMerchant: 'تعليق تاجر', reactivateMerchant: 'إعادة تفعيل تاجر',
     createCoupon: 'إنشاء قسيمة', broadcastNotification: 'بث إشعار', createAdmin: 'إنشاء مسؤول',
     disableAdmin: 'تعطيل مسؤول', adminLogin: 'تسجيل دخول',
-    activateLead: 'تفعيل عميل محتمل', updateLeadStatus: 'تغيير حالة عميل',
+    activateLead: 'تفعيل عميل محتمل', updateLeadStatus: 'تغيير حالة عميل', releaseTerminal: 'تحرير جهاز',
   },
   fr: {
     generateLicense: 'Licence générée', revokeKey: 'Clé révoquée', extendSubscription: 'Abonnement prolongé',
     approveMerchant: 'Commerçant approuvé', suspendMerchant: 'Commerçant suspendu', reactivateMerchant: 'Commerçant réactivé',
     createCoupon: 'Coupon créé', broadcastNotification: 'Notification diffusée', createAdmin: 'Admin créé',
     disableAdmin: 'Admin désactivé', adminLogin: 'Connexion',
-    activateLead: 'Prospect activé', updateLeadStatus: 'Statut du prospect modifié',
+    activateLead: 'Prospect activé', updateLeadStatus: 'Statut du prospect modifié', releaseTerminal: 'Terminal libéré',
   },
   en: {
     generateLicense: 'License generated', revokeKey: 'Key revoked', extendSubscription: 'Subscription extended',
     approveMerchant: 'Merchant approved', suspendMerchant: 'Merchant suspended', reactivateMerchant: 'Merchant reactivated',
     createCoupon: 'Coupon created', broadcastNotification: 'Notification broadcast', createAdmin: 'Admin created',
     disableAdmin: 'Admin disabled/enabled', adminLogin: 'Sign-in',
-    activateLead: 'Lead activated', updateLeadStatus: 'Lead status changed',
+    activateLead: 'Lead activated', updateLeadStatus: 'Lead status changed', releaseTerminal: 'Terminal released',
   },
 };
 

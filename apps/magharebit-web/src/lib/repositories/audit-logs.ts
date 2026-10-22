@@ -24,6 +24,7 @@ export type AuditAction =
   | 'adminLogin'
   | 'activateLead'
   | 'updateLeadStatus'
+  | 'releaseTerminal'
 
 export interface AuditLogEntry {
   id: string

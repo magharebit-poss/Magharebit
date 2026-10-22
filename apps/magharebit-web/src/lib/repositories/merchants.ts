@@ -159,6 +159,29 @@ export const merchantsRepo = {
     return raw ? toDoc(raw as Record<string, unknown>) : null
   },
 
+  /** Find a merchant by the license owner id: a normalised phone or, for email-only sign-ups, an email. */
+  async findByContact(idOrEmail: string): Promise<MerchantDoc | null> {
+    const db = await getDb()
+    if (!db) return null
+    await ensureIndexes(db)
+    const raw = await db.collection('merchants').findOne({ $or: [{ phone: idOrEmail }, { email: idOrEmail }] })
+    return raw ? toDoc(raw as Record<string, unknown>) : null
+  },
+
+  /** Admin toggle: suspended -> approved again. Only matches a suspended merchant. */
+  async reactivate(id: string, by = 'admin'): Promise<MerchantDoc | null> {
+    if (!isValidObjectId(id)) return null
+    const db = await getDb()
+    if (!db) return null
+    await ensureIndexes(db)
+    const raw = await db.collection('merchants').findOneAndUpdate(
+      { _id: new ObjectId(id), status: 'suspended' },
+      { $set: { status: 'approved', reactivatedAt: new Date(), reactivatedBy: by }, $unset: { suspendedAt: '', suspendedBy: '' } },
+      { returnDocument: 'after' }
+    )
+    return raw ? toDoc(raw as Record<string, unknown>) : null
+  },
+
   /** Find a merchant by normalised phone (212XXXXXXXXX). */
   async findByPhone(phone: string): Promise<MerchantDoc | null> {
     const db = await getDb()

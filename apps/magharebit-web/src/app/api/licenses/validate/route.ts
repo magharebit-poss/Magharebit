@@ -1,31 +1,40 @@
 /**
  * POST /api/licenses/validate
  *
- * Public endpoint — no auth header required.
- * Called by the desktop app on every startup and daily thereafter.
+ * Public endpoint — no auth header required (the license key is the credential).
+ * Called by the POS at startup and daily thereafter. Spec: docs/pos-license-contract.md.
  *
  * Request body:
  *   { key: string, machineId?: string }
  *
- * Response:
- *   200 { valid: true,  key, plan, storeName, expiresAt, daysRemaining, firstActivation }
- *   200 { valid: false, reason: "invalid_key" | "expired" | "revoked" | "checksum_failed" }
+ * Response (HTTP 200 unless noted):
+ *   { valid: true, key, plan, storeName, expiresAt, daysRemaining, firstActivation, isTrial,
+ *     maxRegisters, maxBranches, features }                       v1 fields, always present
+ *   + { schema: 2, token }   ONLY when v2 signing is configured AND `machineId` is a terminal that
+ *                            already holds a slot (registered via /api/licenses/activate); this is the
+ *                            refresh path that gives the POS a fresh token.
+ *   { valid: false, reason: "invalid_key" | "checksum_failed" | "expired" | "revoked" | "suspended" }
+ *   400 { valid: false, reason: "invalid_request" }   not JSON
+ *   429 { valid: false, reason: "rate_limited" }
  *
- * Desktop app behaviour:
- *   valid: true  → unlock software, cache response with timestamp
- *   valid: false → show activation/lock screen
- *   network error → use cached response; apply 72-hour grace period
- *
- * Rate-limited to 20 calls / IP / minute at the CDN layer (Vercel Edge Config).
- * No DB calls on checksum failure — prevents brute-force DB hammering.
+ * POS behaviour: valid → unlock and cache; invalid → lock/activation screen; network error → keep
+ * the cached answer inside the grace window (72 h in v1; refreshBy + 72 h with v2 tokens).
+ * No DB call happens for a key whose checksum fails, so random guessing cannot hammer the database.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyKeyChecksum } from '@/lib/license-key'
-import { licensesRepo } from '@/lib/repositories/licenses'
+import { checkRateLimit } from '@/lib/rateLimit'
 import { getPlanLimits } from '@/lib/plans'
+import { buildClaims, loadSigningKey, signLicenseToken } from '@/lib/license-token'
+import { MACHINE_ID_RE, hasTerminal, resolveLicense } from '@/lib/license-service'
+import { licensesRepo } from '@/lib/repositories/licenses'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  if (!checkRateLimit(`license-validate:${ip}`, 120, 60 * 1000)) {
+    return NextResponse.json({ valid: false, reason: 'rate_limited' }, { status: 429 })
+  }
+
   let body: { key?: string; machineId?: string }
   try {
     body = await req.json()
@@ -33,51 +42,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ valid: false, reason: 'invalid_request' }, { status: 400 })
   }
 
-  const rawKey   = (body.key      ?? '').trim().toUpperCase()
+  const rawKey = (body.key ?? '').trim().toUpperCase()
   const machineId = (body.machineId ?? '').trim().slice(0, 128) // cap to prevent oversized storage
 
-  if (!rawKey) {
-    return NextResponse.json({ valid: false, reason: 'invalid_key' })
-  }
+  const resolved = await resolveLicense(rawKey)
+  if (!resolved.valid) return NextResponse.json({ valid: false, reason: resolved.reason })
+  const fresh = resolved.license
 
-  // 1. Fast offline checksum check — no DB hit needed if key is malformed/fake
-  if (!verifyKeyChecksum(rawKey)) {
-    return NextResponse.json({ valid: false, reason: 'checksum_failed' })
-  }
-
-  // 2. DB lookup
-  const license = await licensesRepo.findByKey(rawKey)
-  if (!license) {
-    return NextResponse.json({ valid: false, reason: 'invalid_key' })
-  }
-
-  // 3. Run expiry sweep lazily (keeps status accurate without a cron job)
-  await licensesRepo.sweepExpired()
-
-  // Re-fetch after sweep to get updated status
-  const fresh = await licensesRepo.findByKey(rawKey)
-  if (!fresh) {
-    return NextResponse.json({ valid: false, reason: 'invalid_key' })
-  }
-
-  if (fresh.status === 'revoked') {
-    return NextResponse.json({ valid: false, reason: 'revoked' })
-  }
-  if (fresh.status === 'expired') {
-    return NextResponse.json({ valid: false, reason: 'expired' })
-  }
-
-  // 4. Record first activation (idempotent — only sets if not already set)
+  // Record first activation (idempotent — only sets if not already set)
   if (machineId) {
     await licensesRepo.recordActivation(fresh.id, machineId)
   }
 
-  const now          = Date.now()
+  const now = Date.now()
   const daysRemaining = Math.max(0, Math.ceil((fresh.expiresAt.getTime() - now) / 86_400_000))
   const firstActivation = !fresh.activatedAt
   const limits = getPlanLimits(fresh.plan)
 
-  return NextResponse.json({
+  const response: Record<string, unknown> = {
     valid:           true,
     key:             fresh.key,
     plan:            fresh.plan,
@@ -89,5 +71,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     maxRegisters:    limits.maxRegisters,
     maxBranches:     limits.maxBranches,
     features:        limits.features,
-  })
+  }
+
+  // v2 refresh: only for a terminal that already holds a slot. Registering a NEW terminal is
+  // /activate's job, because that is where the terminal limit is enforced.
+  const signingKey = loadSigningKey()
+  if (signingKey && machineId && MACHINE_ID_RE.test(machineId) && hasTerminal(fresh, machineId)) {
+    await licensesRepo.touchTerminal(fresh.id, machineId)
+    response.schema = 2
+    response.token = signLicenseToken(buildClaims(fresh, machineId, now), signingKey)
+  }
+
+  return NextResponse.json(response)
 }

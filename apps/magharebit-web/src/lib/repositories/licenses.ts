@@ -186,6 +186,14 @@ export const licensesRepo = {
     return readJsonLicenses().find(l => l.key === key.trim().toUpperCase()) ?? null
   },
 
+  /** Find a single license by its id (LIC-...). */
+  async findById(id: string): Promise<LicenseRecord | null> {
+    const db = await getDb()
+    if (!db) return null
+    await ensureIndexes(db)
+    return db.collection<LicenseRecord>('licenses').findOne({ id }, { projection: { _id: 0 } }) as Promise<LicenseRecord | null>
+  },
+
   /** List all licenses for a given merchant */
   async findByMerchant(merchantId: string): Promise<LicenseRecord[]> {
     const db = await getDb()
@@ -268,6 +276,62 @@ export const licensesRepo = {
       { id, activatedAt: { $exists: false } },
       { $set: { activatedAt: new Date(), activatedBy: machineId } }
     )
+  },
+
+  /**
+   * Register a terminal for a license, enforcing the terminal limit atomically.
+   *   'already'    the machine already holds a slot (its lastSeenAt is refreshed)
+   *   'registered' a free slot was taken
+   *   'limit'      all slots are used by other machines
+   *   'missing'    no such license
+   */
+  async registerTerminal(id: string, machineId: string, max: number): Promise<'already' | 'registered' | 'limit' | 'missing'> {
+    const db = await getDb()
+    if (!db) throw new Error('MongoDB unavailable: cannot register terminal')
+    await ensureIndexes(db)
+    const col = db.collection<LicenseRecord>('licenses')
+    const now = new Date()
+
+    const seen = await col.updateOne({ id, 'terminals.machineId': machineId }, { $set: { 'terminals.$.lastSeenAt': now } })
+    if (seen.matchedCount === 1) return 'already'
+
+    // The size check and the push happen in ONE atomic update, so two machines racing for the
+    // last slot cannot both win.
+    const pushed = await col.updateOne(
+      {
+        id,
+        'terminals.machineId': { $ne: machineId },
+        $expr: { $lt: [{ $size: { $ifNull: ['$terminals', []] } }, max] },
+      },
+      { $push: { terminals: { machineId, firstSeenAt: now, lastSeenAt: now } } }
+    )
+    if (pushed.matchedCount === 1) return 'registered'
+
+    // Lost a race for the same machine (it was added a moment ago) counts as 'already'.
+    const again = await col.findOne({ id }, { projection: { terminals: 1 } })
+    if (!again) return 'missing'
+    return (again.terminals ?? []).some(t => t.machineId === machineId) ? 'already' : 'limit'
+  },
+
+  /** Refresh lastSeenAt for a registered terminal (no-op if it is not registered). */
+  async touchTerminal(id: string, machineId: string): Promise<void> {
+    const db = await getDb()
+    if (!db) return
+    await db.collection<LicenseRecord>('licenses').updateOne(
+      { id, 'terminals.machineId': machineId },
+      { $set: { 'terminals.$.lastSeenAt': new Date() } }
+    )
+  },
+
+  /** Free a terminal slot (admin action). Returns true when a slot was removed. */
+  async releaseTerminal(id: string, machineId: string): Promise<boolean> {
+    const db = await getDb()
+    if (!db) throw new Error('MongoDB unavailable: cannot release terminal')
+    const res = await db.collection<LicenseRecord>('licenses').updateOne(
+      { id, 'terminals.machineId': machineId },
+      { $pull: { terminals: { machineId } } }
+    )
+    return res.matchedCount === 1
   },
 
   /**
