@@ -420,3 +420,35 @@ a { color: inherit; text-decoration: none; }
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: none; }
 }
+
+/* ---------- admin console theme ----------
+   Light = clean white content (default). Dark = Pine Green. Toggled by the switch in the
+   console sidebar; stored in localStorage as "mgh-admin-theme". Only the console reads these. */
+.admin-theme {
+  --adm-bg: #F8F9FA;
+  --adm-surface: #FFFFFF;
+  --adm-head: #F8F9FA;
+  --adm-field: #FFFFFF;
+  --adm-border: #E0E0E0;
+  --adm-text: #111827;
+  --adm-text2: #374151;
+  --adm-muted: #6B7280;
+  --adm-primary: #0F3D2A;
+  --adm-primary-text: #FFFFFF;
+  --adm-accent: #B8860B;
+  --adm-error: #D32F2F;
+}
+.admin-theme[data-theme='dark'] {
+  --adm-bg: #0A2318;
+  --adm-surface: #0F3D2A;
+  --adm-head: #0C2F20;
+  --adm-field: #0A2318;
+  --adm-border: rgba(255, 255, 255, 0.16);
+  --adm-text: #F3F4F6;
+  --adm-text2: #D1D5DB;
+  --adm-muted: rgba(255, 255, 255, 0.66);
+  --adm-primary: #F0B429;
+  --adm-primary-text: #0A2318;
+  --adm-accent: #F0B429;
+  --adm-error: #FCA5A5;
+}

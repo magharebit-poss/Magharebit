@@ -22,6 +22,7 @@ type Lang = 'ar' | 'fr' | 'en';
 const ACTIONS = [
   'generateLicense', 'revokeKey', 'extendSubscription', 'approveMerchant', 'suspendMerchant',
   'reactivateMerchant', 'createCoupon', 'broadcastNotification', 'createAdmin', 'disableAdmin', 'adminLogin',
+  'activateLead', 'updateLeadStatus',
 ] as const;
 
 const ACTION_LABEL: Record<Lang, Record<string, string>> = {
@@ -30,18 +31,21 @@ const ACTION_LABEL: Record<Lang, Record<string, string>> = {
     approveMerchant: 'قبول تاجر', suspendMerchant: 'تعليق تاجر', reactivateMerchant: 'إعادة تفعيل تاجر',
     createCoupon: 'إنشاء قسيمة', broadcastNotification: 'بث إشعار', createAdmin: 'إنشاء مسؤول',
     disableAdmin: 'تعطيل مسؤول', adminLogin: 'تسجيل دخول',
+    activateLead: 'تفعيل عميل محتمل', updateLeadStatus: 'تغيير حالة عميل',
   },
   fr: {
     generateLicense: 'Licence générée', revokeKey: 'Clé révoquée', extendSubscription: 'Abonnement prolongé',
     approveMerchant: 'Commerçant approuvé', suspendMerchant: 'Commerçant suspendu', reactivateMerchant: 'Commerçant réactivé',
     createCoupon: 'Coupon créé', broadcastNotification: 'Notification diffusée', createAdmin: 'Admin créé',
     disableAdmin: 'Admin désactivé', adminLogin: 'Connexion',
+    activateLead: 'Prospect activé', updateLeadStatus: 'Statut du prospect modifié',
   },
   en: {
     generateLicense: 'License generated', revokeKey: 'Key revoked', extendSubscription: 'Subscription extended',
     approveMerchant: 'Merchant approved', suspendMerchant: 'Merchant suspended', reactivateMerchant: 'Merchant reactivated',
     createCoupon: 'Coupon created', broadcastNotification: 'Notification broadcast', createAdmin: 'Admin created',
     disableAdmin: 'Admin disabled/enabled', adminLogin: 'Sign-in',
+    activateLead: 'Lead activated', updateLeadStatus: 'Lead status changed',
   },
 };
 
@@ -74,8 +78,8 @@ const COPY: Record<Lang, {
 };
 
 const FIELD =
-  'min-h-[44px] w-full rounded-[4px] border border-[#E0E0E0] bg-white px-3 text-sm text-[#111827] sm:w-auto ' +
-  'focus:border-[#B8860B] focus:outline-none focus:ring-2 focus:ring-[#F0B429]/40';
+  'min-h-[44px] w-full rounded-[4px] border border-[var(--adm-border)] bg-[var(--adm-field)] px-3 text-sm text-[var(--adm-text)] sm:w-auto ' +
+  'focus:border-[var(--adm-accent)] focus:outline-none focus:ring-2 focus:ring-[#F0B429]/40';
 
 const LIMIT = 25;
 
@@ -146,50 +150,50 @@ export default function AuditLogTable() {
 
   return (
     <section aria-labelledby="audit-title">
-      <h1 id="audit-title" className="text-2xl font-bold text-[#111827]">{c.title}</h1>
-      <p className="mb-4 text-sm text-[#6B7280]">{c.subtitle}</p>
+      <h1 id="audit-title" className="text-2xl font-bold text-[var(--adm-text)]">{c.title}</h1>
+      <p className="mb-4 text-sm text-[var(--adm-muted)]">{c.subtitle}</p>
 
       <form
         onSubmit={(e) => { e.preventDefault(); go(1, { action, target: target.trim(), from, to }); }}
-        className="mb-4 flex flex-wrap items-end gap-3 rounded-[8px] border border-[#E0E0E0] bg-white p-3"
+        className="mb-4 flex flex-wrap items-end gap-3 rounded-[8px] border border-[var(--adm-border)] bg-[var(--adm-surface)] p-3"
       >
-        <label className="flex w-full min-w-0 flex-col gap-1 text-xs font-semibold text-[#6B7280] sm:w-auto">
+        <label className="flex w-full min-w-0 flex-col gap-1 text-xs font-semibold text-[var(--adm-muted)] sm:w-auto">
           {c.action}
           <select className={FIELD} value={action} onChange={(e) => setAction(e.target.value)}>
             <option value="">{c.all}</option>
             {ACTIONS.map((a) => <option key={a} value={a}>{ACTION_LABEL[lang][a]} ({a})</option>)}
           </select>
         </label>
-        <label className="flex w-full min-w-0 flex-col gap-1 text-xs font-semibold text-[#6B7280] sm:w-auto">
+        <label className="flex w-full min-w-0 flex-col gap-1 text-xs font-semibold text-[var(--adm-muted)] sm:w-auto">
           {c.targetFilter}
           <input className={FIELD} value={target} onChange={(e) => setTarget(e.target.value)} />
         </label>
-        <label className="flex w-full min-w-0 flex-col gap-1 text-xs font-semibold text-[#6B7280] sm:w-auto">
+        <label className="flex w-full min-w-0 flex-col gap-1 text-xs font-semibold text-[var(--adm-muted)] sm:w-auto">
           {c.from}
           <input type="date" className={FIELD} value={from} onChange={(e) => setFrom(e.target.value)} />
         </label>
-        <label className="flex w-full min-w-0 flex-col gap-1 text-xs font-semibold text-[#6B7280] sm:w-auto">
+        <label className="flex w-full min-w-0 flex-col gap-1 text-xs font-semibold text-[var(--adm-muted)] sm:w-auto">
           {c.to}
           <input type="date" className={FIELD} value={to} onChange={(e) => setTo(e.target.value)} />
         </label>
-        <button type="submit" className="min-h-[44px] rounded-[4px] bg-brand-900 px-4 text-sm font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B8860B]">{c.apply}</button>
+        <button type="submit" className="min-h-[44px] rounded-[4px] bg-[var(--adm-primary)] px-4 text-sm font-bold text-[var(--adm-primary-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B8860B]">{c.apply}</button>
         <button
           type="button"
           onClick={() => { setAction(''); setTarget(''); setFrom(''); setTo(''); go(1, { action: '', target: '', from: '', to: '' }); }}
-          className="min-h-[44px] rounded-[4px] border border-[#E0E0E0] px-4 text-sm font-semibold text-[#111827]"
+          className="min-h-[44px] rounded-[4px] border border-[var(--adm-border)] px-4 text-sm font-semibold text-[var(--adm-text)]"
         >
           {c.reset}
         </button>
       </form>
 
-      {state === 'error' && <p role="alert" className="mb-3 text-sm text-[#D32F2F]">{c.error}</p>}
-      {state === 'unavailable' && <p role="alert" className="mb-3 text-sm text-[#D32F2F]">{c.unavailable}</p>}
+      {state === 'error' && <p role="alert" className="mb-3 text-sm text-[var(--adm-error)]">{c.error}</p>}
+      {state === 'unavailable' && <p role="alert" className="mb-3 text-sm text-[var(--adm-error)]">{c.unavailable}</p>}
 
-      <div className="overflow-x-auto rounded-[8px] border border-[#E0E0E0] bg-white">
+      <div className="overflow-x-auto rounded-[8px] border border-[var(--adm-border)] bg-[var(--adm-surface)]">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <caption className="sr-only">{c.title}</caption>
           <thead>
-            <tr className="bg-[#F8F9FA] text-start text-xs uppercase tracking-wide text-[#6B7280]">
+            <tr className="bg-[var(--adm-head)] text-start text-xs uppercase tracking-wide text-[var(--adm-muted)]">
               {[c.time, c.performedBy, c.action, c.target, c.details].map((h) => (
                 <th key={h} scope="col" className="px-3 py-3 text-start font-semibold">{h}</th>
               ))}
@@ -197,41 +201,41 @@ export default function AuditLogTable() {
           </thead>
           <tbody>
             {state === 'loading' && (
-              <tr><td colSpan={5} className="px-3 py-8 text-center text-[#6B7280]">{c.loading}</td></tr>
+              <tr><td colSpan={5} className="px-3 py-8 text-center text-[var(--adm-muted)]">{c.loading}</td></tr>
             )}
             {state === 'ok' && entries.length === 0 && (
-              <tr><td colSpan={5} className="px-3 py-8 text-center text-[#6B7280]">{c.empty}</td></tr>
+              <tr><td colSpan={5} className="px-3 py-8 text-center text-[var(--adm-muted)]">{c.empty}</td></tr>
             )}
             {state === 'ok' && entries.map((e) => (
-              <tr key={e.id} className="border-t border-[#E0E0E0] align-top">
-                <td className="whitespace-nowrap px-3 py-3 text-[#374151]" dir="ltr">{fmtTime(e.ts, lang)}</td>
+              <tr key={e.id} className="border-t border-[var(--adm-border)] align-top">
+                <td className="whitespace-nowrap px-3 py-3 text-[var(--adm-text2)]" dir="ltr">{fmtTime(e.ts, lang)}</td>
                 <td className="px-3 py-3">
-                  <div className="font-semibold text-[#111827]">{e.actorName}</div>
-                  <div className="text-xs text-[#6B7280]" dir="ltr">{e.actorEmail ?? e.actorId} · {e.actorRole}</div>
+                  <div className="font-semibold text-[var(--adm-text)]">{e.actorName}</div>
+                  <div className="text-xs text-[var(--adm-muted)]" dir="ltr">{e.actorEmail ?? e.actorId} · {e.actorRole}</div>
                 </td>
                 <td className="px-3 py-3">
-                  <div className="text-[#111827]">{ACTION_LABEL[lang][e.action] ?? e.action}</div>
-                  <code className="text-xs text-[#6B7280]" dir="ltr">API: {e.action}</code>
+                  <div className="text-[var(--adm-text)]">{ACTION_LABEL[lang][e.action] ?? e.action}</div>
+                  <code className="text-xs text-[var(--adm-muted)]" dir="ltr">API: {e.action}</code>
                 </td>
                 <td className="px-3 py-3">
-                  <div className="text-xs text-[#6B7280]">{e.targetType}</div>
-                  <code className="break-all text-xs text-[#111827]" dir="ltr">{e.targetId}</code>
+                  <div className="text-xs text-[var(--adm-muted)]">{e.targetType}</div>
+                  <code className="break-all text-xs text-[var(--adm-text)]" dir="ltr">{e.targetId}</code>
                 </td>
-                <td className="max-w-[320px] px-3 py-3 text-xs text-[#6B7280]" dir="ltr">{summarize(e.meta)}{e.ip ? ` · ip ${e.ip}` : ''}</td>
+                <td className="max-w-[320px] px-3 py-3 text-xs text-[var(--adm-muted)]" dir="ltr">{summarize(e.meta)}{e.ip ? ` · ip ${e.ip}` : ''}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-3 text-sm text-[#6B7280]">
+      <div className="mt-3 flex items-center justify-between gap-3 text-sm text-[var(--adm-muted)]">
         <span>{total} {c.total}</span>
         <div className="flex items-center gap-2">
-          <button type="button" disabled={page <= 1} onClick={() => go(page - 1)} className="min-h-[44px] rounded-[4px] border border-[#E0E0E0] bg-white px-3 font-semibold text-[#111827] disabled:opacity-50">
+          <button type="button" disabled={page <= 1} onClick={() => go(page - 1)} className="min-h-[44px] rounded-[4px] border border-[var(--adm-border)] bg-[var(--adm-surface)] px-3 font-semibold text-[var(--adm-text)] disabled:opacity-50">
             {isRTL ? '›' : '‹'} {c.prev}
           </button>
           <span>{c.page} {page} / {pages}</span>
-          <button type="button" disabled={page >= pages} onClick={() => go(page + 1)} className="min-h-[44px] rounded-[4px] border border-[#E0E0E0] bg-white px-3 font-semibold text-[#111827] disabled:opacity-50">
+          <button type="button" disabled={page >= pages} onClick={() => go(page + 1)} className="min-h-[44px] rounded-[4px] border border-[var(--adm-border)] bg-[var(--adm-surface)] px-3 font-semibold text-[var(--adm-text)] disabled:opacity-50">
             {c.next} {isRTL ? '‹' : '›'}
           </button>
         </div>

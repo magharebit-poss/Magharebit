@@ -55,8 +55,8 @@ const COPY: Record<Lang, {
 };
 
 const FIELD =
-  'min-h-[44px] w-full rounded-[4px] border border-[#E0E0E0] bg-white px-3 text-sm text-[#111827] ' +
-  'focus:border-[#B8860B] focus:outline-none focus:ring-2 focus:ring-[#F0B429]/40';
+  'min-h-[44px] w-full rounded-[4px] border border-[var(--adm-border)] bg-[var(--adm-field)] px-3 text-sm text-[var(--adm-text)] ' +
+  'focus:border-[var(--adm-accent)] focus:outline-none focus:ring-2 focus:ring-[#F0B429]/40';
 
 export default function AdminsTable() {
   const { actor, lang } = useAdmin();
@@ -92,7 +92,7 @@ export default function AdminsTable() {
   const reload = () => { setState('loading'); setTick((t) => t + 1); };
 
   if (actor.role !== 'owner') {
-    return <p role="alert" className="rounded-[8px] border border-[#E0E0E0] bg-white p-6 text-[#6B7280]">{c.forbidden}</p>;
+    return <p role="alert" className="rounded-[8px] border border-[var(--adm-border)] bg-[var(--adm-surface)] p-6 text-[var(--adm-muted)]">{c.forbidden}</p>;
   }
 
   async function create() {
@@ -131,72 +131,72 @@ export default function AdminsTable() {
 
   return (
     <section aria-labelledby="admins-title">
-      <h1 id="admins-title" className="text-2xl font-bold text-[#111827]">{c.title}</h1>
-      <p className="mb-4 text-sm text-[#6B7280]">{c.subtitle}</p>
+      <h1 id="admins-title" className="text-2xl font-bold text-[var(--adm-text)]">{c.title}</h1>
+      <p className="mb-4 text-sm text-[var(--adm-muted)]">{c.subtitle}</p>
 
       <form
         onSubmit={(e) => { e.preventDefault(); void create(); }}
-        className="mb-6 rounded-[8px] border border-[#E0E0E0] bg-white p-4"
+        className="mb-6 rounded-[8px] border border-[var(--adm-border)] bg-[var(--adm-surface)] p-4"
       >
-        <h2 className="mb-3 text-base font-bold text-[#111827]">{c.add}</h2>
+        <h2 className="mb-3 text-base font-bold text-[var(--adm-text)]">{c.add}</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="text-xs font-semibold text-[#6B7280]">{c.username}
+          <label className="text-xs font-semibold text-[var(--adm-muted)]">{c.username}
             <input className={`${FIELD} mt-1`} value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required autoComplete="off" dir="ltr" />
           </label>
-          <label className="text-xs font-semibold text-[#6B7280]">{c.displayName}
+          <label className="text-xs font-semibold text-[var(--adm-muted)]">{c.displayName}
             <input className={`${FIELD} mt-1`} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />
           </label>
-          <label className="text-xs font-semibold text-[#6B7280]">{c.email} {c.emailOpt}
+          <label className="text-xs font-semibold text-[var(--adm-muted)]">{c.email} {c.emailOpt}
             <input type="email" className={`${FIELD} mt-1`} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="off" dir="ltr" />
           </label>
-          <label className="text-xs font-semibold text-[#6B7280]">{c.role}
+          <label className="text-xs font-semibold text-[var(--adm-muted)]">{c.role}
             <select className={`${FIELD} mt-1`} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
               <option value="operator">{c.operator}</option>
               <option value="viewer">{c.viewer}</option>
             </select>
           </label>
-          <label className="text-xs font-semibold text-[#6B7280]">{c.password}
+          <label className="text-xs font-semibold text-[var(--adm-muted)]">{c.password}
             <input type="password" className={`${FIELD} mt-1`} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={12} autoComplete="new-password" />
             <span className="mt-1 block font-normal">{c.passwordHint}</span>
           </label>
           <div className="flex items-end">
-            <button type="submit" disabled={busy} className="min-h-[48px] w-full rounded-[4px] bg-gold-400 px-4 font-bold text-brand-950 disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B8860B]">
+            <button type="submit" disabled={busy} className="min-h-[48px] w-full rounded-[4px] bg-[var(--adm-primary)] px-4 font-bold text-[var(--adm-primary-text)] disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B8860B]">
               {busy ? c.creating : c.create}
             </button>
           </div>
         </div>
-        {msg && <p role={msg.kind === 'err' ? 'alert' : 'status'} className={`mt-3 text-sm ${msg.kind === 'err' ? 'text-[#D32F2F]' : 'text-[#166534]'}`}>{msg.text}</p>}
+        {msg && <p role={msg.kind === 'err' ? 'alert' : 'status'} className={`mt-3 text-sm ${msg.kind === 'err' ? 'text-[var(--adm-error)]' : 'text-[#166534]'}`}>{msg.text}</p>}
       </form>
 
-      {state === 'error' && <p role="alert" className="mb-3 text-sm text-[#D32F2F]">{c.loadError}</p>}
-      {state === 'unavailable' && <p role="alert" className="mb-3 text-sm text-[#D32F2F]">{c.unavailable}</p>}
+      {state === 'error' && <p role="alert" className="mb-3 text-sm text-[var(--adm-error)]">{c.loadError}</p>}
+      {state === 'unavailable' && <p role="alert" className="mb-3 text-sm text-[var(--adm-error)]">{c.unavailable}</p>}
 
-      <div className="overflow-x-auto rounded-[8px] border border-[#E0E0E0] bg-white">
+      <div className="overflow-x-auto rounded-[8px] border border-[var(--adm-border)] bg-[var(--adm-surface)]">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <caption className="sr-only">{c.title}</caption>
           <thead>
-            <tr className="bg-[#F8F9FA] text-xs uppercase tracking-wide text-[#6B7280]">
+            <tr className="bg-[var(--adm-head)] text-xs uppercase tracking-wide text-[var(--adm-muted)]">
               {[c.name, c.role, c.status, c.created, ''].map((h, i) => <th key={i} scope="col" className="px-3 py-3 text-start font-semibold">{h}</th>)}
             </tr>
           </thead>
           <tbody>
-            {state === 'loading' && <tr><td colSpan={5} className="px-3 py-8 text-center text-[#6B7280]">{c.loading}</td></tr>}
-            {state === 'ok' && users.length === 0 && <tr><td colSpan={5} className="px-3 py-8 text-center text-[#6B7280]">{c.empty}</td></tr>}
+            {state === 'loading' && <tr><td colSpan={5} className="px-3 py-8 text-center text-[var(--adm-muted)]">{c.loading}</td></tr>}
+            {state === 'ok' && users.length === 0 && <tr><td colSpan={5} className="px-3 py-8 text-center text-[var(--adm-muted)]">{c.empty}</td></tr>}
             {state === 'ok' && users.map((u) => (
-              <tr key={u.id} className="border-t border-[#E0E0E0]">
+              <tr key={u.id} className="border-t border-[var(--adm-border)]">
                 <td className="px-3 py-3">
-                  <div className="font-semibold text-[#111827]">{u.displayName}</div>
-                  <div className="text-xs text-[#6B7280]" dir="ltr">{u.username}{u.email ? ` · ${u.email}` : ''}</div>
+                  <div className="font-semibold text-[var(--adm-text)]">{u.displayName}</div>
+                  <div className="text-xs text-[var(--adm-muted)]" dir="ltr">{u.username}{u.email ? ` · ${u.email}` : ''}</div>
                 </td>
-                <td className="px-3 py-3 text-[#374151]">{u.role}</td>
+                <td className="px-3 py-3 text-[var(--adm-text2)]">{u.role}</td>
                 <td className="px-3 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${u.disabledAt ? 'bg-[#FEE2E2] text-[#991B1B]' : 'bg-[#DCFCE7] text-[#166534]'}`}>
                     {u.disabledAt ? c.disabled : c.active}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-3 py-3 text-[#6B7280]" dir="ltr">{new Date(u.createdAt).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB')}</td>
+                <td className="whitespace-nowrap px-3 py-3 text-[var(--adm-muted)]" dir="ltr">{new Date(u.createdAt).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB')}</td>
                 <td className="px-3 py-3 text-end">
-                  <button type="button" onClick={() => void toggle(u)} className="min-h-[44px] rounded-[4px] border border-[#E0E0E0] px-3 text-sm font-semibold text-[#111827] hover:border-[#B8860B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B8860B]">
+                  <button type="button" onClick={() => void toggle(u)} className="min-h-[44px] rounded-[4px] border border-[var(--adm-border)] px-3 text-sm font-semibold text-[var(--adm-text)] hover:border-[#B8860B] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B8860B]">
                     {u.disabledAt ? c.enable : c.disable}
                   </button>
                 </td>

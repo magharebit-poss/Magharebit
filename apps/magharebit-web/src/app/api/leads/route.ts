@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { leadsRepo, Lead } from '@/lib/repositories/leads';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp';
 import { checkRateLimit } from '@/lib/rateLimit';
-import { isAdminRequest } from '@/lib/admin-auth';
+import { authenticateAdmin } from '@/lib/admin-auth';
 
 type LeadStatus = Lead['status'];
 
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
 // ── GET /api/leads — list all leads (admin only) ──────────────────────────────
 export async function GET(request: NextRequest) {
-  if (!isAdminRequest(request)) {
+  if (!(await authenticateAdmin(request))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -100,7 +100,8 @@ export async function GET(request: NextRequest) {
 
     const validStatuses: Array<LeadStatus | 'all'> = ['new', 'contacted', 'converted', 'rejected', 'activated', 'all'];
     const safeStatus = validStatuses.includes(status as LeadStatus | 'all') ? (status as LeadStatus | 'all') : 'all';
-    const { leads, total } = await leadsRepo.findAll({ page, limit, status: safeStatus });
+    const q = (searchParams.get('q') ?? '').slice(0, 100);
+    const { leads, total } = await leadsRepo.findAll({ page, limit, status: safeStatus, q });
     return NextResponse.json({ leads, total, page, limit });
   } catch (err) {
     console.error('[GET /api/leads]', err);

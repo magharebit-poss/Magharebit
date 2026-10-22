@@ -158,4 +158,44 @@ export const merchantsRepo = {
     )
     return raw ? toDoc(raw as Record<string, unknown>) : null
   },
+
+  /** Find a merchant by normalised phone (212XXXXXXXXX). */
+  async findByPhone(phone: string): Promise<MerchantDoc | null> {
+    const db = await getDb()
+    if (!db) return null
+    await ensureIndexes(db)
+    const raw = await db.collection('merchants').findOne({ phone })
+    return raw ? toDoc(raw as Record<string, unknown>) : null
+  },
+
+  /** Create an already-approved merchant (used when an admin activates a lead). */
+  async createApproved(input: {
+    phone: string; storeName: string; sector: string; city: string; locale: string
+    plan: LicensePlan; subscriptionEndsAt: Date; approvedBy: string
+  }): Promise<MerchantDoc | null> {
+    const db = await getDb()
+    if (!db) return null
+    await ensureIndexes(db)
+    const doc = {
+      phone: input.phone, storeName: input.storeName, sector: input.sector, city: input.city, locale: input.locale,
+      createdAt: new Date(), status: 'approved' as const, plan: input.plan,
+      subscriptionEndsAt: input.subscriptionEndsAt, approvedAt: new Date(), approvedBy: input.approvedBy,
+    }
+    const res = await db.collection('merchants').insertOne({ ...doc })
+    return toDoc({ _id: res.insertedId, ...doc })
+  },
+
+  /** Point an existing approved merchant at its newest subscription. */
+  async setSubscription(id: string, plan: LicensePlan, subscriptionEndsAt: Date): Promise<MerchantDoc | null> {
+    if (!isValidObjectId(id)) return null
+    const db = await getDb()
+    if (!db) return null
+    await ensureIndexes(db)
+    const raw = await db.collection('merchants').findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: { plan, subscriptionEndsAt } },
+      { returnDocument: 'after' }
+    )
+    return raw ? toDoc(raw as Record<string, unknown>) : null
+  },
 }
