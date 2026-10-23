@@ -18,7 +18,7 @@ type Lang = 'ar' | 'fr' | 'en';
 const COPY: Record<Lang, {
   title: string; username: string; usernameHint: string; password: string; signIn: string; signOut: string;
   errBad: string; errLimit: string; errConfig: string; errNet: string; loading: string;
-  nav: { merchants: string; licenses: string; leads: string; audit: string; admins: string };
+  nav: { merchants: string; licenses: string; leads: string; coupons: string; notifications: string; audit: string; admins: string };
   roles: Record<AdminRole, string>; menu: string; darkMode: string;
 }> = {
   ar: {
@@ -26,7 +26,7 @@ const COPY: Record<Lang, {
     password: 'كلمة المرور', signIn: 'دخول', signOut: 'خروج',
     errBad: 'بيانات الدخول غير صحيحة', errLimit: 'محاولات كثيرة، حاول لاحقاً',
     errConfig: 'لوحة الإدارة غير مهيأة على الخادم', errNet: 'تعذّر الاتصال بالخادم', loading: 'جارٍ التحميل…',
-    nav: { merchants: 'التجار', licenses: 'التراخيص', leads: 'العملاء المحتملون', audit: 'سجل التدقيق', admins: 'المسؤولون' },
+    nav: { merchants: 'التجار', licenses: 'التراخيص', leads: 'العملاء المحتملون', coupons: 'القسائم', notifications: 'الإشعارات', audit: 'سجل التدقيق', admins: 'المسؤولون' },
     roles: { owner: 'مالك', operator: 'مشغّل', viewer: 'مشاهد' }, menu: 'القائمة', darkMode: 'الوضع الداكن',
   },
   fr: {
@@ -34,7 +34,7 @@ const COPY: Record<Lang, {
     password: 'Mot de passe', signIn: 'Se connecter', signOut: 'Déconnexion',
     errBad: 'Identifiants incorrects', errLimit: 'Trop de tentatives, réessayez plus tard',
     errConfig: 'Console non configurée sur le serveur', errNet: 'Serveur injoignable', loading: 'Chargement…',
-    nav: { merchants: 'Commerçants', licenses: 'Licences', leads: 'Prospects', audit: 'Journal d’audit', admins: 'Administrateurs' },
+    nav: { merchants: 'Commerçants', licenses: 'Licences', leads: 'Prospects', coupons: 'Coupons', notifications: 'Notifications', audit: 'Journal d’audit', admins: 'Administrateurs' },
     roles: { owner: 'Propriétaire', operator: 'Opérateur', viewer: 'Lecteur' }, menu: 'Menu', darkMode: 'Mode sombre',
   },
   en: {
@@ -42,7 +42,7 @@ const COPY: Record<Lang, {
     password: 'Password', signIn: 'Sign in', signOut: 'Sign out',
     errBad: 'Incorrect credentials', errLimit: 'Too many attempts, try again later',
     errConfig: 'Console is not configured on the server', errNet: 'Cannot reach the server', loading: 'Loading…',
-    nav: { merchants: 'Merchants', licenses: 'Licenses', leads: 'Leads', audit: 'Audit log', admins: 'Admins' },
+    nav: { merchants: 'Merchants', licenses: 'Licenses', leads: 'Leads', coupons: 'Coupons', notifications: 'Notifications', audit: 'Audit log', admins: 'Admins' },
     roles: { owner: 'Owner', operator: 'Operator', viewer: 'Viewer' }, menu: 'Menu', darkMode: 'Dark mode',
   },
 };
@@ -177,6 +177,8 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     { href: `/${locale}/admin/merchants`, label: c.nav.merchants, show: true },
     { href: `/${locale}/admin/licenses`, label: c.nav.licenses, show: true },
     { href: `/${locale}/admin/leads`, label: c.nav.leads, show: true },
+    { href: `/${locale}/admin/coupons`, label: c.nav.coupons, show: true },
+    { href: `/${locale}/admin/notifications`, label: c.nav.notifications, show: true },
     { href: `/${locale}/admin/audit-log`, label: c.nav.audit, show: true },
     { href: `/${locale}/admin/admins`, label: c.nav.admins, show: actor.role === 'owner' },
   ];
