@@ -13,6 +13,7 @@
 
 import { Db } from 'mongodb'
 import { getDb } from '../mongodb'
+import { escapeRegex } from '../regex'
 import {
   LicenseRecord,
   LicensePlan,
@@ -101,6 +102,8 @@ export interface FindAllOptions {
   limit?:      number
   status?:     LicenseStatus | 'all'
   merchantId?: string
+  /** Case-insensitive search over key, store name and merchant id. */
+  q?:          string
 }
 
 export interface FindAllResult {
@@ -220,10 +223,15 @@ export const licensesRepo = {
       const filter: Record<string, unknown> = {}
       if (statusF)   filter.status     = statusF
       if (merchantF) filter.merchantId = merchantF
+      const q = (options?.q ?? '').trim().slice(0, 100)
+      if (q) {
+        const re = { $regex: escapeRegex(q), $options: 'i' }
+        filter.$or = [{ key: re }, { storeName: re }, { merchantId: re }]
+      }
 
       const [licenses, total] = await Promise.all([
         db.collection<LicenseRecord>('licenses')
-          .find(filter)
+          .find(filter, { projection: { _id: 0 } })
           .sort({ issuedAt: -1 })
           .skip(skip)
           .limit(limit)

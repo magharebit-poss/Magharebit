@@ -11,4 +11,6 @@ All except the unit check need a dev server on its own cache folder (`NEXT_DIST_
 | `license-token-unit.mjs` | Ed25519/JWT module: keys, claims, signing, the reference POS verifier, tamper/alg/kid/expiry/offline-window rules, rotation, and the contract test vector. No server needed. | 28 passed |
 | `license-v2-e2e.mjs` | v2 server: jwks, activate, terminal limits (incl. an 8-way race), validate refresh, suspend toggle, extend, revoke, release, audit. Needs a server started with a signing key (see the file header); `NO_KEY=1` mode checks fail-closed behaviour without a key. | 63 passed (+4 fail-closed) |
 
+| `merchants-licenses-ui-e2e.mjs` | Merchants + Licenses pages (fr + ar): filters, literal-regex search, suspend/reactivate switch, approve from drawer, terminal release, extend, revoke, viewer read-only, 375 px, audit entries. Needs a server with a signing key (see license-v2-e2e header). **Use `next build && next start`**: dev-mode on-demand compiles caused false timeouts. | 63 passed, 2 timing failures in the dev-mode run (both ar wait-window expiries; the same actions were verified by later checks) |
+
 Warm the pages first (first compile can take minutes on a slow machine), start a **fresh** database per run.

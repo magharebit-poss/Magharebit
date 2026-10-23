@@ -14,6 +14,8 @@ import { licensesRepo, LicensePlan } from '@/lib/repositories/licenses'
 import { isValidDuration } from '@/lib/license-key'
 import { authenticateAdmin, canWrite } from '@/lib/admin-auth'
 import { clientIp, recordAudit } from '@/lib/repositories/audit-logs'
+import { merchantsRepo } from '@/lib/repositories/merchants'
+import { getPlanLimits } from '@/lib/plans'
 
 const VALID_PLANS: LicensePlan[] = ['Starter', 'Business', 'Enterprise']
 
@@ -27,6 +29,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const limit       = Math.min(100, parseInt(searchParams.get('limit') ?? '50', 10))
   const statusParam = searchParams.get('status') ?? 'all'
   const merchantId  = searchParams.get('merchantId') ?? undefined
+  const q           = (searchParams.get('q') ?? '').slice(0, 100)
 
   // Lazily sweep expired licenses so the list is always accurate
   await licensesRepo.sweepExpired()
@@ -36,9 +39,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     limit,
     status: statusParam as 'all' | 'active' | 'expired' | 'revoked',
     merchantId,
+    q,
   })
 
-  return NextResponse.json({ licenses, total, page, limit })
+  // the admin table shows terminal usage against the plan limit
+  const withLimits = licenses.map((l) => ({ ...l, maxRegisters: getPlanLimits(l.plan).maxRegisters }))
+  return NextResponse.json({ licenses: withLimits, total, page, limit })
 }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -90,6 +96,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       plan,
       durationMonths,
     })
+    // an approved merchant follows its newest subscription
+    const merchant = merchantId ? await merchantsRepo.findByContact(merchantId) : null
+    if (merchant && merchant.status === 'approved') {
+      await merchantsRepo.setSubscription(merchant.id, plan, license.expiresAt)
+    }
     const auditRecorded = await recordAudit({
       actor, action: 'generateLicense', targetType: 'license', targetId: license.id,
       meta: { merchantId, plan, durationMonths, expiresAt: license.expiresAt.toISOString(), manual: true },

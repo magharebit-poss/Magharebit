@@ -18,16 +18,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { merchantsRepo, MerchantStatus } from '@/lib/repositories/merchants'
 import { licensesRepo } from '@/lib/repositories/licenses'
-import { isAdminRequest } from '@/lib/admin-auth'
+import { authenticateAdmin } from '@/lib/admin-auth'
+import type { LicensePlan } from '@/lib/license-key'
 
 const VALID_STATUSES: Array<MerchantStatus | 'all'> = ['pending', 'approved', 'suspended', 'all']
 
-function isAdminAuthed(req: NextRequest): boolean {
-  return isAdminRequest(req)
-}
+const VALID_PLANS: LicensePlan[] = ['Starter', 'Business', 'Enterprise']
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
-  if (!isAdminAuthed(req)) {
+  if (!(await authenticateAdmin(req))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -46,7 +45,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Sweep expired licenses so the list is always accurate
   await licensesRepo.sweepExpired()
 
-  const { merchants, total } = await merchantsRepo.findAll({ status, page, limit })
+  const sector = (searchParams.get('sector') ?? '').slice(0, 40) || undefined
+  const planParam = searchParams.get('plan') as LicensePlan | null
+  const plan = planParam && VALID_PLANS.includes(planParam) ? planParam : undefined
+  const q = (searchParams.get('q') ?? '').slice(0, 100)
+
+  const { merchants, total } = await merchantsRepo.findAll({ status, page, limit, sector, plan, q })
 
   return NextResponse.json({ merchants, total, page, limit })
 }

@@ -1,5 +1,6 @@
 import { Db } from 'mongodb'
 import { getDb } from '../mongodb'
+import { escapeRegex } from '../regex'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 
@@ -51,10 +52,6 @@ async function ensureIndexes(db: Db) {
   indexesCreated = true
 }
 
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 // ── Repository ───────────────────────────────────────────────────────────────
 export const leadsRepo = {
   async create(lead: Omit<Lead, 'id' | 'submittedAt' | 'status'>): Promise<Lead> {
@@ -93,7 +90,7 @@ export const leadsRepo = {
       await ensureIndexes(db)
       const filter: Record<string, unknown> = statusFilter ? { status: statusFilter } : {}
       if (q) {
-        const re = { $regex: escapeRe(q), $options: 'i' }
+        const re = { $regex: escapeRegex(q), $options: 'i' }
         filter.$or = [{ storeName: re }, { phone: re }, { city: re }, { businessType: re }]
       }
       const [leads, total] = await Promise.all([

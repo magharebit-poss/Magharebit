@@ -10,6 +10,7 @@
 
 import { Db, ObjectId } from 'mongodb'
 import { getDb } from '../mongodb'
+import { escapeRegex } from '../regex'
 import type { LicensePlan } from '../license-key'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -38,6 +39,10 @@ export interface FindMerchantsOptions {
   status?: MerchantStatus | 'all'
   page?:   number
   limit?:  number
+  sector?: string
+  plan?:   LicensePlan
+  /** Case-insensitive search over store name, phone, email and city. */
+  q?:      string
 }
 
 export interface FindMerchantsResult {
@@ -87,7 +92,14 @@ export const merchantsRepo = {
     if (!db) return { merchants: [], total: 0 }
 
     await ensureIndexes(db)
-    const filter = statusF ? { status: statusF } : {}
+    const filter: Record<string, unknown> = statusF ? { status: statusF } : {}
+    if (opts?.sector) filter.sector = opts.sector
+    if (opts?.plan) filter.plan = opts.plan
+    const q = (opts?.q ?? '').trim().slice(0, 100)
+    if (q) {
+        const re = { $regex: escapeRegex(q), $options: 'i' }
+      filter.$or = [{ storeName: re }, { phone: re }, { email: re }, { city: re }]
+    }
     const col = db.collection('merchants')
 
     const [rawDocs, total] = await Promise.all([
