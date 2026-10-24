@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { createHash, randomUUID } from 'crypto';
 import { verifyPin } from '../../services/pin-hash.js';
 import { normalizeLineItem } from '../../services/sales/line-items.js';
+import { staffManageRoutes } from '../staff/staff-manage-routes.js';
 import {
   checkDiscount,
   checkCashVariance,
@@ -3310,83 +3311,9 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
     return reply.send(r.rows);
   });
 
-  // ── Staff management CRUD ────────────────────────────────────────────────
-  const MGMT_ROLES = ['MANAGER', 'SUPERVISOR', 'OWNER'] as const;
-
-  fastify.get('/staff/manage', { config: { allowedRoles: MGMT_ROLES } }, async (request, reply) => {
-    const tenantId = request.auth?.tenant_id;
-    const r = await fastify.pg.query(
-      `SELECT staff_id, name_ar, name_fr, role, is_active, created_at
-       FROM staff WHERE tenant_id = $1 ORDER BY role, name_ar`,
-      [tenantId],
-    );
-    return reply.send(r.rows);
-  });
-
-  fastify.post<{ Body: { name_ar: string; name_fr?: string; role: string; pin: string } }>(
-    '/staff/manage',
-    { config: { allowedRoles: MGMT_ROLES } },
-    async (request, reply) => {
-      const tenantId = request.auth?.tenant_id;
-      const { name_ar, name_fr, role, pin } = request.body ?? {};
-      if (!name_ar?.trim()) return reply.status(400).send({ error: 'name_ar required' });
-      if (!pin || pin.length < 4) return reply.status(400).send({ error: 'PIN must be at least 4 digits' });
-      const { hashPin } = await import('../../services/pin-hash.js');
-      const pinHash = await hashPin(pin);
-      try {
-        const r = await fastify.pg.query(
-          `INSERT INTO staff (tenant_id, name_ar, name_fr, role, pin_hash, is_active)
-           VALUES ($1,$2,$3,$4,$5,true)
-           RETURNING staff_id, name_ar, name_fr, role, is_active`,
-          [tenantId, name_ar.trim(), name_fr ?? null, role, pinHash],
-        );
-        return reply.status(201).send(r.rows[0]);
-      } catch (err: unknown) {
-        fastify.log.error({ err }, '[staff] insert failed');
-        return reply.status(500).send({ error: err instanceof Error ? err.message : 'Internal error' });
-      }
-    },
-  );
-
-  fastify.patch<{
-    Params: { id: string };
-    Body: { name_ar?: string; name_fr?: string; role?: string; pin?: string; is_active?: boolean };
-  }>(
-    '/staff/manage/:id',
-    { config: { allowedRoles: MGMT_ROLES } },
-    async (request, reply) => {
-      const tenantId = request.auth?.tenant_id;
-      const { id } = request.params;
-      const { name_ar, name_fr, role, pin, is_active } = request.body ?? {};
-
-      const updates: string[] = [];
-      const values: unknown[] = [];
-      let idx = 1;
-
-      if (name_ar !== undefined) { updates.push(`name_ar = $${idx++}`); values.push(name_ar.trim()); }
-      if (name_fr !== undefined) { updates.push(`name_fr = $${idx++}`); values.push(name_fr); }
-      if (role    !== undefined) { updates.push(`role = $${idx++}`);    values.push(role); }
-      if (is_active !== undefined) { updates.push(`is_active = $${idx++}`); values.push(is_active); }
-      if (pin !== undefined && pin.length >= 4) {
-        const { hashPin } = await import('../../services/pin-hash.js');
-        const pinHash = await hashPin(pin);
-        updates.push(`pin_hash = $${idx++}`);
-        values.push(pinHash);
-      }
-
-      if (updates.length === 0) return reply.status(400).send({ error: 'nothing to update' });
-
-      values.push(id, tenantId);
-      const r = await fastify.pg.query(
-        `UPDATE staff SET ${updates.join(', ')}
-         WHERE staff_id = $${idx} AND tenant_id = $${idx + 1}
-         RETURNING staff_id, name_ar, name_fr, role, is_active`,
-        values,
-      );
-      if (!r.rows[0]) return reply.status(404).send({ error: 'not found' });
-      return reply.send(r.rows[0]);
-    },
-  );
+  // ── Staff management: extracted to api/staff/staff-manage-routes.ts (rank rules in
+  //    services/staff-access.ts) so privilege escalation is enforced and unit-tested.
+  await fastify.register(staffManageRoutes);
 
   // ─── Product management routes ────────────────────────────────────────────
   const PROD_WRITE_ROLES = ['INVENTORY', 'MANAGER', 'SUPERVISOR', 'OWNER'] as const;

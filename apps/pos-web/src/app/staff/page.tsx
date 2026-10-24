@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../context/LanguageContext';
 import { BrandLockup } from '../../components/brand/BrandLockup';
 
-const ROLES = ['CASHIER', 'SENIOR_CASHIER', 'INVENTORY', 'MANAGER', 'SUPERVISOR'] as const;
+// Display order only. WHICH of these a user may assign is decided by the backend
+// (GET /api/staff/assignable-roles); the page offers just those.
+const ROLES = ['CASHIER', 'SENIOR_CASHIER', 'INVENTORY', 'MANAGER', 'SUPERVISOR', 'OWNER'] as const;
 type RoleKey = (typeof ROLES)[number];
 
 const ROLE_COLOR: Record<string, string> = {
@@ -23,6 +25,8 @@ interface StaffMember {
   name_fr:   string | null;
   role:      string;
   is_active: boolean;
+  // Whether the signed-in user may edit or deactivate this account (decided by the backend).
+  can_modify?: boolean;
 }
 
 type Mode = 'list' | 'add' | 'edit';
@@ -43,6 +47,7 @@ export default function StaffPage() {
   const [nameAr,  setNameAr]  = useState('');
   const [nameFr,  setNameFr]  = useState('');
   const [role,    setRole]    = useState<RoleKey>('CASHIER');
+  const [assignable, setAssignable] = useState<RoleKey[]>([]);
   const [pin,     setPin]     = useState('');
   const [pinConf, setPinConf] = useState('');
 
@@ -58,8 +63,19 @@ export default function StaffPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/staff/manage', { headers: { authorization: `Bearer ${token}` } });
+      const headers = { authorization: `Bearer ${token}` };
+      const [res, rolesRes] = await Promise.all([
+        fetch('/api/staff/manage', { headers }),
+        fetch('/api/staff/assignable-roles', { headers }),
+      ]);
       if (res.ok) setStaff((await res.json()) as StaffMember[]);
+      // If the roles call fails the page offers none, which is the safe direction.
+      if (rolesRes.ok) {
+        const data = (await rolesRes.json()) as { assignable_roles?: string[] };
+        setAssignable(ROLES.filter((r) => data.assignable_roles?.includes(r)));
+      } else {
+        setAssignable([]);
+      }
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, [token]);
@@ -68,7 +84,7 @@ export default function StaffPage() {
 
   function openAdd() {
     setEditing(null);
-    setNameAr(''); setNameFr(''); setRole('CASHIER'); setPin(''); setPinConf('');
+    setNameAr(''); setNameFr(''); setRole(assignable.includes('CASHIER') ? 'CASHIER' : (assignable[0] ?? 'CASHIER')); setPin(''); setPinConf('');
     setError(''); setSuccess('');
     setMode('add');
   }
@@ -102,8 +118,17 @@ export default function StaffPage() {
         headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) { setError(data.error ?? ts.errorSave); return; }
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        // The backend answers with fixed codes; show the dictionary text, never the code.
+        setError(
+          res.status === 403 ? ts.errorNotAllowed
+          : data.error === 'invalid_pin' ? ts.errorPinLength
+          : data.error === 'name_ar required' ? ts.errorNameRequired
+          : ts.errorSave,
+        );
+        return;
+      }
 
       setSuccess(mode === 'add' ? ts.successAdd : ts.successEdit);
       await load();
@@ -179,22 +204,27 @@ export default function StaffPage() {
                     background: ROLE_COLOR[s.role] ?? 'rgba(107,114,128,0.9)', color: '#fff',
                     borderRadius: '999px', padding: '0.2rem 0.65rem', fontSize: '0.72rem', fontWeight: 700,
                   }}>{roleLabel(s.role)}</span>
-                  <button
-                    onClick={() => openEdit(s)}
-                    style={{
-                      background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
-                      borderRadius: '8px', color: '#fff', padding: '0.35rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem',
-                    }}
-                  >{ts.editButton}</button>
-                  <button
-                    onClick={() => void toggleActive(s)}
-                    style={{
-                      background: s.is_active ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
-                      border: `1px solid ${s.is_active ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`,
-                      borderRadius: '8px', color: s.is_active ? '#FCA5A5' : '#6EE7B7',
-                      padding: '0.35rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem',
-                    }}
-                  >{s.is_active ? ts.deactivate : ts.activate}</button>
+                  {/* Edit and (de)activate only on accounts this user may change (can_modify). */}
+                  {s.can_modify && (
+                    <>
+                      <button
+                        onClick={() => openEdit(s)}
+                        style={{
+                          background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+                          borderRadius: '8px', color: '#fff', padding: '0.35rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem',
+                        }}
+                      >{ts.editButton}</button>
+                      <button
+                        onClick={() => void toggleActive(s)}
+                        style={{
+                          background: s.is_active ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)',
+                          border: `1px solid ${s.is_active ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`,
+                          borderRadius: '8px', color: s.is_active ? '#FCA5A5' : '#6EE7B7',
+                          padding: '0.35rem 0.7rem', cursor: 'pointer', fontSize: '0.8rem',
+                        }}
+                      >{s.is_active ? ts.deactivate : ts.activate}</button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -236,7 +266,7 @@ export default function StaffPage() {
                 {ts.roleLabel}
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                {ROLES.map((r) => (
+                {ROLES.filter((r) => assignable.includes(r)).map((r) => (
                   <button
                     key={r}
                     onClick={() => setRole(r)}

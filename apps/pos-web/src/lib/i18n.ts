@@ -959,7 +959,7 @@ export interface Translations {
     errorConnection: string;
     successAdd: string;
     successEdit: string;
-    roles: { CASHIER: string; SENIOR_CASHIER: string; INVENTORY: string; MANAGER: string; SUPERVISOR: string };
+    roles: { CASHIER: string; SENIOR_CASHIER: string; INVENTORY: string; MANAGER: string; SUPERVISOR: string; OWNER: string };
   };
   alerts: {
     types: { rapid_voids: string; void_spike: string; discount_over_limit: string; unusual_discount: string; cash_discrepancy: string; price_override: string; unusual_refund: string };
@@ -993,6 +993,7 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       errorUnknown: 'خطأ غير معروف',
       role: { CASHIER: 'كاشير', MANAGER: 'مدير', SUPERVISOR: 'مشرف' },
       licenseTitle: 'هذا الترخيص غير مُفعّل',
+    errorNotAllowed: string;
       licenseBody: 'تعذّر التحقق من ترخيص البرنامج. يرجى التواصل مع الدعم لتفعيل أو تجديد الاشتراك.',
       licenseSupport: 'الدعم',
     },
@@ -1954,7 +1955,8 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       errorConnection: 'تعذر الاتصال بالخادم',
       successAdd: 'تم إضافة الموظف بنجاح ✓',
       successEdit: 'تم تحديث الموظف بنجاح ✓',
-      roles: { CASHIER: 'كاشير', SENIOR_CASHIER: 'كاشير أول', INVENTORY: 'مسؤول المخزون', MANAGER: 'مدير', SUPERVISOR: 'مشرف' },
+      errorNotAllowed: 'دورك لا يسمح بهذا الإجراء',
+      roles: { CASHIER: 'كاشير', SENIOR_CASHIER: 'كاشير أول', INVENTORY: 'مسؤول المخزون', MANAGER: 'مدير', SUPERVISOR: 'مشرف', OWNER: 'المالك' },
     },
     alerts: {
       types: { rapid_voids: 'إلغاء متكرر ⚠️', void_spike: 'ارتفاع معدل الإلغاء', discount_over_limit: 'خصم استثنائي', unusual_discount: 'خصم غير معتاد', cash_discrepancy: 'فرق في الصندوق 💰', price_override: 'تغيير سعر', unusual_refund: 'استرداد مشبوه' },
@@ -2947,7 +2949,8 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       errorConnection: 'Impossible de contacter le serveur',
       successAdd: 'Employé ajouté avec succès ✓',
       successEdit: 'Employé mis à jour ✓',
-      roles: { CASHIER: 'Caissier', SENIOR_CASHIER: 'Caissier Senior', INVENTORY: 'Responsable Stock', MANAGER: 'Manager', SUPERVISOR: 'Superviseur' },
+      errorNotAllowed: "Votre rôle n'autorise pas cette action",
+      roles: { CASHIER: 'Caissier', SENIOR_CASHIER: 'Caissier Senior', INVENTORY: 'Responsable Stock', MANAGER: 'Manager', SUPERVISOR: 'Superviseur', OWNER: 'Propriétaire' },
     },
     alerts: {
       types: { rapid_voids: 'Annulations répétées ⚠️', void_spike: "Pic d'annulations", discount_over_limit: 'Remise exceptionnelle', unusual_discount: 'Remise inhabituelle', cash_discrepancy: 'Écart de caisse 💰', price_override: 'Modification de prix', unusual_refund: 'Remboursement suspect' },
@@ -3940,7 +3943,8 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       errorConnection: 'Could not connect to server',
       successAdd: 'Staff member added ✓',
       successEdit: 'Staff member updated ✓',
-      roles: { CASHIER: 'Cashier', SENIOR_CASHIER: 'Senior Cashier', INVENTORY: 'Stock Manager', MANAGER: 'Manager', SUPERVISOR: 'Supervisor' },
+      errorNotAllowed: 'Your role is not allowed to do this',
+      roles: { CASHIER: 'Cashier', SENIOR_CASHIER: 'Senior Cashier', INVENTORY: 'Stock Manager', MANAGER: 'Manager', SUPERVISOR: 'Supervisor', OWNER: 'Owner' },
     },
     alerts: {
       types: { rapid_voids: 'Repeated voids ⚠️', void_spike: 'Void spike', discount_over_limit: 'Excessive discount', unusual_discount: 'Unusual discount', cash_discrepancy: 'Cash discrepancy 💰', price_override: 'Price override', unusual_refund: 'Suspicious refund' },
