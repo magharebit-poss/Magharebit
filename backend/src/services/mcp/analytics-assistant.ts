@@ -122,6 +122,8 @@ export async function askAssistant(params: {
   question:   string;
   history:    AssistantMessage[];
   lang?:      AssistantLang;
+  /** The tenant's own AI key, when it configured one (else the shared env key is used). */
+  apiKey?:    string;
   toolRunner: (name: string, args: Record<string, unknown>) => Promise<unknown>;
 }): Promise<string> {
   if (process.env.ASSISTANT_STUB === 'true') {
@@ -129,7 +131,7 @@ export async function askAssistant(params: {
       `يرجى إضافة رصيد Anthropic لتفعيل الإجابات الحقيقية.`;
   }
 
-  const llm = createLLMClient();
+  const llm = createLLMClient(params.apiKey ? { anthropicApiKey: params.apiKey } : {});
   const systemPrompt = buildSystemPrompt(params.lang);
 
   const messages: LLMMessage[] = [

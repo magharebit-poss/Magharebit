@@ -35,10 +35,11 @@ export interface LLMClient {
   }): Promise<LLMResponse>;
 }
 
-// Anthropic adapter
-export function createAnthropicClient(): LLMClient {
+// Anthropic adapter. `apiKey` is a tenant's own key; absent → the shared environment key.
+// A client is built per call and never cached, so keys cannot cross tenants.
+export function createAnthropicClient(apiKey?: string): LLMClient {
   const client = new Anthropic({
-    apiKey: process.env['ANTHROPIC_API_KEY'],
+    apiKey: apiKey ?? process.env['ANTHROPIC_API_KEY'],
   });
 
   return {
@@ -110,7 +111,11 @@ export function createOllamaClient(
   };
 }
 
-export function createLLMClient(): LLMClient {
+export function createLLMClient(opts: { anthropicApiKey?: string } = {}): LLMClient {
+  // A tenant that configured its own key uses it, even when a shared Ollama is set.
+  if (opts.anthropicApiKey) {
+    return createAnthropicClient(opts.anthropicApiKey);
+  }
   if (process.env['OLLAMA_URL']) {
     return createOllamaClient(
       process.env['OLLAMA_URL'],

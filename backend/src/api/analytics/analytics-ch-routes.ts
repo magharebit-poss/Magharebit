@@ -2,6 +2,8 @@ import type { FastifyInstance } from 'fastify';
 import { getClickHouseClient, pingClickHouse } from '../../services/analytics/clickhouse-client.js';
 import { runTool } from '../../services/mcp/analytics-server.js';
 import { askAssistant } from '../../services/mcp/analytics-assistant.js';
+import { loadTenantAiKey } from '../../services/integrations.js';
+import { scrubSecrets } from '../../services/credentials-crypto.js';
 import { buildCashFlowReport } from '../../services/analytics/cashflow-predictor.js';
 
 const ANALYTICS_ROLES = ['MANAGER', 'SUPERVISOR', 'OWNER'] as const;
@@ -801,22 +803,33 @@ export async function analyticsChRoutes(fastify: FastifyInstance): Promise<void>
         return reply.status(400).send({ error: 'question too long (max 500)' });
       }
 
+      // The tenant's own AI key when it configured one; otherwise the shared key.
+      // If a stored key cannot be read we stop: using the shared key instead
+      // would silently bill and expose this merchant's data on another account.
+      let tenantKey: string | null = null;
+      try {
+        tenantKey = await loadTenantAiKey(fastify.pg, tenantId);
+      } catch {
+        return reply.status(503).send({ error: 'assistant_credentials_unavailable' });
+      }
+
       try {
         const answer = await askAssistant({
           question: question.trim(),
           history:  history.slice(-6),
           lang:     answerLang,
+          ...(tenantKey ? { apiKey: tenantKey } : {}),
           toolRunner: (name, args) =>
             runTool({ tenantId, pool: fastify.pg }, name, args),
         });
 
         return reply.send({ answer });
       } catch (err) {
-        console.error('[assistant]', err);
-        return reply.status(500).send({
-          error: String(err),
-          stack: err instanceof Error ? err.stack : undefined,
-        });
+        // Log the error object without secrets; the response never carries a stack
+        // trace, and the message is scrubbed of the tenant key.
+        const message = scrubSecrets(String(err), [tenantKey]);
+        console.error('[assistant]', scrubSecrets(err instanceof Error ? (err.stack ?? message) : message, [tenantKey]));
+        return reply.status(500).send({ error: message });
       }
     },
   );

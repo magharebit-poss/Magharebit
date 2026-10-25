@@ -1132,6 +1132,16 @@ export default function POSPage() {
                 🏪
               </button>
             )}
+            {(cashierRole === 'SUPERVISOR' || cashierRole === 'OWNER') && (
+              <button
+                onClick={() => router.push('/settings')}
+                title={t.nav.settings}
+                aria-label={t.nav.settings}
+                className="border border-[#E2E8F0] text-[#64748B] text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#F1F5F9] transition-colors flex items-center gap-2"
+              >
+                ⚙️
+              </button>
+            )}
             {modules.tables && (
               <button
                 onClick={() => setShowTableMap(true)}

@@ -794,6 +794,42 @@ export interface Translations {
   };
   nav: {
     branches: string;
+    settings: string;
+  };
+  settings: {
+    title: string;
+    back: string;
+    loading: string;
+    errorLoad: string;
+    errorSave: string;
+    errorInvalid: string;
+    saved: string;
+    save: string;
+    updated: string;
+    digestTitle: string;
+    digestHint: string;
+    phoneLabel: string;
+    enabledLabel: string;
+    languageLabel: string;
+    timeLabel: string;
+    timeHint: string;
+    integrationsTitle: string;
+    integrationsHint: string;
+    restricted: string;
+    aiKey: string;
+    greenInstance: string;
+    greenToken: string;
+    configured: string;
+    notConfigured: string;
+    keepHint: string;
+    clear: string;
+    testGreen: string;
+    testing: string;
+    testConnected: string;
+    testState: string;
+    testNotConfigured: string;
+    testFailed: string;
+    encryptionMissing: string;
   };
   branches: {
     title: string;
@@ -957,6 +993,7 @@ export interface Translations {
     errorPinMismatch: string;
     errorSave: string;
     errorConnection: string;
+    errorNotAllowed: string;
     successAdd: string;
     successEdit: string;
     roles: { CASHIER: string; SENIOR_CASHIER: string; INVENTORY: string; MANAGER: string; SUPERVISOR: string; OWNER: string };
@@ -993,7 +1030,6 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       errorUnknown: 'خطأ غير معروف',
       role: { CASHIER: 'كاشير', MANAGER: 'مدير', SUPERVISOR: 'مشرف' },
       licenseTitle: 'هذا الترخيص غير مُفعّل',
-    errorNotAllowed: string;
       licenseBody: 'تعذّر التحقق من ترخيص البرنامج. يرجى التواصل مع الدعم لتفعيل أو تجديد الاشتراك.',
       licenseSupport: 'الدعم',
     },
@@ -1688,6 +1724,42 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
     },
     nav: {
       branches: 'الفروع',
+      settings: 'الإعدادات',
+    },
+    settings: {
+      title: 'الإعدادات',
+      back: 'رجوع',
+      loading: 'جارٍ التحميل...',
+      errorLoad: 'تعذّر تحميل الإعدادات',
+      errorSave: 'تعذّر الحفظ',
+      errorInvalid: 'قيمة غير صالحة',
+      saved: 'تم الحفظ',
+      save: 'حفظ',
+      updated: 'آخر تحديث',
+      digestTitle: 'التقرير اليومي عبر واتساب',
+      digestHint: 'يُرسَل ملخص مبيعات اليوم السابق إلى هذا الرقم.',
+      phoneLabel: 'رقم واتساب (مع رمز الدولة)',
+      enabledLabel: 'تفعيل التقرير اليومي',
+      languageLabel: 'لغة التقرير',
+      timeLabel: 'وقت الإرسال',
+      timeHint: 'بتوقيت متجرك، على فترات من 15 دقيقة.',
+      integrationsTitle: 'التكاملات',
+      integrationsHint: 'تُحفَظ المفاتيح مشفّرة ولا تُعرَض مرة أخرى بعد الحفظ.',
+      restricted: 'يمكن للمشرف أو المالك فقط تغيير المفاتيح.',
+      aiKey: 'مفتاح المساعد الذكي (Anthropic)',
+      greenInstance: 'معرّف نسخة Green API',
+      greenToken: 'رمز Green API',
+      configured: 'مُهيَّأ',
+      notConfigured: 'غير مُهيَّأ (يُستخدم الإعداد المشترك)',
+      keepHint: 'اتركه فارغاً للإبقاء على القيمة الحالية',
+      clear: 'مسح',
+      testGreen: 'اختبار Green API',
+      testing: 'جارٍ الاختبار...',
+      testConnected: 'متصل ✓',
+      testState: 'الحالة',
+      testNotConfigured: 'لا توجد بيانات اعتماد للاختبار',
+      testFailed: 'فشل الاتصال',
+      encryptionMissing: 'مفتاح التشفير غير مضبوط على الخادم. اطلب من مسؤول النظام إضافته.',
     },
     branches: {
       title: 'الفروع',
@@ -2682,6 +2754,42 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
     },
     nav: {
       branches: 'Succursales',
+      settings: 'Paramètres',
+    },
+    settings: {
+      title: 'Paramètres',
+      back: 'Retour',
+      loading: 'Chargement...',
+      errorLoad: 'Impossible de charger les paramètres',
+      errorSave: "Échec de l'enregistrement",
+      errorInvalid: 'Valeur invalide',
+      saved: 'Enregistré',
+      save: 'Enregistrer',
+      updated: 'Dernière mise à jour',
+      digestTitle: 'Rapport quotidien WhatsApp',
+      digestHint: 'Un résumé des ventes de la veille est envoyé à ce numéro.',
+      phoneLabel: 'Numéro WhatsApp (avec indicatif)',
+      enabledLabel: 'Activer le rapport quotidien',
+      languageLabel: 'Langue du rapport',
+      timeLabel: "Heure d'envoi",
+      timeHint: 'Heure locale du commerce, par tranches de 15 minutes.',
+      integrationsTitle: 'Intégrations',
+      integrationsHint: "Les clés sont chiffrées et ne sont plus jamais affichées après l'enregistrement.",
+      restricted: 'Seuls un superviseur ou le propriétaire peuvent modifier les clés.',
+      aiKey: "Clé de l'assistant IA (Anthropic)",
+      greenInstance: "Identifiant d'instance Green API",
+      greenToken: 'Jeton Green API',
+      configured: 'Configuré',
+      notConfigured: 'Non configuré (la configuration partagée est utilisée)',
+      keepHint: 'Laisser vide pour conserver la valeur actuelle',
+      clear: 'Effacer',
+      testGreen: 'Tester Green API',
+      testing: 'Test en cours...',
+      testConnected: 'Connecté ✓',
+      testState: 'État',
+      testNotConfigured: 'Aucun identifiant à tester',
+      testFailed: 'Échec de la connexion',
+      encryptionMissing: "La clé de chiffrement n'est pas configurée sur le serveur. Demandez à l'administrateur de l'ajouter.",
     },
     branches: {
       title: 'Succursales',
@@ -3676,6 +3784,42 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
     },
     nav: {
       branches: 'Branches',
+      settings: 'Settings',
+    },
+    settings: {
+      title: 'Settings',
+      back: 'Back',
+      loading: 'Loading...',
+      errorLoad: 'Could not load settings',
+      errorSave: 'Could not save',
+      errorInvalid: 'Invalid value',
+      saved: 'Saved',
+      save: 'Save',
+      updated: 'Last updated',
+      digestTitle: 'Daily WhatsApp report',
+      digestHint: "A summary of the previous day's sales is sent to this number.",
+      phoneLabel: 'WhatsApp number (with country code)',
+      enabledLabel: 'Enable the daily report',
+      languageLabel: 'Report language',
+      timeLabel: 'Send time',
+      timeHint: 'Store local time, in 15-minute steps.',
+      integrationsTitle: 'Integrations',
+      integrationsHint: 'Keys are stored encrypted and are never shown again after saving.',
+      restricted: 'Only a supervisor or the owner can change keys.',
+      aiKey: 'AI assistant key (Anthropic)',
+      greenInstance: 'Green API instance ID',
+      greenToken: 'Green API token',
+      configured: 'Configured',
+      notConfigured: 'Not configured (the shared setup is used)',
+      keepHint: 'Leave empty to keep the current value',
+      clear: 'Clear',
+      testGreen: 'Test Green API',
+      testing: 'Testing...',
+      testConnected: 'Connected ✓',
+      testState: 'State',
+      testNotConfigured: 'No credentials to test',
+      testFailed: 'Connection failed',
+      encryptionMissing: 'The encryption key is not set on the server. Ask the administrator to add it.',
     },
     branches: {
       title: 'Branches',

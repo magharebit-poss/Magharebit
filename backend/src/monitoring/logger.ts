@@ -32,7 +32,7 @@ const LOG_LEVEL = process.env['LOG_LEVEL'] ?? DEFAULT_LEVEL;
 // Pino redact paths — prevents PII appearing in any log line
 // ---------------------------------------------------------------------------
 
-const REDACT_PATHS: string[] = [
+export const REDACT_PATHS: string[] = [
   // Payment fields (LAW 5 / CI gate 02)
   'req.body.card_number',
   'req.body.pan',
@@ -57,6 +57,16 @@ const REDACT_PATHS: string[] = [
   'req.headers["x-device-id"]',
   'req.headers.authorization',
   'req.headers["x-api-key"]',
+
+  // Per-tenant integration secrets (PUT /settings/integrations)
+  'req.body.ai_key',
+  'req.body.green_token',
+  'req.body.green_instance_id',
+  '*.ai_key',
+  '*.green_token',
+  '*.green_instance_id',
+  '*.apiKey',
+  '*.apiToken',
 
   // Response body mirrors
   'res.body.masterSecret',

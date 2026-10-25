@@ -52,6 +52,8 @@ import { productRoutes } from './api/products/product-routes.js';
 import { tenantRoutes } from './api/tenants/tenant-routes.js';
 import { syncRoutes } from './api/sync/sync-routes.js';
 import { digestRoutes } from './api/digest/digest-routes.js';
+import { integrationsRoutes } from './api/settings/integrations-routes.js';
+import { REDACT_PATHS } from './monitoring/logger.js';
 import { sendDigestsDue } from './services/digest-service.js';
 import { markdownRoutes } from './api/markdown/markdown-routes.js';
 import { computeMarkdowns } from './services/markdown-engine.js';
@@ -109,6 +111,8 @@ async function main() {
   const app = Fastify({
     logger: {
       level: process.env['LOG_LEVEL'] ?? 'info',
+      // Same redaction list as the structured loggers (secrets, PINs, auth headers).
+      redact: { paths: REDACT_PATHS, censor: '[REDACTED]' },
       transport: process.env['NODE_ENV'] !== 'production'
         ? { target: 'pino-pretty', options: { colorize: true } }
         : undefined,
@@ -319,6 +323,12 @@ async function main() {
   await app.register(async (scope) => {
     await scope.register(rateLimit, { max: 60, timeWindow: '1 minute' });
     await scope.register(digestRoutes);
+  });
+
+  // Integrations settings scope — per-tenant credentials (SUPERVISOR/OWNER write).
+  await app.register(async (scope) => {
+    await scope.register(rateLimit, { max: 30, timeWindow: '1 minute' });
+    await scope.register(integrationsRoutes);
   });
 
   // KDS scope — Kitchen Display System. Higher rate limit for frequent polling.

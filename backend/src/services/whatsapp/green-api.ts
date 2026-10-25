@@ -11,12 +11,25 @@ interface GreenApiSendResponse {
   idMessage?: string;
 }
 
+/** A tenant's own Green API credentials. Absent → the shared environment ones. */
+export interface GreenApiCredentials {
+  instanceId: string;
+  apiToken: string;
+}
+
 export class GreenApiProvider implements WhatsAppProvider {
   readonly name = 'green-api';
 
+  // One provider instance per send, never shared across tenants.
+  constructor(private readonly creds?: GreenApiCredentials) {}
+
   async send(message: WhatsAppMessage): Promise<WhatsAppSendResult> {
-    const instanceId = process.env['GREENAPI_INSTANCE_ID'];
-    const apiToken   = process.env['GREENAPI_API_TOKEN'];
+    const instanceId = this.creds?.instanceId ?? process.env['GREENAPI_INSTANCE_ID'];
+    const apiToken   = this.creds?.apiToken   ?? process.env['GREENAPI_API_TOKEN'];
+    // The token is part of the request URL, so scrub it from anything we return.
+    const scrub = (text: string): string =>
+      [instanceId, apiToken].reduce<string>(
+        (t, s) => (s && s.length >= 4 ? t.split(s).join('[REDACTED]') : t), text);
 
     if (!instanceId || !apiToken) {
       console.warn('[green-api] GREENAPI_INSTANCE_ID or GREENAPI_API_TOKEN not set — skipping send');
@@ -38,7 +51,7 @@ export class GreenApiProvider implements WhatsAppProvider {
 
       if (!res.ok) {
         const detail = await res.text().catch(() => `HTTP ${res.status}`);
-        return { success: false, error: `green-api HTTP ${res.status}: ${detail}` };
+        return { success: false, error: scrub(`green-api HTTP ${res.status}: ${detail}`) };
       }
 
       const data = (await res.json()) as GreenApiSendResponse;
@@ -49,7 +62,7 @@ export class GreenApiProvider implements WhatsAppProvider {
       return { success: true, messageId: data.idMessage };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'unknown';
-      return { success: false, error: `green-api fetch error: ${msg}` };
+      return { success: false, error: scrub(`green-api fetch error: ${msg}`) };
     }
   }
 }

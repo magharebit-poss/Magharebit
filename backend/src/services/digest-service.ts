@@ -2,6 +2,7 @@ import type { Pool } from 'pg';
 import { buildDigestData } from './digest-query.js';
 import { formatDigest, type DigestLanguage } from './digest-formatter.js';
 import { getWhatsAppProvider } from './whatsapp/provider-factory.js';
+import { loadTenantGreenCreds } from './integrations.js';
 
 /** The scheduler ticks every DIGEST_TICK_MINUTES; digest_time is floored to a tick. */
 export const DIGEST_TICK_MINUTES = 15;
@@ -61,7 +62,17 @@ export async function sendDailyDigest(
     const data = await buildDigestData(pg, tenantId, timezone);
     const body = formatDigest(data, language);
 
-    const provider = getWhatsAppProvider();
+    // The tenant's own Green API account when configured, else the shared one.
+    // If its stored credentials cannot be decrypted we stop: falling back to the
+    // shared account would send this merchant's data through someone else's number.
+    let tenantCreds: Awaited<ReturnType<typeof loadTenantGreenCreds>>;
+    try {
+      tenantCreds = await loadTenantGreenCreds(pg, tenantId);
+    } catch {
+      console.warn(`[digest] tenant ${tenantId}: stored Green API credentials unreadable, skipping send`);
+      return { tenantId, sent: false, skipped: false, error: 'tenant credentials unreadable' };
+    }
+    const provider = getWhatsAppProvider(tenantCreds ?? undefined);
     const result = await provider.send({ to: phone, body });
 
     if (result.success) {
