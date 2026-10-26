@@ -18,6 +18,8 @@ export interface ReceiptPrintInfo {
 
 const PROVISIONAL_PREFIX = 'LOCAL-';
 
+const warnedTimeZones = new Set<string>();
+
 /** Provisional number for a sale that is queued locally. Same shape the on-screen receipt already uses. */
 export function provisionalReceiptNumber(localId: string): string {
   return `${PROVISIONAL_PREFIX}${localId.slice(0, 8).toUpperCase()}`;
@@ -73,6 +75,10 @@ export function formatReceiptDateTime(iso: string, timeZone: string = DEFAULT_TI
   } catch {
     // Unknown time zone name: fall back to the default rather than printing nothing.
     if (timeZone === DEFAULT_TIME_ZONE) return '';
+    if (!warnedTimeZones.has(timeZone)) {
+      warnedTimeZones.add(timeZone); // once per name, so a misconfigured tenant does not flood the log
+      console.warn(`[receipt] unknown time zone "${timeZone}", using ${DEFAULT_TIME_ZONE}`);
+    }
     return formatReceiptDateTime(iso, DEFAULT_TIME_ZONE);
   }
   const get = (type: string): string => parts.find((p) => p.type === type)?.value ?? '';

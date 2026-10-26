@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildPrintInfo,
   DEFAULT_TIME_ZONE,
@@ -53,8 +53,14 @@ describe('formatReceiptDateTime', () => {
       expect(formatReceiptDateTime(iso)).toMatch(SHAPE);
     }
   });
-  it('an unknown time zone falls back to Africa/Casablanca instead of printing nothing', () => {
+  it('an unknown time zone falls back to Africa/Casablanca instead of printing nothing, and warns once', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     expect(formatReceiptDateTime('2026-10-25T17:20:05Z', 'Not/AZone')).toBe('25/10/2026 18:20:05');
+    expect(formatReceiptDateTime('2026-10-26T10:00:00Z', 'Not/AZone')).toBe('26/10/2026 11:00:00');
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain('Not/AZone');
+    expect(String(warn.mock.calls[0]?.[0])).toContain('Africa/Casablanca');
+    warn.mockRestore();
   });
   it('an invalid date returns an empty string', () => {
     expect(formatReceiptDateTime('not a date')).toBe('');
