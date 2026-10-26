@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
   try {
     // Same rate limit envelope as lead submissions: 5/hour/IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-    if (!checkRateLimit(`callback:${ip}`, 5, 60 * 60 * 1000)) {
+    if (!(await checkRateLimit(`callback:${ip}`, 5, 60 * 60 * 1000))) {
       return NextResponse.json(
         { error: 'Too many requests. Try again in an hour.' },
         { status: 429 }

@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting: 5 requests per hour per IP
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-    if (!checkRateLimit(`leads:${ip}`, 5, 60 * 60 * 1000)) {
+    if (!(await checkRateLimit(`leads:${ip}`, 5, 60 * 60 * 1000))) {
       return NextResponse.json(
         { error: 'Too many requests. Try again in an hour.' },
         { status: 429 }

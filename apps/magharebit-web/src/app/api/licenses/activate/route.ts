@@ -21,7 +21,7 @@ import { getPlanLimits } from '@/lib/plans'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  if (!checkRateLimit(`license-activate:${ip}`, 60, 60 * 1000)) {
+  if (!(await checkRateLimit(`license-activate:${ip}`, 60, 60 * 1000))) {
     return NextResponse.json({ valid: false, reason: 'rate_limited' }, { status: 429 })
   }
 

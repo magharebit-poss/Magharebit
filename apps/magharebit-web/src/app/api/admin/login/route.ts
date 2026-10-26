@@ -28,7 +28,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const ip = clientIp(req)
-  if (!checkRateLimit(`admin-login:${ip}`, 10, 15 * 60 * 1000)) {
+  if (!(await checkRateLimit(`admin-login:${ip}`, 10, 15 * 60 * 1000))) {
     return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
   }
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (checkAdminPassword(password)) actor = OWNER_ACTOR
   } else {
     // Per-username limiter slows targeted guessing from many IPs.
-    if (!checkRateLimit(`admin-login-user:${username}`, 10, 15 * 60 * 1000)) {
+    if (!(await checkRateLimit(`admin-login-user:${username}`, 10, 15 * 60 * 1000))) {
       return NextResponse.json({ error: 'rate_limited' }, { status: 429 })
     }
     const user = await adminUsersRepo.findByUsername(username)
