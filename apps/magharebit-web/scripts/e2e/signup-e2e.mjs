@@ -1,11 +1,12 @@
 // Sign-up funnel end-to-end check (headless Chrome + real MongoDB in Docker): landing CTA -> phone OTP -> store details -> confirmation -> trial license -> POS validate -> admin list.
-// Needs a dev server on :3021 with MONGODB_URI=mongodb://127.0.0.1:27018 MONGODB_DB=magharebit_signup (see scripts/admin-smoke/README.md for the Docker command). Env: APP_DIR, OUT, PROFILE, CHROME.
+// Also checks the license-gated download route: start the server with DOWNLOAD_WINDOWS_URL=https://downloads.example.test/pos-setup.exe (DOWNLOAD_ANDROID_URL unset).
+// Needs a server on :3021 with MONGODB_URI=mongodb://127.0.0.1:27018 MONGODB_DB=magharebit_signup (see scripts/admin-smoke/README.md for the Docker command). Env: APP_DIR, OUT, PROFILE, CHROME.
 import { spawn } from 'node:child_process'
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
 
-const B = 'http://localhost:3021'
+const B = process.env.BASE || 'http://localhost:3021'
 const APP = process.env.APP_DIR
 const OUT = process.env.OUT
 mkdirSync(OUT, { recursive: true })
@@ -70,16 +71,45 @@ async function signup(lang, local, expect) {
   await js(`document.querySelector('form button[type=submit]').click()`)
   check(`[${lang}] confirmation screen shown`, await waitFor(`document.body.innerText.includes(${JSON.stringify(expect)})`))
   const links = await js(`[...document.querySelectorAll('[role=status] a')].map(a => a.getAttribute('href'))`)
-  check(`[${lang}] confirmation links to portal + download`, links?.includes(`/${lang}/portal/login`) && links?.includes(`/${lang}/download`), JSON.stringify(links))
+  check(`[${lang}] confirmation offers Windows + Android downloads and the portal`, links?.includes(`/api/download/windows?locale=${lang}`) && links?.includes(`/api/download/android?locale=${lang}`) && links?.includes(`/${lang}/portal/dashboard`), JSON.stringify(links))
+  const shownKey = await js(`(document.querySelector('[role=status] code') || {}).innerText || ''`)
   await shot(`${lang}-3-confirmation`)
 
   const m = await db.collection('merchants').findOne({ phone })
   check(`[${lang}] merchant stored: Starter trial, approved by system`, m && m.status === 'approved' && m.plan === 'Starter' && m.approvedBy === 'system:trial' && m.sector === 'boulangerie' && m.city === 'Rabat' && m.locale === lang)
-  await sleep(1500)
   const lic = await db.collection('licenses').findOne({ merchantId: phone })
   check(`[${lang}] 14-day trial license created`, lic && lic.isTrial === true && lic.status === 'active' && /^MGH-\d{6}-[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{2}$/.test(lic.key) && Math.round((lic.expiresAt - lic.issuedAt) / 86400000) === 14, lic?.key)
   const v = await (await fetch(`${B}/api/licenses/validate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: lic.key, machineId: 'E2E' }) })).json()
   check(`[${lang}] POS validate accepts the trial key`, v.valid === true && v.isTrial === true && v.plan === 'Starter' && v.daysRemaining >= 13, JSON.stringify(v).slice(0, 110))
+  check(`[${lang}] the key on the confirmation screen is the real trial key`, shownKey === lic.key, shownKey)
+
+  // portal session was opened by sign-up: no separate login needed to see the account
+  const me = await js(`fetch('/api/portal/auth/me').then(async r => ({ status: r.status, body: await r.json().catch(() => null) }))`)
+  check(`[${lang}] sign-up opened a portal session (me = 200, same key)`, me?.status === 200 && me.body?.licenseKey === lic.key, JSON.stringify(me)?.slice(0, 100))
+  const ck = (await send('Network.getCookies', { urls: [B] })).result.cookies.find((c) => c.name === 'portal_session')
+  check(`[${lang}] portal_session cookie is HttpOnly`, !!ck && ck.httpOnly === true)
+
+  // gated download
+  const get = (p, cookie) => fetch(B + p, { redirect: 'manual', headers: cookie ? { cookie } : {} })
+  const cookie = `portal_session=${ck.value}`
+  const win = await get(`/api/download/windows?locale=${lang}`, cookie)
+  check(`[${lang}] download/windows with session + active license -> 302 to the installer, no-store`, win.status === 302 && win.headers.get('location') === 'https://downloads.example.test/pos-setup.exe' && /no-store/.test(win.headers.get('cache-control') || ''), `${win.status} ${win.headers.get('location')}`)
+  check(`[${lang}] download/android not configured yet -> 503 not_available_yet`, (await get(`/api/download/android?locale=${lang}`, cookie)).status === 503)
+  const anon = await get(`/api/download/windows?locale=${lang}`)
+  check(`[${lang}] download without a session -> 302 to portal login with ?next`, anon.status === 302 && new URL(anon.headers.get('location')).pathname === `/${lang}/portal/login` && (anon.headers.get('location') || '').includes('next='), anon.headers.get('location'))
+  check(`[${lang}] unknown platform -> 404`, (await get('/api/download/linux', cookie)).status === 404)
+  check(`[${lang}] forged portal session is refused`, (await get('/api/download/windows', 'portal_session=AAAA.BBBB')).status === 302)
+
+  // signing up again with the same identity: still gets the key and a session (exists = true)
+  const again = await js(`fetch('/api/auth/complete-signup', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ phone: '${phone}', storeName: 'x', locale: '${lang}' }) }).then(async r => ({ status: r.status, body: await r.json() }))`)
+  check(`[${lang}] repeat sign-up reports exists and returns the same key`, again?.status === 200 && again.body.exists === true && again.body.licenseKey === lic.key)
+
+  // revoked license stops downloads immediately
+  const lg = await fetch(`${B}/api/admin/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: OWNER_PW }) })
+  const adminCookie = lg.headers.get('set-cookie').split(';')[0]
+  const rv = await fetch(`${B}/api/admin/licenses/${lic.id}/revoke`, { method: 'POST', headers: { cookie: adminCookie, 'content-type': 'application/json' }, body: JSON.stringify({ reason: 'e2e' }) })
+  const afterRevoke = await get(`/api/download/windows?locale=${lang}`, cookie)
+  check(`[${lang}] after the license is revoked, download -> 403 license_required`, rv.ok && afterRevoke.status === 403)
   return { phone, lic }
 }
 

@@ -84,11 +84,14 @@ Verified: this runs only `next dev -p 3004`. **Do not run `npm run dev` at the r
 - **OTP in development:** use the **email** OTP option in the sign-up/login UI. With no `RESEND_API_KEY` the server console prints `[send-otp-email] ── DEV MODE ──` with the code. The **WhatsApp** OTP route stores only a hash and never prints the code, so it cannot be completed without a working Green API. SMS needs Twilio.
 - **There are no built-in test accounts or bypass flags** in the code.
 
+### Admin sign-in (local)
+Open `http://localhost:3004/fr/admin/leads`. **Identifiant:** leave empty (or type `owner`). **Mot de passe:** the value of `ADMIN_SECRET` in your `apps/magharebit-web/.env.local`. There is deliberately no shared default password: each machine sets its own. Print yours in your own terminal with `grep ADMIN_SECRET apps/magharebit-web/.env.local`. Per-admin accounts (operator/viewer) are created by the owner under Admins.
+
 ### Admin pages
 `/ar/admin/leads`, `/ar/admin/licenses`, `/ar/admin/merchants`.
 - The password is whatever you put in `ADMIN_SECRET`. The page posts it to `POST /api/admin/login`; the server checks it and sets an **HttpOnly, SameSite=Strict cookie** (`mgh_admin`, 8 hours). The browser never sees the secret, and a reload keeps you signed in. `POST /api/admin/logout` ends the session.
 - Login needs **both** `ADMIN_SECRET` and `NEXTAUTH_SECRET`; otherwise it returns 503 ("لوحة الإدارة غير مهيأة على الخادم").
-- Limit: 10 login attempts per 15 minutes per IP (in memory, per server instance). In dev every local request shares one bucket, so after ten bad tries you get 429 until you wait or restart the server.
+- Limit: 10 login attempts per 15 minutes per IP (stored in MongoDB when it is configured, so shared by all instances; in-memory otherwise). In dev every local request shares one bucket, so after ten bad tries you get 429 until you wait or restart the server.
 - Scripts can skip the cookie: `curl -H "x-admin-secret: <ADMIN_SECRET>" http://localhost:3004/api/leads`.
 
 ### Merchant approval and the license key (verified from the route)
@@ -122,4 +125,4 @@ The `tlsv1 alert internal error` above is the usual symptom of a client IP that 
 1. **Fixed in this branch:** the admin secret used to be shipped to every visitor as `NEXT_PUBLIC_ADMIN_PASSWORD`. The code no longer reads that variable and the secret stays on the server (verified: the old value, set deliberately in the test environment, appears 0 times in the admin pages' HTML and 14 JavaScript bundles). **Because the old value was public, rotate `ADMIN_SECRET` and delete `NEXT_PUBLIC_ADMIN_PASSWORD` in every deployed environment.** Admin access is still one shared password; per-user auth is a later task.
 2. **`DEPLOY.md` no longer contains the Atlas host, database user, shard names or Green API instance ID** (replaced with placeholders). They remain in git **history** (commit `617c5e6` and the pushed branch). No password was ever in them, but treat the names as known: keep the repo private, keep the Atlas allowlist tight, and use a least-privilege Atlas user (`readWrite` on `magharebit` only, not `readWriteAnyDatabase`). Removing them from history would need a force-push and is a deliberate owner decision.
 3. `.env.local` holds live secrets (Mongo, Twilio, Green API, session secret). It is git-ignored. Use separate throwaway values for QA.
-4. `lib/portal-session.ts` signs merchant sessions with a hard-coded fallback secret (`fallback-dev-secret`) if `NEXTAUTH_SECRET` is unset. Always set `NEXTAUTH_SECRET`; the admin session fails closed instead.
+4. **Fixed:** there is no hard-coded fallback secret any more. Merchant sessions, OTP sessions, license keys and the admin session all fail closed (503) when `NEXTAUTH_SECRET` is unset. Always set it.

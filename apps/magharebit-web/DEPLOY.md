@@ -20,9 +20,9 @@
 | Auth UI shells | ✅ BUILT — signup (3-step), login, otp, forgot-password, reset-password; all 3 locales × 5 pages = 15 routes | `app/[locale]/auth/` |
 | OTP storage | ✅ MongoDB `otp_sessions` collection, SHA-256 hashed, 5-min TTL index | `app/api/auth/verify-otp/route.ts` |
 | Session management | ✅ MongoDB `auth_sessions` + signed HttpOnly cookie `mgh_session` | `lib/otp.ts` → `createSessionToken()` |
-| License system | NOT INTEGRATED — defers to software/superadmin side | `data/licenses.json` (stub) |
+| License system | ✅ v1 keys live; v2 signed tokens implemented (needs `LICENSE_SIGNING_*`), see `docs/pos-license-contract.md` | `lib/license-token.ts`, `app/api/licenses/` |
 | Admin auth system | ✅ Server-side: `POST /api/admin/login` checks the password against `ADMIN_SECRET` and sets a signed HttpOnly cookie (8 h). Single shared password; no secret in client code | `lib/admin-auth.ts` (per-user auth is a post-launch TODO) |
-| Download URLs | NOT READY — software not built yet | `NEXT_PUBLIC_DOWNLOAD_*` env (empty) |
+| Download | ✅ Gated route `/api/download/<platform>` (portal session + active license). Installer URLs not set yet: the POS is not released | `DOWNLOAD_*` env |
 
 ## Pre-launch Backend Integration TODOs
 
@@ -95,7 +95,16 @@ Set the following in your hosting platform (Vercel / VPS `.env.production`).
 | `ADMIN_SECRET` | ✅ | Server-only. The admin login password and the `x-admin-secret` header value for admin API routes. Never give it a `NEXT_PUBLIC_` prefix |
 | `NEXTAUTH_SECRET` | ✅ | Server-only. Signs the admin session cookie (and portal/OTP sessions); admin login returns 503 without it |
 | `MONGODB_URI` | ✅ | MongoDB connection string. Required for OTP, sign-up, login, the merchant portal and admin merchants (no fallback: those routes return 503 without it) |
-| `NEXT_PUBLIC_BASE_URL` | optional | Canonical site URL for sitemap and robots (e.g. `https://magharebit.com`) |
+| `NEXT_PUBLIC_BASE_URL` | ✅ in production | Canonical site URL: canonical links, hreflang, sitemap, robots and structured data are built from it (e.g. `https://magharebit.com`). Set it at **build** time |
+| `MONGODB_DB` | optional | Database name (default `magharebit`). Rate limits live in the `rate_limits` collection (TTL index), shared by all instances |
+| `LICENSE_SIGNING_KID`, `LICENSE_SIGNING_PRIVATE_KEY` | ✅ for license v2 | Ed25519 signing key (`node scripts/gen-license-keypair.mjs <kid>`). Without them `jwks`/`activate` return 503; v1 keys keep working. `LICENSE_EXTRA_JWKS` only during key rotation |
+| `DOWNLOAD_WINDOWS_URL`, `DOWNLOAD_ANDROID_URL` | ✅ when the POS is released | Installer URLs, server-only. Served only through `/api/download/<platform>` (merchant session + active license). Set at build time (the download page is prerendered) |
+| `CRON_SECRET` | ✅ | Protects `/api/cron/daily-report` (scheduled in `vercel.json`) |
+| `GREEN_API_INSTANCE_ID`, `GREEN_API_API_TOKEN`, `GREEN_API_BASE_URL`, `WHATSAPP_BUSINESS_NUMBER` | for WhatsApp | License delivery, lead notifications and WhatsApp OTP (default provider) |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | for SMS | SMS OTP (default provider) |
+| `OTP_SMS_PROVIDER`, `OTP_WHATSAPP_PROVIDER` | optional | `twilio`/`infobip` and `green-api`/`infobip`. Default unchanged until you switch |
+| `INFOBIP_BASE_URL`, `INFOBIP_API_KEY`, `INFOBIP_SMS_SENDER`, `INFOBIP_WHATSAPP_SENDER`, `INFOBIP_WHATSAPP_TEMPLATE` | for Infobip | Scaffold, see `src/lib/otp-delivery/infobip.ts` |
+| `RESEND_API_KEY`, `EMAIL_FROM` | for email OTP | Email one-time codes |
 
 `ADMIN_SECRET` and `NEXTAUTH_SECRET` are **required server-only variables**: admin login returns 503 until both are set to strong random values (generate each with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`). A tracked template with the full list is in `.env.example`.
 
@@ -106,7 +115,7 @@ Set the following in your hosting platform (Vercel / VPS `.env.production`).
 | `NEXT_PUBLIC_ADMIN_PASSWORD` | **REMOVED.** It was embedded in the browser bundle and exposed the admin secret to every visitor. The code no longer reads it | Delete it from Vercel (all environments), `.env.local`, `.env.production` and CI. **Rotate `ADMIN_SECRET`**: the previously deployed value was public |
 | `NEXT_PUBLIC_SITE_URL` | **Not read** by the code (an older version of this document listed it) | Use `NEXT_PUBLIC_BASE_URL` instead; delete the old variable |
 
-> ⚠️ **Security note:** the admin secret is server-only. Admin login is one shared password with an 8-hour HttpOnly cookie and a 10-attempts / 15-minute per-IP limit (in-memory, per server instance). Restrict `/admin` at the network/CDN layer (IP allowlist) and plan per-user auth.
+> ⚠️ **Security note:** the admin secret is server-only. Admin login: owner password (or a per-admin account) with an 8-hour HttpOnly cookie and a 10-attempts / 15-minute per-IP limit, stored in MongoDB so it holds across server instances. Restrict `/admin` at the network/CDN layer (IP allowlist) and plan per-user auth.
 
 ---
 
