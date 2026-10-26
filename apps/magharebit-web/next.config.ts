@@ -50,6 +50,14 @@ const nextConfig: NextConfig = {
       ...(process.env.NODE_ENV === 'production'
         ? [{ source: '/_next/static/(.*)', headers: immutableCache }]
         : []),
+      // Self-hosted fonts: the version is in the file name (scripts/fonts/sync-fonts.mjs),
+      // so a new version gets a new URL and these can be cached forever.
+      { source: '/fonts/(.*)\\.woff2', headers: immutableCache },
+      // Images in public/ are not versioned: cache for a day, then revalidate in the background.
+      {
+        source: '/:dir(media|brand)/:file*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
+      },
       // Video range + cache headers
       {
         source: '/(.*)\\.mp4',

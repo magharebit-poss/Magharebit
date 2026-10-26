@@ -5,6 +5,9 @@ import AOSInit from '@/components/AOSInit';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
 import { SECTORS } from '@/data/sectors';
+import { setRequestLocale } from 'next-intl/server';
+import { pageAlternates, ogBase } from '@/lib/seo';
+import { breadcrumbSchema } from '@/lib/schemas';
 
 export async function generateStaticParams() {
   const locales = ['ar', 'fr', 'en'];
@@ -19,6 +22,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string; sector: string }>;
 }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { locale, sector: slug } = await params;
   const data = SECTORS.find((s) => s.slug === slug);
   if (!data) return { title: 'Not found' };
@@ -26,8 +30,8 @@ export async function generateMetadata({
   return {
     title: data.meta.title[lang],
     description: data.meta.desc[lang],
-    alternates: { canonical: `/${locale}/sectors/${slug}` },
-    openGraph: { title: data.meta.title[lang], description: data.meta.desc[lang] },
+    alternates: pageAlternates(locale, `/sectors/${slug}`),
+    openGraph: { ...ogBase(locale), title: data.meta.title[lang], description: data.meta.desc[lang] },
   };
 }
 
@@ -36,6 +40,7 @@ export default async function SectorPage({
 }: {
   params: Promise<{ locale: string; sector: string }>;
 }) {
+  setRequestLocale((await params).locale);
   const { locale, sector: slug } = await params;
   const data = SECTORS.find((s) => s.slug === slug);
   if (!data) notFound();
@@ -49,6 +54,18 @@ export default async function SectorPage({
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbSchema(lang, [
+              [{ ar: 'الرئيسية', fr: 'Accueil', en: 'Home' }[lang], ''],
+              [{ ar: 'القطاعات', fr: 'Secteurs', en: 'Sectors' }[lang], '/sectors'],
+              [data.meta.title[lang], `/sectors/${slug}`],
+            ]),
+          ),
+        }}
+      />
       <AOSInit />
       <Navbar />
       <main style={{ background: '#0A2318', minHeight: '100vh' }}>

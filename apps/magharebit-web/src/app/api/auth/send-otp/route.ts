@@ -1,29 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomInt } from 'crypto'
 import { getDb, getLastConnectionError } from '@/lib/mongodb'
-import { sendWhatsAppMessage } from '@/lib/whatsapp'
+import { deliverOtp, toOtpLocale } from '@/lib/otp-delivery'
 import { normalisePhone, hashOTP } from '@/lib/otp'
+import { checkRateLimit } from '@/lib/rateLimit'
+import { clientIp } from '@/lib/repositories/audit-logs'
 
 function generateOTP(): string {
   return String(randomInt(100000, 999999))
 }
 
-function otpMessage(otp: string, locale: string): string {
-  const msgs: Record<string, string> = {
-    ar:
-      `🔐 رمز التحقق من MAGHAREBIT:\n\n*${otp}*\n\n` +
-      `صالح لمدة 5 دقائق. لا تشاركه مع أحد.`,
-    fr:
-      `🔐 Votre code de vérification MAGHAREBIT:\n\n*${otp}*\n\n` +
-      `Valable 5 minutes. Ne le partagez pas.`,
-    en:
-      `🔐 Your MAGHAREBIT verification code:\n\n*${otp}*\n\n` +
-      `Valid for 5 minutes. Do not share it.`,
-  }
-  return msgs[locale] ?? msgs.fr
-}
-
 export async function POST(req: NextRequest) {
+  // Per-IP cap on top of the per-phone cap below: stops one client from burning SMS/WhatsApp credit on many numbers.
+  if (!(await checkRateLimit(`otp-send:${clientIp(req)}`, 12, 10 * 60 * 1000))) {
+    return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
+  }
   let body: { phone?: string; locale?: string }
   try {
     body = await req.json()
@@ -90,14 +81,11 @@ export async function POST(req: NextRequest) {
     method: 'whatsapp',
   })
 
-  // Send via WhatsApp
-  const waResult = await sendWhatsAppMessage({
-    to: phone,
-    message: otpMessage(otp, locale),
-  })
+  // Send via the configured WhatsApp provider (OTP_WHATSAPP_PROVIDER: green-api by default, or infobip)
+  const waResult = await deliverOtp({ channel: 'whatsapp', phone, code: otp, locale: toOtpLocale(locale) })
 
   if (!waResult.success) {
-    console.warn('[send-otp] WhatsApp send failed:', waResult.error)
+    console.warn(`[send-otp] ${waResult.provider} send failed:`, waResult.error)
     return NextResponse.json({
       success: true,
       method: 'whatsapp',

@@ -1,8 +1,9 @@
-import { getTranslations } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { Metadata } from 'next';
 import BlogContent from '@/components/blog/BlogContent';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
 interface Post {
   slug: string;
@@ -21,11 +22,14 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'blog' });
   return {
     title: t('meta_title'),
     description: t('meta_desc'),
+    alternates: pageAlternates(locale, '/blog'),
+    openGraph: { ...ogBase(locale), title: t('meta_title'), description: t('meta_desc') },
   };
 }
 
@@ -56,6 +60,7 @@ export default async function BlogPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
+  setRequestLocale((await params).locale);
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'blog' });
   const posts = await getPosts();

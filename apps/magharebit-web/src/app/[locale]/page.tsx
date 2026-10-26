@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
+import { preload } from 'react-dom';
+import { setRequestLocale } from 'next-intl/server';
 
 // ─── above-the-fold: static imports (SSR, no bundle split needed) ─────────────
 import AOSInit from '@/components/AOSInit';
@@ -7,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
 import ProofStrip from '@/components/landing/ProofStrip';
 import IntentCards from '@/components/landing/IntentCards';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
 // ─── below-the-fold: dynamic imports (code splitting) ─────────────────────────
 const FeatureStories        = dynamic(() => import('@/components/landing/FeatureStories'));
@@ -26,6 +29,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { locale } = await params;
 
   const titles: Record<string, string> = {
@@ -45,12 +49,16 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: `/${locale}` },
-    openGraph: { title, description },
+    alternates: pageAlternates(locale, ``),
+    openGraph: { ...ogBase(locale), title, description },
   };
 }
 
-export default function LandingPage() {
+export default async function LandingPage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale((await params).locale);
+  // The hero backdrop is a CSS background inside a client component, so the browser would
+  // only discover it after the stylesheet and script; hint it from the HTML head instead.
+  preload('/media/a1-hero.webp', { as: 'image', fetchPriority: 'high' });
   return (
     <>
       <AOSInit />

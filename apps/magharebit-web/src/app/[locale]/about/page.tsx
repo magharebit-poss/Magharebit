@@ -1,23 +1,26 @@
 import type { Metadata } from 'next';
-import { getTranslations, getLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations, getLocale } from 'next-intl/server';
 import AOSInit from '@/components/AOSInit';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
 import NewsletterSignup from '@/components/NewsletterSignup';
 import Link from 'next/link';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const t = await getTranslations('about');
   const locale = await getLocale();
   return {
     title: t('meta_title'),
     description: t('meta_desc'),
-    alternates: { canonical: `/${locale}/about` },
-    openGraph: { title: t('meta_title'), description: t('meta_desc') },
+    alternates: pageAlternates(locale, `/about`),
+    openGraph: { ...ogBase(locale), title: t('meta_title'), description: t('meta_desc') },
   };
 }
 
-export default async function AboutPage() {
+export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale((await params).locale);
   const t = await getTranslations('about');
   const locale = await getLocale();
   const isRTL = locale === 'ar';

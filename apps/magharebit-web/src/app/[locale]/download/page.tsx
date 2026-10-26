@@ -1,17 +1,22 @@
-import { getTranslations } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { installerUrl, type DownloadPlatform } from '@/lib/downloads';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'download' });
   return {
     title: t('meta_title'),
     description: t('meta_desc'),
+    alternates: pageAlternates(locale, '/download'),
+    openGraph: { ...ogBase(locale), title: t('meta_title'), description: t('meta_desc') },
   };
 }
 
@@ -20,13 +25,15 @@ export default async function DownloadPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
+  setRequestLocale((await params).locale);
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'download' });
   const isRTL = locale === 'ar';
   const fontBody = isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Plus Jakarta Sans, Inter, sans-serif';
 
-  const windowsUrl = process.env.NEXT_PUBLIC_DOWNLOAD_WINDOWS_URL ?? '';
-  const androidUrl = process.env.NEXT_PUBLIC_DOWNLOAD_ANDROID_URL ?? '';
+  // The installer URL itself stays on the server. Buttons go through the license-gated route
+  // /api/download/<platform> (portal session + active license), and only appear once a URL is configured.
+  const gated = (p: DownloadPlatform) => (installerUrl(p) ? `/api/download/${p}?locale=${locale}` : '');
 
   const platforms = [
     {
@@ -35,7 +42,7 @@ export default async function DownloadPage({
       label: t('windows_label'),
       desc: t('windows_desc'),
       req: t('req_windows'),
-      url: windowsUrl,
+      url: gated('windows'),
     },
     {
       key: 'android',
@@ -43,7 +50,7 @@ export default async function DownloadPage({
       label: t('android_label'),
       desc: t('android_desc'),
       req: t('req_android'),
-      url: androidUrl,
+      url: gated('android'),
     },
   ];
 

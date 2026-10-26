@@ -1,27 +1,30 @@
 import type { Metadata } from 'next';
-import { getTranslations, getLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations, getLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
 import AOSInit from '@/components/AOSInit';
 import { faqSchema } from '@/lib/schemas';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
 export async function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const t = await getTranslations('faq');
   const locale = await getLocale();
   return {
     title: t('meta_title'),
     description: t('meta_desc'),
-    alternates: { canonical: `/${locale}/faq` },
-    openGraph: { title: t('meta_title'), description: t('meta_desc') },
+    alternates: pageAlternates(locale, `/faq`),
+    openGraph: { ...ogBase(locale), title: t('meta_title'), description: t('meta_desc') },
   };
 }
 
-export default async function FaqPage() {
+export default async function FaqPage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale((await params).locale);
   const t = await getTranslations('faq');
   const locale = (await getLocale()) as 'ar' | 'fr' | 'en';
   const isRTL = locale === 'ar';

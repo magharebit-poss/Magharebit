@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { Suspense, useState, useRef, useCallback, useEffect } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
@@ -76,7 +76,17 @@ function OtpBoxes({
   )
 }
 
+// useSearchParams() needs a Suspense boundary for the page to be prerendered (the phone number
+// arrives in the query string, so this part renders on the client).
 export default function OtpPage() {
+  return (
+    <Suspense fallback={null}>
+      <OtpPageContent />
+    </Suspense>
+  )
+}
+
+function OtpPageContent() {
   const params = useParams()
   const searchParams = useSearchParams()
   const router = useRouter()

@@ -16,6 +16,7 @@ import { normalisePhone, verifySessionToken } from '@/lib/otp'
 import type { Merchant } from '@/lib/license-key'
 import { licensesRepo } from '@/lib/repositories/licenses'
 import { TRIAL_DAYS } from '@/lib/plans'
+import { setPortalSessionCookie } from '@/lib/portal-session'
 
 export async function POST(req: NextRequest) {
   // ── Session verification ────────────────────────────────────────────────────
@@ -86,7 +87,17 @@ export async function POST(req: NextRequest) {
   const lookupFilter = phone ? { phone } : { email }
   const existing = await merchantsCol.findOne(lookupFilter)
   if (existing) {
-    return NextResponse.json({ success: true, exists: true })
+    // The OTP session above already proved this person owns the phone/email, so an approved
+    // account gets its portal session and its active key back (same as a fresh sign-up).
+    const body: Record<string, unknown> = { success: true, exists: true }
+    if (existing.status === 'approved') {
+      const { licenses } = await licensesRepo.findAll({ merchantId: phone ?? email ?? '', status: 'active' })
+      if (licenses[0]) { body.licenseKey = licenses[0].key; body.expiresAt = licenses[0].expiresAt }
+      const res = NextResponse.json(body)
+      setPortalSessionCookie(res, { merchantId: existing._id.toString(), identifier: phone ?? email ?? '' })
+      return res
+    }
+    return NextResponse.json(body)
   }
 
   // ── Trial issuance (fire before DB write so we know the expiry date) ─────────
@@ -110,22 +121,22 @@ export async function POST(req: NextRequest) {
     approvedBy: 'system:trial',
   }
 
-  await merchantsCol.insertOne(merchantDoc)
+  const inserted = await merchantsCol.insertOne(merchantDoc)
 
   // Ensure indexes exist for fast lookup
   await merchantsCol.createIndex({ phone: 1 },  { sparse: true })
   await merchantsCol.createIndex({ email: 1 },  { sparse: true })
   await merchantsCol.createIndex({ status: 1 })
 
-  // Auto-generate 14-day Starter trial license (fire-and-forget errors — do not
-  // block the signup response if license creation fails; the admin can issue manually).
-  void (async () => {
-    try {
-      await licensesRepo.createTrial({ merchantId: licenseOwner, storeName, trialDays: TRIAL_DAYS })
-    } catch (err) {
-      console.error('[complete-signup] trial license creation failed:', err)
-    }
-  })()
+  // Auto-generate the 14-day Starter trial license. Awaited so the confirmation screen can show the key
+  // right away (the merchant needs it to activate the app and to sign in to the portal). If creation
+  // fails the account still exists and an admin can issue a key manually.
+  let trialLicense: Awaited<ReturnType<typeof licensesRepo.createTrial>> | null = null
+  try {
+    trialLicense = await licensesRepo.createTrial({ merchantId: licenseOwner, storeName, trialDays: TRIAL_DAYS })
+  } catch (err) {
+    console.error('[complete-signup] trial license creation failed:', err)
+  }
 
   // Mark auth session as signup-completed
   await db.collection('auth_sessions').updateOne(
@@ -133,5 +144,14 @@ export async function POST(req: NextRequest) {
     { $set: { completed_signup: true } }
   )
 
-  return NextResponse.json({ success: true, status: 'trial', trialDays: TRIAL_DAYS })
+  const res = NextResponse.json({
+    success: true,
+    status: 'trial',
+    trialDays: TRIAL_DAYS,
+    ...(trialLicense ? { licenseKey: trialLicense.key, expiresAt: trialLicense.expiresAt } : {}),
+  })
+  // Sign the new merchant into the portal: the OTP just proved they own this phone/email, and the
+  // license-gated download route needs this session.
+  setPortalSessionCookie(res, { merchantId: inserted.insertedId.toString(), identifier: licenseOwner })
+  return res
 }

@@ -2,25 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomInt } from 'crypto'
 import { getDb } from '@/lib/mongodb'
 import { normalisePhone, hashOTP } from '@/lib/otp'
+import { deliverOtp, providerFor, toOtpLocale } from '@/lib/otp-delivery'
+import { checkRateLimit } from '@/lib/rateLimit'
+import { clientIp } from '@/lib/repositories/audit-logs'
 
 function generateOTP(): string {
   return String(randomInt(100000, 999999))
 }
 
-function toE164(phone: string): string {
-  return '+' + normalisePhone(phone)
-}
-
-function smsMessage(otp: string, locale: string): string {
-  const msgs: Record<string, string> = {
-    ar: `MAGHAREBIT: رمز التحقق ${otp} — صالح 5 دقائق`,
-    fr: `MAGHAREBIT: Votre code est ${otp} — Valable 5 min`,
-    en: `MAGHAREBIT: Your code is ${otp} — Valid 5 min`,
-  }
-  return msgs[locale] ?? msgs.fr
-}
-
 export async function POST(req: NextRequest) {
+  if (!(await checkRateLimit(`otp-send:${clientIp(req)}`, 12, 10 * 60 * 1000))) {
+    return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
+  }
   let body: { phone?: string; locale?: string }
   try {
     body = await req.json()
@@ -57,15 +50,8 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Validate Twilio credentials
-  const accountSid = process.env.TWILIO_ACCOUNT_SID
-  const authToken = process.env.TWILIO_AUTH_TOKEN
-  const fromNumber = process.env.TWILIO_FROM_NUMBER
-
-  if (
-    !accountSid || !authToken || !fromNumber ||
-    accountSid === 'REPLACE_AFTER_ROTATION'
-  ) {
+  // The SMS provider (OTP_SMS_PROVIDER: twilio by default, or infobip) must be configured before a code is created.
+  if (!providerFor('sms').isConfigured()) {
     return NextResponse.json({ error: 'sms_not_configured' }, { status: 503 })
   }
 
@@ -86,34 +72,10 @@ export async function POST(req: NextRequest) {
     method: 'sms',
   })
 
-  // Send via Twilio
-  try {
-    const twilioRes = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization:
-            'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          To: toE164(phone),
-          From: fromNumber,
-          Body: smsMessage(otp, locale),
-        }),
-      }
-    )
-
-    if (!twilioRes.ok) {
-      const errBody = await twilioRes.text()
-      console.error('[send-otp-sms] Twilio error:', errBody)
-      return NextResponse.json({ error: 'sms_send_failed' }, { status: 502 })
-    }
-
-    return NextResponse.json({ success: true, method: 'sms', expiresIn: 300 })
-  } catch (err) {
-    console.error('[send-otp-sms] Network error:', err)
+  const result = await deliverOtp({ channel: 'sms', phone, code: otp, locale: toOtpLocale(locale) })
+  if (!result.success) {
+    console.error(`[send-otp-sms] ${result.provider} error:`, result.error)
     return NextResponse.json({ error: 'sms_send_failed' }, { status: 502 })
   }
+  return NextResponse.json({ success: true, method: 'sms', expiresIn: 300 })
 }

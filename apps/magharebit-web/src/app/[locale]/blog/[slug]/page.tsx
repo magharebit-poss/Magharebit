@@ -1,9 +1,10 @@
-import { getTranslations } from 'next-intl/server';
+import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
 interface Post {
   slug: string;
@@ -71,12 +72,15 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { locale, slug } = await params;
   const post = await getPost(slug);
   if (!post) return { title: 'Not found' };
   return {
     title: `${post.title[locale] ?? post.title['fr']} | MAGHAREBIT Blog`,
     description: post.excerpt[locale] ?? post.excerpt['fr'],
+    alternates: pageAlternates(locale, `/blog/${slug}`),
+    openGraph: { ...ogBase(locale), type: 'article', title: post.title[locale] ?? post.title['fr'], description: post.excerpt[locale] ?? post.excerpt['fr'] },
   };
 }
 
@@ -85,6 +89,7 @@ export default async function BlogPostPage({
 }: {
   params: Promise<{ locale: string; slug: string }>;
 }) {
+  setRequestLocale((await params).locale);
   const { locale, slug } = await params;
   const post = await getPost(slug);
 

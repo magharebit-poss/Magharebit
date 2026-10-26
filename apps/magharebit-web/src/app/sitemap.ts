@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next';
+import { HREFLANG } from '@/lib/seo';
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://magharebit.com';
 const LOCALES = ['ar', 'fr', 'en'] as const;
@@ -51,11 +52,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   for (const locale of LOCALES) {
     for (const page of PAGES) {
+      // hreflang cluster: every language version lists all of its siblings (and x-default),
+      // so Google serves the Moroccan Arabic / French / English page to the right searcher.
+      const languages: Record<string, string> = {};
+      for (const l of LOCALES) languages[HREFLANG[l]] = `${BASE_URL}/${l}${page.path}`;
+      languages['x-default'] = `${BASE_URL}/ar${page.path}`;
       entries.push({
         url: `${BASE_URL}/${locale}${page.path}`,
         lastModified,
         changeFrequency: page.changeFrequency,
         priority: page.priority,
+        alternates: { languages },
       });
     }
   }

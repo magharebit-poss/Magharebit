@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
+import { setRequestLocale } from 'next-intl/server';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { locale } = await params;
   const titles: Record<string, string> = {
     ar: 'سجل التحديثات | MAGHAREBIT POS',
@@ -21,6 +24,8 @@ export async function generateMetadata({
   return {
     title: titles[locale] ?? titles['ar'],
     description: descs[locale] ?? descs['ar'],
+    alternates: pageAlternates(locale, '/changelog'),
+    openGraph: { ...ogBase(locale), title: titles[locale] ?? titles['ar'], description: descs[locale] ?? descs['ar'] },
   };
 }
 
@@ -68,6 +73,7 @@ export default async function ChangelogPage({
 }: {
   params: Promise<{ locale: string }>;
 }) {
+  setRequestLocale((await params).locale);
   const { locale } = await params;
   const l = locale as 'ar' | 'fr' | 'en';
   const isRTL = locale === 'ar';

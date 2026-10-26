@@ -1,5 +1,5 @@
 /**
- * Root-level not-found page — renders inside app/layout.tsx (which provides html/body).
+ * Root-level not-found page. The root layout is a pass-through (html lives in [locale]/layout.tsx), so this page renders its own <html>/<body>.
  * No next-intl dependency — defaults to Arabic since it renders without locale context.
  * Locale-specific 404s are handled by [locale]/not-found.tsx.
  */
@@ -7,6 +7,8 @@ import Link from 'next/link';
 
 export default function GlobalNotFound() {
   return (
+    <html lang="ar" dir="rtl">
+    <body>
     <main
       style={{
         background: '#0A2318',
@@ -150,5 +152,7 @@ export default function GlobalNotFound() {
         </div>
       </div>
     </main>
+    </body>
+    </html>
   );
 }

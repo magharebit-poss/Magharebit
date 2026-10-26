@@ -278,9 +278,9 @@ export default function DashboardPage() {
             <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>آخر تحديث: 10 مايو 2025</p>
           </div>
         </div>
-        <button style={{ background: '#0F3D2A', color: '#FFFFFF', fontWeight: 600, border: 'none', borderRadius: '8px', padding: '10px 20px', cursor: 'pointer', fontSize: '14px', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
+        <a href={`/${locale}/download`} style={{ background: '#0F3D2A', color: '#FFFFFF', fontWeight: 600, borderRadius: '8px', padding: '12px 20px', fontSize: '14px', whiteSpace: 'nowrap', fontFamily: 'inherit', textDecoration: 'none', minHeight: '44px', display: 'inline-flex', alignItems: 'center' }}>
           تحميل التطبيق
-        </button>
+        </a>
       </div>
 
       {/* ── Sales chart ── */}

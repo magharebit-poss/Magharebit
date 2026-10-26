@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getTranslations, getLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations, getLocale } from 'next-intl/server';
 import AOSInit from '@/components/AOSInit';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
@@ -8,16 +8,17 @@ import ProductTourTabs from '@/components/landing/ProductTourTabs';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import WasteTracker from '@/components/landing/WasteTracker';
 import WhatsAppReportPreview from '@/components/landing/WhatsAppReportPreview';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const t = await getTranslations('features');
   const locale = await getLocale();
   return {
     title: t('meta_title'),
     description: t('meta_desc'),
-    alternates: { canonical: `/${locale}/features` },
-    openGraph: {
-      title: t('meta_title'),
+    alternates: pageAlternates(locale, `/features`),
+    openGraph: { ...ogBase(locale), title: t('meta_title'),
       description: t('meta_desc'),
     },
   };
@@ -25,7 +26,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const CARD_ICONS = ['🏪', '📦', '📊', '🏢', '👥', '🔗'];
 
-export default async function FeaturesPage() {
+export default async function FeaturesPage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale((await params).locale);
   const t = await getTranslations('features');
   const locale = await getLocale();
   const isRTL = locale === 'ar';

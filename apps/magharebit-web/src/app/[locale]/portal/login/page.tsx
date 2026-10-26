@@ -71,6 +71,12 @@ export default function LoginPage() {
         setError(errorMessage(data.error ?? ''));
         return;
       }
+      // Coming from a gated download (?next=/api/download/windows): continue to the installer.
+      const next = new URLSearchParams(window.location.search).get('next') ?? '';
+      if (/^\/api\/download\/(windows|android)\?locale=(ar|fr|en)$/.test(next)) {
+        window.location.assign(next);
+        return;
+      }
       router.push(`/${locale}/portal/dashboard`);
     } catch {
       setError('تعذر الاتصال بالخادم');

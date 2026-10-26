@@ -6,6 +6,8 @@ import Footer from '@/components/landing/Footer';
 import { CITIES } from '@/data/cities';
 import { SECTORS } from '@/data/sectors';
 import { MERCHANTS } from '@/data/merchants';
+import { pageAlternates, ogBase, SITE_URL, HREFLANG } from '@/lib/seo';
+import { breadcrumbSchema } from '@/lib/schemas';
 
 interface Props {
   locale: string;
@@ -34,31 +36,36 @@ export default async function CityPageContent({ locale, citySlug }: Props) {
       ? `The smart POS for ${data.name} merchants`
       : `La caisse intelligente pour les commerçants de ${data.name}`;
 
-  // LocalBusiness JSON-LD — helps Google show city-specific business info
-  const localBusinessSchema = {
+  // Structured data: the product is software sold to merchants in this city, not a shop at an
+  // address, so it is a Service provided by the Organization (not a LocalBusiness with a street).
+  const homeLabel = { ar: 'الرئيسية', fr: 'Accueil', en: 'Home' }[lang]
+  const cityUrl = `${SITE_URL}/${lang}/caisse-enregistreuse-${citySlug}`
+  const cityGraph = {
     '@context': 'https://schema.org',
-    '@type': 'LocalBusiness',
-    name: `MAGHAREBIT — ${data.name}`,
-    description: data.positioning[lang],
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: data.name,
-      addressRegion: data.region,
-      addressCountry: 'MA',
-    },
-    telephone: '+212619522487',
-    url: `https://magharebit.com/${locale}/caisse-enregistreuse-${citySlug}`,
-    areaServed: {
-      '@type': 'City',
-      name: data.name,
-    },
+    '@graph': [
+      {
+        '@type': 'Service',
+        '@id': `${cityUrl}#service`,
+        serviceType: 'Point-of-sale software',
+        name: heroTitle,
+        description: data.positioning[lang],
+        url: cityUrl,
+        inLanguage: HREFLANG[lang],
+        provider: { '@id': `${SITE_URL}/#organization` },
+        areaServed: [
+          { '@type': 'City', name: data.name, containedInPlace: { '@type': 'Country', name: 'Morocco' } },
+        ],
+        audience: { '@type': 'BusinessAudience', geographicArea: { '@type': 'City', name: data.name } },
+      },
+      breadcrumbSchema(lang, [[homeLabel, ''], [heroTitle, `/caisse-enregistreuse-${citySlug}`]]),
+    ],
   };
 
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(cityGraph) }}
       />
       <AOSInit />
       <Navbar />
@@ -263,7 +270,7 @@ export async function generateCityMetadata(locale: string, citySlug: string) {
   return {
     title,
     description: data.positioning[lang],
-    alternates: { canonical: `/${locale}/caisse-enregistreuse-${citySlug}` },
-    openGraph: { title, description: data.positioning[lang] },
+    alternates: pageAlternates(locale, `/caisse-enregistreuse-${citySlug}`),
+    openGraph: { ...ogBase(locale), title, description: data.positioning[lang] },
   };
 }

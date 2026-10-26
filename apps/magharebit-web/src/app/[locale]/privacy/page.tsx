@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
-import { getLocale } from 'next-intl/server';
+import { setRequestLocale, getLocale } from 'next-intl/server';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
 import { BRAND } from '@/lib/brand';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const locale = await getLocale();
   const isAr = locale === 'ar';
   const title = isAr
@@ -20,8 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title,
     description,
-    alternates: { canonical: `/${locale}/privacy` },
-    openGraph: { title, description },
+    alternates: pageAlternates(locale, `/privacy`),
+    openGraph: { ...ogBase(locale), title, description },
   };
 }
 
@@ -173,7 +175,8 @@ const SECTIONS_EN = [
   },
 ];
 
-export default async function PrivacyPage() {
+export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale((await params).locale);
   const locale = await getLocale();
   const isRTL = locale === 'ar';
   const fontBody = isRTL

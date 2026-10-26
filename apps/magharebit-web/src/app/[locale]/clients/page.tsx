@@ -1,24 +1,27 @@
 import type { Metadata } from 'next';
-import { getTranslations, getLocale } from 'next-intl/server';
+import { setRequestLocale, getTranslations, getLocale } from 'next-intl/server';
 import Link from 'next/link';
 import AOSInit from '@/components/AOSInit';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
 import MoroccoMap from '@/components/MoroccoMap';
 import { MERCHANTS } from '@/data/merchants';
+import { pageAlternates, ogBase } from '@/lib/seo';
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const t = await getTranslations('clients');
   const locale = await getLocale();
   return {
     title: t('meta_title'),
     description: t('meta_desc'),
-    alternates: { canonical: `/${locale}/clients` },
-    openGraph: { title: t('meta_title'), description: t('meta_desc') },
+    alternates: pageAlternates(locale, `/clients`),
+    openGraph: { ...ogBase(locale), title: t('meta_title'), description: t('meta_desc') },
   };
 }
 
-export default async function ClientsPage() {
+export default async function ClientsPage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale((await params).locale);
   const t = await getTranslations('clients');
   const locale = (await getLocale()) as 'ar' | 'fr' | 'en';
   const isRTL = locale === 'ar';

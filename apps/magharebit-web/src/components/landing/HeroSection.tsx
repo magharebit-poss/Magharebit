@@ -44,6 +44,7 @@ const DEMO_INTERVAL_MS = 3000;
 export default function HeroSection() {
   const t = useTranslations('hero');
   const tMock = useTranslations('hero.mockup');
+  const tLead = useTranslations('lead_modal');
   const locale = useLocale();
   const isRTL = locale === 'ar';
   const lang = locale === 'ar' || locale === 'fr' ? locale : 'en';
@@ -180,8 +181,11 @@ export default function HeroSection() {
         style={{ direction: isRTL ? 'rtl' : 'ltr' }}
       >
 
+        {/* Above the fold: no data-aos here. AOS keeps those elements invisible until its
+            script runs, which pushed the largest paint back to after hydration. */}
+
         {/* Live indicator */}
-        <div data-aos="fade-down" style={{ marginBottom: '14px' }}>
+        <div style={{ marginBottom: '14px' }}>
           <div
             style={{
               display: 'inline-flex',
@@ -203,8 +207,6 @@ export default function HeroSection() {
 
         {/* Badge */}
         <div
-          data-aos="fade-down"
-          data-aos-delay="50"
           className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/[0.18] rounded-full px-5 py-2 mb-10"
         >
           <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse" />
@@ -213,8 +215,6 @@ export default function HeroSection() {
 
         {/* Headline */}
         <h1
-          data-aos="fade-up"
-          data-aos-delay="100"
           className="font-arabic font-bold leading-[1.2] mb-4"
           style={{ letterSpacing: '-0.01em', lineHeight: '1.12' }}
         >
@@ -234,8 +234,6 @@ export default function HeroSection() {
 
         {/* Subtitle line 3 */}
         <p
-          data-aos="fade-up"
-          data-aos-delay="150"
           className="text-white/38 text-base font-sans mb-3 mt-2"
         >
           {t('line3')}
@@ -243,8 +241,6 @@ export default function HeroSection() {
 
         {/* Subheadline */}
         <p
-          data-aos="fade-up"
-          data-aos-delay="200"
           className="font-arabic text-white/65 max-w-[600px] mx-auto leading-[2] mb-10"
           style={{ fontSize: 'clamp(1rem, 2.5vw, 1.2rem)' }}
         >
@@ -253,8 +249,6 @@ export default function HeroSection() {
 
         {/* CTA buttons */}
         <div
-          data-aos="fade-up"
-          data-aos-delay="250"
           style={{
             display: 'flex',
             flexDirection: 'row',
@@ -305,8 +299,6 @@ export default function HeroSection() {
 
         {/* Trust row */}
         <div
-          data-aos="fade-up"
-          data-aos-delay="300"
           className="flex flex-wrap gap-6 justify-center font-arabic text-sm text-white/42 mt-8 mb-4"
         >
           {(['trust1', 'trust2', 'trust3'] as const).map((k) => (
@@ -317,10 +309,17 @@ export default function HeroSection() {
           ))}
         </div>
 
+        {/* Soft conversion path: opens the lead capture modal (LeadModalHost) */}
+        <button
+          type="button"
+          data-lead-modal
+          className="font-arabic mb-10 min-h-[44px] px-3 text-sm font-semibold text-gold-400 underline underline-offset-4 hover:text-gold-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-400"
+        >
+          {tLead('callback_link')}
+        </button>
+
         {/* Hero mockup */}
         <div
-          data-aos="fade-up"
-          data-aos-delay="400"
           className="max-w-[880px] mx-auto animate-[float_6s_ease-in-out_infinite]"
           style={{ position: 'relative' }}
         >

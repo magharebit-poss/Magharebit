@@ -56,10 +56,12 @@ function useImperativeCountdown() {
 }
 
 // ── 6-box OTP input ───────────────────────────────────────────────────────────
-function OtpBoxes({ value, onChange, onComplete }: {
+function OtpBoxes({ value, onChange, onComplete, groupLabel, digitLabel }: {
   value:      string[]
   onChange:   (v: string[]) => void
   onComplete: () => void
+  groupLabel: string
+  digitLabel: (n: number) => string
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -96,18 +98,18 @@ function OtpBoxes({ value, onChange, onComplete }: {
   }
 
   return (
-    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', direction: 'ltr' }}>
+    <div role="group" aria-label={groupLabel} style={{ display: 'flex', gap: '8px', justifyContent: 'center', direction: 'ltr' }}>
       {Array.from({ length: 6 }).map((_, i) => (
         <input
           key={i}
           ref={el => { refs.current[i] = el }}
-          type="text" inputMode="numeric" maxLength={6}
+          type="text" inputMode="numeric" maxLength={6} autoComplete={i === 0 ? 'one-time-code' : 'off'} aria-label={digitLabel(i + 1)}
           value={value[i] ?? ''}
           onChange={e => handleChange(e, i)}
           onKeyDown={e => handleKey(e, i)}
           onPaste={e => handlePaste(e, i)}
           style={{
-            width: '44px', height: '52px', textAlign: 'center',
+            width: '46px', height: '56px', textAlign: 'center',
             fontSize: '1.4rem', fontWeight: 700,
             background: 'rgba(255,255,255,0.07)',
             border: `1.5px solid ${value[i] ? '#F0B429' : 'rgba(255,255,255,0.18)'}`,
@@ -120,18 +122,30 @@ function OtpBoxes({ value, onChange, onComplete }: {
   )
 }
 
-// ── Progress dots ─────────────────────────────────────────────────────────────
-function StepDots({ current, total }: { current: number; total: number }) {
+// ── Labelled progress (phone/email → code → shop) ─────────────────────────────
+function Stepper({ current, labels }: { current: number; labels: string[] }) {
   return (
-    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '28px' }}>
-      {Array.from({ length: total }).map((_, i) => (
-        <div key={i} style={{
-          width: i === current ? '20px' : '8px', height: '8px', borderRadius: '999px',
-          background: i === current ? '#F0B429' : i < current ? 'rgba(240,180,41,0.40)' : 'rgba(255,255,255,0.18)',
-          transition: 'all 0.25s',
-        }} />
-      ))}
-    </div>
+    <ol aria-label="Progress" style={{ display: 'flex', gap: '6px', listStyle: 'none', margin: '0 0 28px', padding: 0 }}>
+      {labels.map((label, i) => {
+        const state = i < current ? 'done' : i === current ? 'current' : 'todo'
+        return (
+          <li key={label} aria-current={state === 'current' ? 'step' : undefined} style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              height: '4px', borderRadius: '999px', marginBottom: '8px',
+              background: state === 'todo' ? 'rgba(255,255,255,0.14)' : state === 'done' ? 'rgba(240,180,41,0.55)' : '#F0B429',
+              transition: 'background 0.25s',
+            }} />
+            <span style={{
+              display: 'block', fontSize: '12px', fontWeight: state === 'current' ? 700 : 500,
+              color: state === 'current' ? '#F0B429' : state === 'done' ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.40)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              {state === 'done' ? '✓ ' : ''}{label}
+            </span>
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 
@@ -164,25 +178,33 @@ export default function SignupPage() {
   const [resendAllowed, setResendAllowed] = useState(false)
   const [smsAvailable, setSmsAvailable]   = useState(false)
   // Filled once the account exists: drives the confirmation screen (step 3).
-  const [done, setDone] = useState<{ trialDays: number; exists: boolean } | null>(null)
+  const [done, setDone] = useState<{ trialDays: number; exists: boolean; licenseKey?: string } | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const resendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const smsTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
   const countdown      = useImperativeCountdown()
+  const resendWait     = useImperativeCountdown()
 
   const startResendTimers = useCallback(() => {
     if (resendTimerRef.current) clearTimeout(resendTimerRef.current)
     if (smsTimerRef.current)    clearTimeout(smsTimerRef.current)
     setResendAllowed(false)
     setSmsAvailable(false)
+    resendWait.startCountdown(60)
     resendTimerRef.current = setTimeout(() => setResendAllowed(true), 60000)
     smsTimerRef.current    = setTimeout(() => setSmsAvailable(true),  60000)
-  }, [])
+  }, [resendWait])
 
   useEffect(() => () => {
     if (resendTimerRef.current) clearTimeout(resendTimerRef.current)
     if (smsTimerRef.current)    clearTimeout(smsTimerRef.current)
   }, [])
+
+  // Move focus to the new step's heading so keyboard and screen-reader users land on the change.
+  useEffect(() => {
+    if (step > 0) document.querySelector<HTMLElement>('[data-step-heading]')?.focus()
+  }, [step])
 
   // ── Step 0: send OTP ───────────────────────────────────────────────────────
   const sendOtp = useCallback(async (e?: React.FormEvent) => {
@@ -274,8 +296,8 @@ export default function SignupPage() {
         body: JSON.stringify({ ...identifierFields, storeName: storeName.trim(), sector, city, locale }),
       })
       if (!res.ok) { setError(t('signup_failed')); return }
-      const data = (await res.json().catch(() => ({}))) as { exists?: boolean; trialDays?: number }
-      setDone({ trialDays: data.trialDays ?? 14, exists: data.exists === true })
+      const data = (await res.json().catch(() => ({}))) as { exists?: boolean; trialDays?: number; licenseKey?: string }
+      setDone({ trialDays: data.trialDays ?? 14, exists: data.exists === true, licenseKey: data.licenseKey })
       setStep(3)
     } finally { setLoading(false) }
   }, [storeName, mode, phone, email, sector, city, locale, t])
@@ -297,7 +319,7 @@ export default function SignupPage() {
 
   // ── Shared styles ─────────────────────────────────────────────────────────
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '12px 14px',
+    width: '100%', padding: '14px 14px', minHeight: '52px',
     background: 'rgba(255,255,255,0.07)',
     border: '1.5px solid rgba(255,255,255,0.15)',
     borderRadius: '10px', color: '#FFFFFF', fontSize: '1rem',
@@ -305,7 +327,7 @@ export default function SignupPage() {
     boxSizing: 'border-box', direction: 'ltr', transition: 'border-color 0.18s',
   }
   const ctaStyle: React.CSSProperties = {
-    width: '100%', padding: '13px',
+    width: '100%', padding: '14px', minHeight: '52px',
     background: loading ? 'rgba(240,180,41,0.60)' : '#F0B429',
     color: '#0A2318', fontWeight: 800, fontSize: '1rem',
     borderRadius: '10px', border: 'none',
@@ -329,12 +351,12 @@ export default function SignupPage() {
 
   return (
     <div style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-      <StepDots current={step} total={3} />
+      <Stepper current={step} labels={[mode === 'phone' ? t('step_phone') : t('step_email'), t('step_code'), t('step_shop')]} />
 
       {/* ── Step 0: identity input ── */}
       {step === 0 && (
         <form onSubmit={sendOtp}>
-          <h1 style={titleStyle}>{t('signup_title')}</h1>
+          <h1 style={{ ...titleStyle, outline: 'none' }} tabIndex={-1} data-step-heading>{t('signup_title')}</h1>
           <p style={subStyle}>{t('signup_sub')}</p>
 
           {/* Mode toggle */}
@@ -393,7 +415,7 @@ export default function SignupPage() {
             </div>
           )}
 
-          {error && <p style={{ color: '#F87171', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>}
+          {error && <p role="alert" style={{ color: '#F87171', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>}
           <button type="submit" disabled={loading} style={ctaStyle}>
             {loading ? '...' : t('step1_cta')}
           </button>
@@ -414,17 +436,17 @@ export default function SignupPage() {
       {/* ── Step 1: OTP ── */}
       {step === 1 && (
         <div>
-          <h1 style={titleStyle}>{t('otp_heading')}</h1>
+          <h1 style={{ ...titleStyle, outline: 'none' }} tabIndex={-1} data-step-heading>{t('otp_heading')}</h1>
           <p style={{ ...subStyle, marginBottom: '24px' }}>
             {mode === 'phone' ? t('otp_sent_to') : t('otp_sent_to_email')}{' '}
             <strong style={{ color: '#FFFFFF' }}>{mode === 'phone' ? phone : email}</strong>
           </p>
-          <OtpBoxes value={otpDigits} onChange={setOtpDigits} onComplete={() => {
+          <OtpBoxes groupLabel={t('code_label')} digitLabel={(n) => t('digit', { n })} value={otpDigits} onChange={setOtpDigits} onComplete={() => {
             const id = setTimeout(() => verifyOtp(), 0)
             return () => clearTimeout(id)
           }} />
           {loading && <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontSize: '13px', marginTop: '16px' }}>...</p>}
-          {error && <p style={{ color: '#F87171', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
+          {error && <p role="alert" style={{ color: '#F87171', fontSize: '13px', marginTop: '12px', textAlign: 'center' }}>{error}</p>}
 
           <div style={{ textAlign: 'center', marginTop: '16px' }}>
             {countdown.remaining > 0 ? (
@@ -436,6 +458,11 @@ export default function SignupPage() {
             )}
           </div>
 
+          {!resendAllowed && resendWait.remaining > 0 && (
+            <p aria-live="polite" style={{ textAlign: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginTop: '14px' }}>
+              {t('resend_in', { seconds: resendWait.remaining })}
+            </p>
+          )}
           {/* Resend buttons */}
           {resendAllowed && (
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
@@ -473,7 +500,7 @@ export default function SignupPage() {
       {/* ── Step 2: store setup ── */}
       {step === 2 && (
         <form onSubmit={completeSignup}>
-          <h1 style={titleStyle}>{t('step3_heading')}</h1>
+          <h1 style={{ ...titleStyle, outline: 'none' }} tabIndex={-1} data-step-heading>{t('step3_heading')}</h1>
           <p style={subStyle}>{t('step3_sub')}</p>
           <div style={{ marginBottom: '16px' }}>
             <label htmlFor="store-name" style={labelStyle}>{t('store_name')}</label>
@@ -506,7 +533,7 @@ export default function SignupPage() {
               {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          {error && <p style={{ color: '#F87171', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>}
+          {error && <p role="alert" style={{ color: '#F87171', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>}
           <button type="submit" disabled={loading} style={ctaStyle}>
             {loading ? '...' : t('step3_cta')}
           </button>
@@ -516,7 +543,7 @@ export default function SignupPage() {
         </form>
       )}
 
-      {/* ── Step 3: confirmation ── */}
+      {/* ── Step 3: confirmation: key, downloads, next steps ── */}
       {step === 3 && done && (() => {
         const lang = locale === 'ar' || locale === 'fr' ? locale : 'en'
         const days = done.trialDays
@@ -524,39 +551,75 @@ export default function SignupPage() {
           ar: {
             title: done.exists ? 'لديك حساب بالفعل' : 'تم إنشاء حسابك',
             body: done.exists
-              ? 'هذا الرقم أو البريد مسجّل مسبقاً. يمكنك الدخول إلى فضاء التاجر.'
-              : `بدأت تجربتك المجانية لمدة ${days} يوماً. حمّل التطبيق وادخل إلى فضاء التاجر لإعداد متجرك.`,
-            portal: 'الدخول إلى فضاء التاجر', download: 'تحميل التطبيق',
+              ? 'هذا الرقم أو البريد مسجّل مسبقاً. مفتاح الترخيص أدناه، ويمكنك تحميل التطبيق مباشرة.'
+              : `بدأت تجربتك المجانية لمدة ${days} يوماً. هذا مفتاح الترخيص الخاص بك: احتفظ به، ستحتاجه في التطبيق.`,
+            keyLabel: 'مفتاح الترخيص', copy: 'نسخ', copied: 'تم النسخ',
+            nokey: 'سنرسل لك مفتاح الترخيص قريباً. يمكنك أيضاً التواصل معنا على واتساب.',
+            steps: ['حمّل التطبيق لجهازك', 'افتحه وأدخل مفتاح الترخيص', 'ابدأ البيع'],
+            win: 'تحميل لنظام Windows', and: 'تحميل لنظام Android', portal: 'الدخول إلى فضاء التاجر',
           },
           fr: {
             title: done.exists ? 'Vous avez déjà un compte' : 'Votre compte est créé',
             body: done.exists
-              ? 'Ce numéro ou cet e-mail est déjà enregistré. Vous pouvez accéder à votre espace commerçant.'
-              : `Votre essai gratuit de ${days} jours a commencé. Téléchargez l’application et ouvrez votre espace commerçant pour configurer votre boutique.`,
-            portal: 'Accéder à mon espace', download: 'Télécharger l’application',
+              ? 'Ce numéro ou cet e-mail est déjà enregistré. Votre clé de licence est ci-dessous et vous pouvez télécharger l’application.'
+              : `Votre essai gratuit de ${days} jours a commencé. Voici votre clé de licence : gardez-la, l’application vous la demandera.`,
+            keyLabel: 'Clé de licence', copy: 'Copier', copied: 'Copié',
+            nokey: 'Votre clé de licence vous sera envoyée très vite. Vous pouvez aussi nous écrire sur WhatsApp.',
+            steps: ['Téléchargez l’application', 'Ouvrez-la et saisissez votre clé', 'Commencez à vendre'],
+            win: 'Télécharger pour Windows', and: 'Télécharger pour Android', portal: 'Accéder à mon espace',
           },
           en: {
             title: done.exists ? 'You already have an account' : 'Your account is ready',
             body: done.exists
-              ? 'This phone number or email is already registered. You can open your merchant portal.'
-              : `Your ${days}-day free trial has started. Download the app and open your merchant portal to set up your shop.`,
-            portal: 'Open my merchant portal', download: 'Download the app',
+              ? 'This phone number or email is already registered. Your license key is below and you can download the app.'
+              : `Your ${days}-day free trial has started. Here is your license key: keep it, the app will ask for it.`,
+            keyLabel: 'License key', copy: 'Copy', copied: 'Copied',
+            nokey: 'Your license key will be sent to you shortly. You can also message us on WhatsApp.',
+            steps: ['Download the app', 'Open it and enter your key', 'Start selling'],
+            win: 'Download for Windows', and: 'Download for Android', portal: 'Open my merchant portal',
           },
         }[lang]
+        const copyKey = async () => {
+          try { await navigator.clipboard.writeText(done.licenseKey ?? ''); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* clipboard blocked: the key stays selectable */ }
+        }
+        const linkBtn: React.CSSProperties = { ...ctaStyle, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', boxSizing: 'border-box', marginTop: 0 }
+        const ghostBtn: React.CSSProperties = { ...linkBtn, background: 'transparent', color: '#FFFFFF', border: '1.5px solid rgba(255,255,255,0.28)', fontWeight: 700 }
         return (
-          <div role="status" style={{ textAlign: 'center' }}>
-            <div aria-hidden="true" style={{ fontSize: '2.4rem', marginBottom: '8px', color: '#F0B429' }}>✓</div>
-            <h1 style={{ ...titleStyle, textAlign: 'center' }}>{c.title}</h1>
+          <div role="status">
+            <div aria-hidden="true" style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#F0B429', color: '#0A2318', display: 'grid', placeItems: 'center', fontSize: '1.6rem', fontWeight: 800, margin: '0 auto 14px' }}>✓</div>
+            <h1 style={{ ...titleStyle, textAlign: 'center', outline: 'none' }} tabIndex={-1} data-step-heading>{c.title}</h1>
             <p style={{ ...subStyle, textAlign: 'center' }}>{c.body}</p>
-            <a href={`/${locale}/portal/login`} style={{ ...ctaStyle, display: 'block', textDecoration: 'none', boxSizing: 'border-box' }}>
-              {c.portal}
-            </a>
-            <a
-              href={`/${locale}/download`}
-              style={{ display: 'block', marginTop: '14px', color: 'rgba(255,255,255,0.65)', fontSize: '14px', textDecoration: 'underline' }}
-            >
-              {c.download}
-            </a>
+
+            {done.licenseKey ? (
+              <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(240,180,41,0.35)', borderRadius: '12px', padding: '14px 16px', marginBottom: '20px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#F0B429', marginBottom: '6px', textAlign: isRTL ? 'right' : 'left' }}>{c.keyLabel}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', direction: 'ltr' }}>
+                  <code style={{ flex: 1, fontSize: '15px', fontWeight: 700, color: '#FFFFFF', letterSpacing: '0.02em', wordBreak: 'break-all', userSelect: 'all' }}>{done.licenseKey}</code>
+                  <button type="button" onClick={copyKey} style={{ minHeight: '44px', padding: '0 16px', borderRadius: '8px', border: '1px solid rgba(240,180,41,0.5)', background: 'transparent', color: '#F0B429', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                    {copied ? c.copied : c.copy}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p style={{ ...subStyle, textAlign: 'center', color: 'rgba(240,180,41,0.85)' }}>{c.nokey}</p>
+            )}
+
+            <ol style={{ listStyle: 'none', margin: '0 0 20px', padding: 0, display: 'grid', gap: '8px' }}>
+              {c.steps.map((st, i) => (
+                <li key={st} style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.8)', fontSize: '14px' }}>
+                  <span aria-hidden="true" style={{ width: '24px', height: '24px', borderRadius: '50%', border: '1px solid rgba(240,180,41,0.5)', color: '#F0B429', display: 'grid', placeItems: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+                  {st}
+                </li>
+              ))}
+            </ol>
+
+            <div style={{ display: 'grid', gap: '10px' }}>
+              <a href={`/api/download/windows?locale=${locale}`} style={linkBtn}>{c.win}</a>
+              <a href={`/api/download/android?locale=${locale}`} style={ghostBtn}>{c.and}</a>
+              <a href={`/${locale}/portal/dashboard`} style={{ display: 'block', marginTop: '6px', textAlign: 'center', color: 'rgba(255,255,255,0.65)', fontSize: '14px', textDecoration: 'underline' }}>
+                {c.portal}
+              </a>
+            </div>
           </div>
         )
       })()}

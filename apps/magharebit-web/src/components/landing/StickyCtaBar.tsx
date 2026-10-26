@@ -59,6 +59,9 @@ export default function StickyCtaBar() {
       ? '🎯 Commencez votre essai gratuit aujourd\'hui'
       : '🎯 Start your free trial today';
 
+  const callbackText =
+    locale === 'ar' ? 'تواصلوا معي' : locale === 'fr' ? 'Être rappelé' : 'Call me back';
+
   const btnText =
     locale === 'ar' ? 'ابدأ مجاناً ←' : locale === 'fr' ? 'Essai gratuit →' : 'Start free →';
 
@@ -118,6 +121,25 @@ export default function StickyCtaBar() {
 
       {/* Right — CTA + close */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+        <button
+          type="button"
+          data-lead-modal
+          className="hidden md:inline-flex"
+          style={{
+            background: 'transparent',
+            color: '#F0B429',
+            border: '1px solid rgba(240,180,41,0.45)',
+            fontFamily: fontBody,
+            fontWeight: 600,
+            fontSize: '14px',
+            padding: '8px 18px',
+            borderRadius: '999px',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {callbackText}
+        </button>
         <Link
           href={`/${locale}/auth/signup`}
           style={{
