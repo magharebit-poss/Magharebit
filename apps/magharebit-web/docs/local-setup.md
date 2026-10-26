@@ -1,5 +1,9 @@
 # MAGHAREBIT web: local setup for QA
 
+> **Admin sign-in (local):** open `apps/magharebit-web/local-credentials.md` in your editor. It is git-ignored and holds
+> `Identifiant: owner` and `Mot de passe: ...` for http://localhost:3004/fr/admin/leads. It is never committed and has no effect on production.
+> If it is missing on your machine, create it from the template in section "Admin sign-in (local)" below (the password is your `ADMIN_SECRET`).
+
 Everything below was checked against the code in this repo. Items marked **(not run)** were read from the source but not executed.
 
 ## 1. Topology: is there a separate backend?
