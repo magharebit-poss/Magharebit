@@ -2,6 +2,7 @@ import { EscPos } from './escpos';
 import type { CartLine, Discount, ShiftSummary } from '../cart';
 import { pickName } from '../names';
 import { TRANSLATIONS } from '../i18n';
+import { formatReceiptDateTime } from './receipt-format';
 
 export type PaymentMethod = 'cash' | 'card' | 'lana';
 
@@ -19,6 +20,12 @@ export interface ReceiptData {
   storeName?: string;
   storeAddress?: string;
   taxId?: string;
+  /** Sale time (ISO): the server's sold_at, or the local time for a provisional receipt. */
+  soldAt?: string;
+  /** True when the number is a local temporary one (offline sale not yet synced). */
+  provisional?: boolean;
+  /** IANA time zone for the printed date; defaults to Africa/Casablanca. */
+  timeZone?: string;
 }
 
 function fmt(piastres: number): string {
@@ -39,6 +46,12 @@ function nowAr(): string {
 
 const PRINT_WIDTH = 48;
 
+// Receipt strings below must survive CP1256 (checked in receipt-builder.test.ts). The French line
+// is plain ASCII on purpose: CP1256 has no ô, û-with-accent or ù.
+export const PROVISIONAL_AR = 'إيصال مؤقت - غير رسمي';
+export const PROVISIONAL_FR = 'PROVISOIRE - NON OFFICIEL';
+export const PROVISIONAL_NUMBER_LABEL_AR = 'رقم مؤقت';
+
 export function buildReceipt(data: ReceiptData): Uint8Array {
   const ep = new EscPos();
   ep.init().selectArabicCodePage().rtlMode(true);
@@ -52,10 +65,19 @@ export function buildReceipt(data: ReceiptData): Uint8Array {
   if (data.taxId) ep.line(`ICE: ${data.taxId}`);
   ep.separator('=');
 
+  // Provisional banner: an offline sale has no official number yet, so it must not look official.
+  if (data.provisional) {
+    ep.align('center').bold(true);
+    ep.line(PROVISIONAL_AR);
+    ep.line(PROVISIONAL_FR);
+    ep.bold(false);
+  }
+
   // Meta
   ep.align('right');
-  ep.line(`رقم الإيصال: ${data.receiptNumber}`);
-  ep.line(`التاريخ: ${nowAr()}`);
+  ep.line(`${data.provisional ? PROVISIONAL_NUMBER_LABEL_AR : 'رقم الإيصال'}: ${data.receiptNumber}`);
+  const when = formatReceiptDateTime(data.soldAt ?? new Date().toISOString(), data.timeZone);
+  ep.line(`التاريخ: ${when || nowAr()}`);
   ep.line(`الكاشير: ${data.cashierName}`);
   ep.separator('-');
 

@@ -9,6 +9,7 @@ import { apiFetch } from '../lib/api';
 import { getMerchantBranding } from '../lib/branding';
 import Receipt, { type ReceiptData } from './Receipt';
 import type { CustomerProfile } from './CustomerLookupModal';
+import { buildPrintInfo, type ReceiptPrintInfo } from '../lib/printer/receipt-format';
 
 // ── Modal states ─────────────────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ interface LanaPaymentModalProps {
   shiftId: string;
   customer?: CustomerProfile | null;
   onClose: () => void;   // cancel / close without payment
-  onSuccess: () => void; // cart cleared → new sale
+  onSuccess: (info?: ReceiptPrintInfo) => void; // cart cleared → new sale; info feeds the thermal receipt
   onStampComplete?: (updatedLoyalty: CustomerProfile['loyalty']) => void;
 }
 
@@ -93,6 +94,7 @@ export default function LanaPaymentModal({
   const [countdown, setCountdown] = useState<number>(readTimeoutSeconds());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [printInfo, setPrintInfo] = useState<ReceiptPrintInfo | null>(null);
 
   // Stable transaction ref — does NOT change on retry (each session is new).
   const transactionRef = useRef<string>(makeRef()).current;
@@ -131,6 +133,7 @@ export default function LanaPaymentModal({
         transactionId?: string;
         receiptNumber?: string;
         serverTimestamp?: string;
+        soldAt?: string;
         totalPiastres?: number;
       };
       if (!res.ok) {
@@ -144,6 +147,12 @@ export default function LanaPaymentModal({
         void issueStamp(customer.customerId, data.transactionId, onStampComplete);
       }
       const ct = computeCartTotals(cartLines, cartDiscount);
+      setPrintInfo(buildPrintInfo({
+        serverReceiptNumber: data.receiptNumber,
+        serverSoldAt: data.soldAt ?? data.serverTimestamp,
+        localId: data.transactionId ?? crypto.randomUUID(),
+        nowIso: new Date().toISOString(),
+      }));
       setReceipt({
         receiptNumber: data.receiptNumber ?? '—',
         timestamp: data.serverTimestamp ?? new Date().toISOString(),
@@ -274,7 +283,7 @@ export default function LanaPaymentModal({
   // ── After successful transaction, show the receipt ────────────────────────
 
   if (receipt) {
-    return <Receipt data={receipt} onDone={onSuccess} />;
+    return <Receipt data={receipt} onDone={() => onSuccess(printInfo ?? undefined)} />;
   }
 
   // ── States that allow explicit close ──────────────────────────────────────

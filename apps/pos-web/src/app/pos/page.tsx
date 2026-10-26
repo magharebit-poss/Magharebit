@@ -33,6 +33,7 @@ import { startSyncDrain, stopSyncDrain } from '../../lib/sync-drain';
 import { useTenantModules } from '../../hooks/useTenantModules';
 import { printData, getStatus as getPrinterStatus } from '../../lib/printer/printer-manager';
 import { buildReceipt } from '../../lib/printer/receipt-builder';
+import { buildPrintInfo, DEFAULT_TIME_ZONE, type ReceiptPrintInfo } from '../../lib/printer/receipt-format';
 import type { FloorTable } from '../../components/cafe/TableMap';
 import type { SelectedModifier } from '../../components/cafe/ModifierPicker';
 
@@ -789,24 +790,24 @@ export default function POSPage() {
     }
   };
 
-  const handlePaymentSuccess = () => {
-    void printReceipt('cash');
+  const handlePaymentSuccess = (info?: ReceiptPrintInfo) => {
+    void printReceipt('cash', info);
     setCart([]);
     setActiveOrderId(null);
     setCartDiscount(undefined);
     setShowPayment(false);
   };
 
-  const handleCardPaymentSuccess = () => {
-    void printReceipt('card');
+  const handleCardPaymentSuccess = (info?: ReceiptPrintInfo) => {
+    void printReceipt('card', info);
     setCart([]);
     setActiveOrderId(null);
     setCartDiscount(undefined);
     setShowCardModal(false);
   };
 
-  const handleLanaPaymentSuccess = () => {
-    void printReceipt('lana');
+  const handleLanaPaymentSuccess = (info?: ReceiptPrintInfo) => {
+    void printReceipt('lana', info);
     setCart([]);
     setActiveOrderId(null);
     setCartDiscount(undefined);
@@ -820,11 +821,16 @@ export default function POSPage() {
     setShowSplitModal(false);
   };
 
-  function printReceipt(method: 'cash' | 'card' | 'lana') {
+  function printReceipt(method: 'cash' | 'card' | 'lana', info?: ReceiptPrintInfo) {
     if (getPrinterStatus() !== 'connected') return;
-    const receiptNumber = `R-${Date.now().toString(36).toUpperCase()}`;
+    // The payment modal hands over the server's receipt number and sold_at. Without them
+    // (should not happen) the receipt is printed as provisional, never with an official-looking number.
+    const p = info ?? buildPrintInfo({ localId: crypto.randomUUID(), nowIso: new Date().toISOString() });
     const data = buildReceipt({
-      receiptNumber,
+      receiptNumber: p.receiptNumber,
+      soldAt: p.soldAt,
+      provisional: p.provisional,
+      timeZone: process.env.NEXT_PUBLIC_TENANT_TIMEZONE || DEFAULT_TIME_ZONE,
       shiftId: shiftId ?? '',
       cashierName,
       cartLines: cart,
@@ -832,6 +838,8 @@ export default function POSPage() {
       totalPiastres: totals.totalPiastres,
       taxPiastres: totals.taxPiastres,
       paymentMethod: method,
+      ...(p.paidPiastres !== undefined ? { paidPiastres: p.paidPiastres } : {}),
+      ...(p.changePiastres !== undefined ? { changePiastres: p.changePiastres } : {}),
     });
     printData(data).catch(() => { /* silent — printer may be disconnected */ });
   }

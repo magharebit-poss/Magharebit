@@ -14,6 +14,7 @@ import {
   type PaymentRequest,
 } from '../lib/card-terminal';
 import type { CustomerProfile } from './CustomerLookupModal';
+import { buildPrintInfo, type ReceiptPrintInfo } from '../lib/printer/receipt-format';
 
 // ── Modal states ─────────────────────────────────────────────────────────────
 
@@ -36,7 +37,7 @@ interface CardPaymentModalProps {
   shiftId: string;
   customer?: CustomerProfile | null;
   onClose: () => void;   // cancel / close without payment
-  onSuccess: () => void; // cart cleared → new sale
+  onSuccess: (info?: ReceiptPrintInfo) => void; // cart cleared → new sale; info feeds the thermal receipt
   onStampComplete?: (updatedLoyalty: CustomerProfile['loyalty']) => void;
 }
 
@@ -99,6 +100,7 @@ export default function CardPaymentModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number>(readTimeoutSeconds());
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [printInfo, setPrintInfo] = useState<ReceiptPrintInfo | null>(null);
 
   // Per-attempt transaction reference — regenerated on each retry so the
   // CMI implementation can distinguish retried attempts.
@@ -150,6 +152,7 @@ export default function CardPaymentModal({
         transactionId?: string;
         receiptNumber?: string;
         serverTimestamp?: string;
+        soldAt?: string;
         totalPiastres?: number;
         paymentMethod?: 'cash' | 'card' | 'lana';
       };
@@ -164,6 +167,12 @@ export default function CardPaymentModal({
         void issueStamp(customer.customerId, data.transactionId, onStampComplete);
       }
       const ct = computeCartTotals(cartLines, cartDiscount);
+      setPrintInfo(buildPrintInfo({
+        serverReceiptNumber: data.receiptNumber,
+        serverSoldAt: data.soldAt ?? data.serverTimestamp,
+        localId: data.transactionId ?? crypto.randomUUID(),
+        nowIso: new Date().toISOString(),
+      }));
       setReceipt({
         receiptNumber: data.receiptNumber ?? '—',
         timestamp: data.serverTimestamp ?? new Date().toISOString(),
@@ -262,7 +271,7 @@ export default function CardPaymentModal({
   // ── After successful transaction, show the receipt ────────────────────────
 
   if (receipt) {
-    return <Receipt data={receipt} onDone={onSuccess} />;
+    return <Receipt data={receipt} onDone={() => onSuccess(printInfo ?? undefined)} />;
   }
 
   // ── States that allow explicit close ──────────────────────────────────────

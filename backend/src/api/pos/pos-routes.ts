@@ -587,6 +587,7 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
         const insertResult = await fastify.pg.query<{
           transaction_id: string;
           created_at: string;
+          sold_at: Date | string;
         }>(
           `INSERT INTO transactions
              (transaction_id, tenant_id, register_id, shift_id, cashier_id,
@@ -599,7 +600,7 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
                    COALESCE($17, NOW()),
                    $10, $11, $12, $13, $14,
                    $15, $16)
-           RETURNING transaction_id, created_at::text AS created_at`,
+           RETURNING transaction_id, created_at::text AS created_at, sold_at`,
           [
             transactionId,
             shiftRow.tenant_id,
@@ -728,6 +729,9 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
           transactionId: insertResult.rows[0].transaction_id,
           receiptNumber,
           serverTimestamp: insertResult.rows[0].created_at,
+          // The stored sold_at (ISO). It is the client's soldAt when that passed the window checks
+          // above, otherwise the server's NOW(); the printed receipt shows this value.
+          soldAt: new Date(insertResult.rows[0].sold_at).toISOString(),
           totalPiastres: grandTotalPiastres,
           paymentMethod,
           items: lines,

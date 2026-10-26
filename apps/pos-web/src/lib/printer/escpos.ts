@@ -133,7 +133,7 @@ const CP1256: Record<number, number> = {
   0x06D2: 0xFF, // ے
 };
 
-function encodeCP1256(text: string): Uint8Array {
+export function encodeCP1256(text: string): Uint8Array {
   const out: number[] = [];
   for (const char of text) {
     const cp = char.codePointAt(0) ?? 0x3F;

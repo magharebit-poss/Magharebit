@@ -9,6 +9,7 @@ import { getMerchantBranding } from '../lib/branding';
 import Receipt, { type ReceiptData } from './Receipt';
 import { isTauri, isBackendReachable, queueTransactionLocally } from '../lib/offline-queue';
 import type { CustomerProfile } from './CustomerLookupModal';
+import { buildPrintInfo, type ReceiptPrintInfo } from '../lib/printer/receipt-format';
 
 const BACKEND_URL = process.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'http://localhost:3001';
 const TENANT_ID = process.env['NEXT_PUBLIC_TENANT_ID'] ?? '';
@@ -20,7 +21,8 @@ interface CashPaymentModalProps {
   shiftId: string;
   customer?: CustomerProfile | null;
   onClose: () => void;
-  onSuccess: () => void;
+  /** Called on "New sale" with what the thermal receipt needs (server number and sold_at, cash and change). */
+  onSuccess: (info?: ReceiptPrintInfo) => void;
   onStampComplete?: (updatedLoyalty: CustomerProfile['loyalty']) => void;
 }
 
@@ -60,6 +62,7 @@ export default function CashPaymentModal({
   const [paidMad, setPaidMad] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [printInfo, setPrintInfo] = useState<ReceiptPrintInfo | null>(null);
   const [savedTransactionId, setSavedTransactionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Invoice generation state — separate from the receipt so the receipt can
@@ -70,6 +73,10 @@ export default function CashPaymentModal({
   const paidPiastres = paidMad ? Math.round(Number(paidMad) * 100) : 0;
   const change = paidPiastres - totalPiastres;
   const canPay = paidPiastres >= totalPiastres && totalPiastres > 0;
+  // Cash and change go on the printed receipt only when the cashier actually typed an amount.
+  const cashFields = paidMad !== ''
+    ? { paidPiastres, changePiastres: Math.max(0, change) }
+    : {};
 
   const handleConfirm = async () => {
     if (!canPay) return;
@@ -114,9 +121,12 @@ export default function CashPaymentModal({
             ? sessionStorage.getItem('greengo_cashier_name') ?? ''
             : '';
         const ct = computeCartTotals(cartLines, cartDiscount);
+        // No server number yet: the printed receipt is provisional (LOCAL- number, local time).
+        const offlineInfo = buildPrintInfo({ localId, nowIso: soldAt, ...cashFields });
+        setPrintInfo(offlineInfo);
         setReceipt({
-          receiptNumber: `LOCAL-${localId.slice(0, 8).toUpperCase()}`,
-          timestamp: new Date().toISOString(),
+          receiptNumber: offlineInfo.receiptNumber,
+          timestamp: soldAt,
           cashierName,
           lines: cartLines,
           totalDiscountPiastres: ct.totalDiscountPiastres,
@@ -155,6 +165,7 @@ export default function CashPaymentModal({
         ok?: boolean;
         receiptNumber?: string;
         serverTimestamp?: string;
+        soldAt?: string;
         totalPiastres?: number;
         paymentMethod?: 'cash' | 'card' | 'lana';
       };
@@ -179,6 +190,13 @@ export default function CashPaymentModal({
           ? sessionStorage.getItem('greengo_cashier_name') ?? ''
           : '';
       const ct = computeCartTotals(cartLines, cartDiscount);
+      setPrintInfo(buildPrintInfo({
+        serverReceiptNumber: data.receiptNumber,
+        serverSoldAt: data.soldAt ?? data.serverTimestamp,
+        localId: data.transactionId,
+        nowIso: new Date().toISOString(),
+        ...cashFields,
+      }));
       setReceipt({
         receiptNumber: data.receiptNumber ?? '—',
         timestamp: data.serverTimestamp ?? new Date().toISOString(),
@@ -250,7 +268,7 @@ export default function CashPaymentModal({
     return (
       <Receipt
         data={receipt}
-        onDone={onSuccess}
+        onDone={() => onSuccess(printInfo ?? undefined)}
         onGenerateInvoice={handleGenerateInvoice}
         invoiceGenerating={invoiceGenerating}
         invoiceError={invoiceError}
