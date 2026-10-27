@@ -13,6 +13,8 @@ const { MongoClient, ObjectId } = createRequire(`${APP}/package.json`)('mongodb'
 const mongo = new MongoClient('mongodb://127.0.0.1:27018'); await mongo.connect()
 const db = mongo.db(process.env.MONGODB_DB || 'magharebit_v2')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const RUN = Date.now().toString(36).slice(-4) // unique names per run, so reruns on the same database do not collide
+await db.collection('rate_limits').deleteMany({}) // logins from earlier runs must not trip the limiter
 let pass = 0, fail = 0
 const check = (n, ok, x = '') => { if (ok) pass++; else fail++; console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${x ? '  ' + x : ''}`) }
 
@@ -111,7 +113,7 @@ for (const lang of (process.env.LANGS || 'fr,ar').split(',')) {
     check(`[${lang}] ${slug}: table headers and a "+ Add" button`, await waitFor(`!!${plusButton} && document.querySelectorAll('table thead th').length === 5`))
     await js(`${plusButton}.click()`)
     check(`[${lang}] ${slug}: "+ Add" opens the dialog`, await waitFor(`!!document.querySelector('dialog[open] form')`, 10000))
-    const name = `${kind} UI ${lang}`
+    const name = `${kind} UI ${lang} ${RUN}`
     await setVal('dialog input:not([type=checkbox])', name)
     await setVal('dialog textarea', 'Created by the UI test')
     await setVal('dialog input[dir=ltr]', '/media/a1-hero.webp')
@@ -133,7 +135,7 @@ for (const lang of (process.env.LANGS || 'fr,ar').split(',')) {
   await waitFor(`!!${plusButton}`)
   await js(`${plusButton}.click()`)
   check(`[${lang}] notifications: "+ Send Notification" opens the dialog`, await waitFor(`!!document.querySelector('dialog[open] form')`, 10000))
-  const title = `Maintenance ${lang}`
+  const title = `Maintenance ${lang} ${RUN}`
   await setVal('dialog input:not([type=checkbox])', title)
   await setVal('dialog textarea', 'Short downtime tonight at 23:00.')
   await js(`document.querySelector('dialog form button[type=submit]').click()`)
@@ -151,11 +153,11 @@ for (const lang of (process.env.LANGS || 'fr,ar').split(',')) {
   // ── Audit logs ─────────────────────────────────────────────────────────────
   check(`[${lang}] click Audit logs`, await clickSidebar('audit-logs'))
   check(`[${lang}] audit: timeline entries with "API: <action>" and "Performed by"`, await waitFor(`document.querySelectorAll('ol > li').length >= 5 && document.body.innerText.includes('API: updateTipping')`))
-  await js(`document.querySelector('button[aria-expanded=false]').click()`)
-  check(`[${lang}] audit: "show details" expands the entry`, await waitFor(`!!document.querySelector('dl') && document.querySelector('button[aria-expanded=true]')`, 5000))
-  await setVal('select', 'updateCommission')
-  await js(`document.querySelector('form button[type=submit]').click()`)
-  check(`[${lang}] audit: action filter narrows the timeline`, await waitFor(`(() => { const t = [...document.querySelectorAll('ol > li code')].map(c => c.innerText); return t.length > 0 && t.every(x => x.includes('updateCommission')) })()`, 30000))
+  await js(`document.querySelector('ol > li button[aria-controls^="audit-"]').click()`)
+  check(`[${lang}] audit: "show details" expands the entry`, await waitFor(`!!document.querySelector('ol > li dl') && !!document.querySelector('ol > li button[aria-expanded=true]')`, 5000))
+  await setVal('main select, section select', 'updateCommission')
+  await js(`document.querySelector('section form button[type=submit]').click()`)
+  check(`[${lang}] audit: action filter narrows the timeline`, await waitFor(`(() => { const t = [...document.querySelectorAll('ol > li')].map(li => li.innerText); return t.length > 0 && t.every(x => x.includes('API: updateCommission')) })()`, 30000))
   await shot(`${lang}-5-audit-timeline`)
   await js(`[...document.querySelectorAll('button[aria-pressed]')].find(b => b.getAttribute('aria-pressed') === 'false').click()`)
   check(`[${lang}] audit: Table view is one click away`, await waitFor(`!!document.querySelector('table tbody tr td')`, 15000))

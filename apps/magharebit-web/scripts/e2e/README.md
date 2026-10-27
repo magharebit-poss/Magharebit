@@ -18,6 +18,10 @@ All except the unit check need a dev server on its own cache folder (`NEXT_DIST_
 | `otp-delivery-unit.mjs` | OTP delivery layer (Infobip adapter) against a **mock** Infobip server: request shapes, `App` auth header, error mapping, timeout, config guards, provider selection. Proves our side only; the live Infobip test is a go-live step (see `src/lib/otp-delivery/infobip.ts`). No server needed. | 29 passed |
 | `site-seo-leadmodal-e2e.mjs` | Production build: `<html lang/dir>` per locale, hreflang cluster, canonical, og:locale, JSON-LD graph (Morocco), sitemap alternates, 404; lead capture modal (fr + ar, desktop + 375 px, validation, DB row, Esc, exit-intent); auth shell and signup stepper. | see Phase 2 report |
 
+| `phase3-admin-api-e2e.mjs` | Tipping, commission rates, catalog (shop types, cuisines, banners), notification status/resend, audit entries, old audit-log URL 308. Roles, validation, searches. | 90 passed |
+| `phase3-admin-ui-e2e.mjs` | The new admin pages in Chrome (fr + ar): grouped sidebar, tipping steppers, commission save, catalog add/toggle/thumbnail, notification send/resend/status, audit timeline, viewer read-only, 375 px, dark theme. Run the API suite first (it resets the database). | 113 passed |
+| `admin-nav-e2e.mjs` | Signs in and clicks all 12 sidebar links twice (both orders) plus direct loads; fails on any console error, exception or failed request. Guards the "JSON.parse" navigation bug. | 76 passed |
+
 **Run E2E against a production build, not `next dev`:** `NEXT_DIST_DIR=.next-test npx next build` (nothing else may touch that folder while it builds), then `npx next start -p 3021` with the same env. Rate limits are stored in MongoDB (`rate_limits`), so they survive a server restart: the scripts drop their database at start, which also clears them.
 
 Warm the pages first (first compile can take minutes on a slow machine), start a **fresh** database per run.

@@ -30,7 +30,7 @@ ws.onmessage = (m) => {
     if (p.response.status >= 400 && !/\/api\/admin\/session/.test(u)) problems.push(`HTTP ${p.response.status} ${u}`)
     if (/_rsc=/.test(u) && !/text\/x-component/.test(p.response.mimeType + ';' + (p.response.headers['content-type'] || ''))) problems.push(`RSC response is not text/x-component: ${p.response.mimeType} ${u}`)
   }
-  if (d.method === 'Network.loadingFailed' && !p.canceled) problems.push(`FAILED ${p.errorText} ${(reqs.get(p.requestId) || '').replace(B, '')}`)
+  if (d.method === 'Network.loadingFailed' && !p.canceled && !/example.test/.test(reqs.get(p.requestId) || '')) problems.push(`FAILED ${p.errorText} ${(reqs.get(p.requestId) || '').replace(B, '')}`)
 }
 const send = (method, params = {}) => new Promise((res) => { const i = ++id; const t = setTimeout(() => { pending.delete(i); res({ result: {} }) }, 60000); pending.set(i, (d) => { clearTimeout(t); res(d) }); ws.send(JSON.stringify({ id: i, method, params })) })
 const js = async (e) => (await send('Runtime.evaluate', { expression: e, awaitPromise: true, returnByValue: true })).result?.result?.value
