@@ -25,6 +25,11 @@ export type AuditAction =
   | 'activateLead'
   | 'updateLeadStatus'
   | 'releaseTerminal'
+  | 'updateTipping'
+  | 'updateCommission'
+  | 'createCatalogItem'
+  | 'updateCatalogItem'
+  | 'updateNotification'
 
 export interface AuditLogEntry {
   id: string
@@ -35,7 +40,7 @@ export interface AuditLogEntry {
   actorEmail?: string
   actorRole: string
   action: AuditAction
-  targetType: 'merchant' | 'license' | 'coupon' | 'notification' | 'admin' | 'session'
+  targetType: 'merchant' | 'license' | 'coupon' | 'notification' | 'admin' | 'session' | 'setting' | 'catalog'
   targetId: string
   meta?: Record<string, unknown>
   ip?: string

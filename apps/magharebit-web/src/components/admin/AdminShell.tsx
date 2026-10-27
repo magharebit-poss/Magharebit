@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import Logo from '@/components/brand/Logo';
@@ -18,7 +17,8 @@ type Lang = 'ar' | 'fr' | 'en';
 const COPY: Record<Lang, {
   title: string; username: string; usernameHint: string; password: string; signIn: string; signOut: string;
   errBad: string; errLimit: string; errConfig: string; errNet: string; loading: string;
-  nav: { merchants: string; licenses: string; leads: string; coupons: string; notifications: string; audit: string; admins: string };
+  nav: { merchants: string; licenses: string; leads: string; coupons: string; notifications: string; audit: string; admins: string; commission: string; tipping: string; shopTypes: string; cuisines: string; banners: string };
+  groups: { business: string; catalog: string; engagement: string; system: string };
   roles: Record<AdminRole, string>; menu: string; darkMode: string;
 }> = {
   ar: {
@@ -26,7 +26,8 @@ const COPY: Record<Lang, {
     password: 'كلمة المرور', signIn: 'دخول', signOut: 'خروج',
     errBad: 'بيانات الدخول غير صحيحة', errLimit: 'محاولات كثيرة، حاول لاحقاً',
     errConfig: 'لوحة الإدارة غير مهيأة على الخادم', errNet: 'تعذّر الاتصال بالخادم', loading: 'جارٍ التحميل…',
-    nav: { merchants: 'التجار', licenses: 'التراخيص', leads: 'العملاء المحتملون', coupons: 'القسائم', notifications: 'الإشعارات', audit: 'سجل التدقيق', admins: 'المسؤولون' },
+    nav: { merchants: 'التجار', licenses: 'التراخيص', leads: 'العملاء المحتملون', coupons: 'القسائم', notifications: 'الإشعارات', audit: 'سجل التدقيق', admins: 'المسؤولون', commission: 'نسبة العمولة', tipping: 'البقشيش', shopTypes: 'أنواع المتاجر', cuisines: 'المطابخ', banners: 'اللافتات' },
+    groups: { business: 'الأعمال', catalog: 'الفهرس', engagement: 'التفاعل', system: 'النظام' },
     roles: { owner: 'مالك', operator: 'مشغّل', viewer: 'مشاهد' }, menu: 'القائمة', darkMode: 'الوضع الداكن',
   },
   fr: {
@@ -34,7 +35,8 @@ const COPY: Record<Lang, {
     password: 'Mot de passe', signIn: 'Se connecter', signOut: 'Déconnexion',
     errBad: 'Identifiants incorrects', errLimit: 'Trop de tentatives, réessayez plus tard',
     errConfig: 'Console non configurée sur le serveur', errNet: 'Serveur injoignable', loading: 'Chargement…',
-    nav: { merchants: 'Commerçants', licenses: 'Licences', leads: 'Prospects', coupons: 'Coupons', notifications: 'Notifications', audit: 'Journal d’audit', admins: 'Administrateurs' },
+    nav: { merchants: 'Commerçants', licenses: 'Licences', leads: 'Prospects', coupons: 'Coupons', notifications: 'Notifications', audit: 'Journal d’audit', admins: 'Administrateurs', commission: 'Taux de commission', tipping: 'Pourboires', shopTypes: 'Types de commerce', cuisines: 'Cuisines', banners: 'Bannières' },
+    groups: { business: 'Activité', catalog: 'Catalogue', engagement: 'Communication', system: 'Système' },
     roles: { owner: 'Propriétaire', operator: 'Opérateur', viewer: 'Lecteur' }, menu: 'Menu', darkMode: 'Mode sombre',
   },
   en: {
@@ -42,7 +44,8 @@ const COPY: Record<Lang, {
     password: 'Password', signIn: 'Sign in', signOut: 'Sign out',
     errBad: 'Incorrect credentials', errLimit: 'Too many attempts, try again later',
     errConfig: 'Console is not configured on the server', errNet: 'Cannot reach the server', loading: 'Loading…',
-    nav: { merchants: 'Merchants', licenses: 'Licenses', leads: 'Leads', coupons: 'Coupons', notifications: 'Notifications', audit: 'Audit log', admins: 'Admins' },
+    nav: { merchants: 'Merchants', licenses: 'Licenses', leads: 'Leads', coupons: 'Coupons', notifications: 'Notifications', audit: 'Audit log', admins: 'Admins', commission: 'Commission rate', tipping: 'Tipping', shopTypes: 'Shop types', cuisines: 'Cuisines', banners: 'Banners' },
+    groups: { business: 'Business', catalog: 'Catalog', engagement: 'Engagement', system: 'System' },
     roles: { owner: 'Owner', operator: 'Operator', viewer: 'Viewer' }, menu: 'Menu', darkMode: 'Dark mode',
   },
 };
@@ -173,32 +176,58 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   }
 
   // ── Console (dark sidebar, light content) ───────────────────────────────
-  const links: { href: string; label: string; show: boolean }[] = [
-    { href: `/${locale}/admin/merchants`, label: c.nav.merchants, show: true },
-    { href: `/${locale}/admin/licenses`, label: c.nav.licenses, show: true },
-    { href: `/${locale}/admin/leads`, label: c.nav.leads, show: true },
-    { href: `/${locale}/admin/coupons`, label: c.nav.coupons, show: true },
-    { href: `/${locale}/admin/notifications`, label: c.nav.notifications, show: true },
-    { href: `/${locale}/admin/audit-log`, label: c.nav.audit, show: true },
-    { href: `/${locale}/admin/admins`, label: c.nav.admins, show: actor.role === 'owner' },
+  const groups: { heading: string; links: { href: string; label: string; show: boolean }[] }[] = [
+    { heading: c.groups.business, links: [
+      { href: `/${locale}/admin/merchants`, label: c.nav.merchants, show: true },
+      { href: `/${locale}/admin/licenses`, label: c.nav.licenses, show: true },
+      { href: `/${locale}/admin/leads`, label: c.nav.leads, show: true },
+      { href: `/${locale}/admin/commission-rates`, label: c.nav.commission, show: true },
+      { href: `/${locale}/admin/tipping`, label: c.nav.tipping, show: true },
+    ] },
+    { heading: c.groups.catalog, links: [
+      { href: `/${locale}/admin/shop-types`, label: c.nav.shopTypes, show: true },
+      { href: `/${locale}/admin/cuisines`, label: c.nav.cuisines, show: true },
+      { href: `/${locale}/admin/banners`, label: c.nav.banners, show: true },
+    ] },
+    { heading: c.groups.engagement, links: [
+      { href: `/${locale}/admin/coupons`, label: c.nav.coupons, show: true },
+      { href: `/${locale}/admin/notifications`, label: c.nav.notifications, show: true },
+    ] },
+    { heading: c.groups.system, links: [
+      { href: `/${locale}/admin/audit-logs`, label: c.nav.audit, show: true },
+      { href: `/${locale}/admin/admins`, label: c.nav.admins, show: actor.role === 'owner' },
+    ] },
   ];
 
   const nav = (
     <nav aria-label={c.title} className="flex flex-col gap-1 p-3">
-      {links.filter((l) => l.show).map((l) => {
-        const active = pathname === l.href;
+      {groups.map((g) => {
+        const visible = g.links.filter((l) => l.show);
+        if (visible.length === 0) return null;
         return (
-          <Link
-            key={l.href}
-            href={l.href}
-            onClick={() => setMenuOpen(false)}
-            aria-current={active ? 'page' : undefined}
-            className={`flex min-h-[44px] items-center rounded-[4px] px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-400 ${
-              active ? 'bg-gold-400 text-brand-950' : 'text-white/80 hover:bg-brand-900 hover:text-white'
-            }`}
-          >
-            {l.label}
-          </Link>
+          <div key={g.heading} className="mb-2">
+            <p className="px-3 pb-1 pt-2 text-[11px] font-bold uppercase tracking-wider text-white/45">{g.heading}</p>
+            {visible.map((l) => {
+              const active = pathname === l.href;
+              return (
+                // Plain anchor on purpose: a full page load per admin page. Client-side <Link> transitions
+                // fetch and parse an RSC payload in the browser; a stale or corrupted payload (dev cache, proxy,
+                // two servers on one build folder) made the console fail with "JSON.parse ... after JSON".
+                // Every admin page is a client shell that fetches its own data, so nothing is lost.
+                <a
+                  key={l.href}
+                  href={l.href}
+                  onClick={() => setMenuOpen(false)}
+                  aria-current={active ? 'page' : undefined}
+                  className={`flex min-h-[44px] items-center rounded-[4px] px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-400 ${
+                    active ? 'bg-gold-400 text-brand-950' : 'text-white/80 hover:bg-brand-900 hover:text-white'
+                  }`}
+                >
+                  {l.label}
+                </a>
+              );
+            })}
+          </div>
         );
       })}
     </nav>

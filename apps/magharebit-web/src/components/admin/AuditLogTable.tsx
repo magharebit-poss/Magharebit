@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAdmin } from './AdminShell';
+import { ACTION_LABEL, AUDIT_ACTIONS } from './auditActions';
 
 interface AuditEntry {
   id: string;
@@ -18,36 +19,6 @@ interface AuditEntry {
 }
 
 type Lang = 'ar' | 'fr' | 'en';
-
-const ACTIONS = [
-  'generateLicense', 'revokeKey', 'extendSubscription', 'approveMerchant', 'suspendMerchant',
-  'reactivateMerchant', 'createCoupon', 'broadcastNotification', 'createAdmin', 'disableAdmin', 'adminLogin',
-  'activateLead', 'updateLeadStatus', 'releaseTerminal',
-] as const;
-
-const ACTION_LABEL: Record<Lang, Record<string, string>> = {
-  ar: {
-    generateLicense: 'إنشاء ترخيص', revokeKey: 'إلغاء مفتاح', extendSubscription: 'تمديد الاشتراك',
-    approveMerchant: 'قبول تاجر', suspendMerchant: 'تعليق تاجر', reactivateMerchant: 'إعادة تفعيل تاجر',
-    createCoupon: 'إنشاء قسيمة', broadcastNotification: 'بث إشعار', createAdmin: 'إنشاء مسؤول',
-    disableAdmin: 'تعطيل مسؤول', adminLogin: 'تسجيل دخول',
-    activateLead: 'تفعيل عميل محتمل', updateLeadStatus: 'تغيير حالة عميل', releaseTerminal: 'تحرير جهاز',
-  },
-  fr: {
-    generateLicense: 'Licence générée', revokeKey: 'Clé révoquée', extendSubscription: 'Abonnement prolongé',
-    approveMerchant: 'Commerçant approuvé', suspendMerchant: 'Commerçant suspendu', reactivateMerchant: 'Commerçant réactivé',
-    createCoupon: 'Coupon créé', broadcastNotification: 'Notification diffusée', createAdmin: 'Admin créé',
-    disableAdmin: 'Admin désactivé', adminLogin: 'Connexion',
-    activateLead: 'Prospect activé', updateLeadStatus: 'Statut du prospect modifié', releaseTerminal: 'Terminal libéré',
-  },
-  en: {
-    generateLicense: 'License generated', revokeKey: 'Key revoked', extendSubscription: 'Subscription extended',
-    approveMerchant: 'Merchant approved', suspendMerchant: 'Merchant suspended', reactivateMerchant: 'Merchant reactivated',
-    createCoupon: 'Coupon created', broadcastNotification: 'Notification broadcast', createAdmin: 'Admin created',
-    disableAdmin: 'Admin disabled/enabled', adminLogin: 'Sign-in',
-    activateLead: 'Lead activated', updateLeadStatus: 'Lead status changed', releaseTerminal: 'Terminal released',
-  },
-};
 
 const COPY: Record<Lang, {
   title: string; subtitle: string; time: string; performedBy: string; action: string; target: string; details: string;
@@ -96,7 +67,7 @@ function summarize(meta?: Record<string, unknown>): string {
     .join(' · ');
 }
 
-export default function AuditLogTable() {
+export default function AuditLogTable({ embedded = false }: { embedded?: boolean }) {
   const { lang, isRTL } = useAdmin();
   const c = COPY[lang];
 
@@ -149,9 +120,9 @@ export default function AuditLogTable() {
   const pages = Math.max(1, Math.ceil(total / LIMIT));
 
   return (
-    <section aria-labelledby="audit-title">
-      <h1 id="audit-title" className="text-2xl font-bold text-[var(--adm-text)]">{c.title}</h1>
-      <p className="mb-4 text-sm text-[var(--adm-muted)]">{c.subtitle}</p>
+    <section aria-labelledby={embedded ? undefined : 'audit-title'} aria-label={embedded ? c.title : undefined}>
+      {!embedded && <h1 id="audit-title" className="text-2xl font-bold text-[var(--adm-text)]">{c.title}</h1>}
+      {!embedded && <p className="mb-4 text-sm text-[var(--adm-muted)]">{c.subtitle}</p>}
 
       <form
         onSubmit={(e) => { e.preventDefault(); go(1, { action, target: target.trim(), from, to }); }}
@@ -161,7 +132,7 @@ export default function AuditLogTable() {
           {c.action}
           <select className={FIELD} value={action} onChange={(e) => setAction(e.target.value)}>
             <option value="">{c.all}</option>
-            {ACTIONS.map((a) => <option key={a} value={a}>{ACTION_LABEL[lang][a]} ({a})</option>)}
+            {AUDIT_ACTIONS.map((a) => <option key={a} value={a}>{ACTION_LABEL[lang][a]} ({a})</option>)}
           </select>
         </label>
         <label className="flex w-full min-w-0 flex-col gap-1 text-xs font-semibold text-[var(--adm-muted)] sm:w-auto">

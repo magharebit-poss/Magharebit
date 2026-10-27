@@ -33,6 +33,8 @@ export interface MerchantDoc {
   approvedBy?: string
   plan?: LicensePlan
   subscriptionEndsAt?: Date
+  /** Platform commission in percent (0-100, two decimals). Absent = not configured (treated as 0). */
+  commissionRate?: number
 }
 
 export interface FindMerchantsOptions {
@@ -221,6 +223,19 @@ export const merchantsRepo = {
   },
 
   /** Point an existing approved merchant at its newest subscription. */
+  async setCommission(id: string, rate: number): Promise<MerchantDoc | null> {
+    if (!isValidObjectId(id)) return null
+    const db = await getDb()
+    if (!db) return null
+    await ensureIndexes(db)
+    const raw = await db.collection('merchants').findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: { commissionRate: rate } },
+      { returnDocument: 'after' }
+    )
+    return raw ? toDoc(raw as Record<string, unknown>) : null
+  },
+
   async setSubscription(id: string, plan: LicensePlan, subscriptionEndsAt: Date): Promise<MerchantDoc | null> {
     if (!isValidObjectId(id)) return null
     const db = await getDb()

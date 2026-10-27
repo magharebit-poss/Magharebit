@@ -10,7 +10,7 @@ import { getDb } from '../mongodb'
 import type { LicensePlan } from '../license-key'
 
 export type NotificationAudience = 'all' | 'plan' | 'merchant'
-export type NotificationStatus = 'queued' | 'sent'
+export type NotificationStatus = 'queued' | 'sent' | 'cancelled'
 
 export interface NotificationDoc {
   id: string
@@ -21,6 +21,10 @@ export interface NotificationDoc {
   target?: string
   status: NotificationStatus
   deliveredCount?: number
+  /** How many times an admin re-queued it. */
+  resendCount?: number
+  updatedAt?: Date
+  updatedBy?: string
   createdAt: Date
   createdBy: string
 }
@@ -55,6 +59,21 @@ export const notificationsRepo = {
       col.countDocuments({}),
     ])
     return { notifications: rows.map(toDoc), total }
+  },
+
+  /** Change the status, or re-queue ("resend"). Nothing is delivered yet: resend only puts it back in the queue. */
+  async update(id: string, change: { status?: NotificationStatus; resend?: boolean }, by: string): Promise<NotificationDoc | null> {
+    const db = await getDb()
+    if (!db || !/^[0-9a-f]{24}$/i.test(id)) return null
+    const set: Record<string, unknown> = { updatedAt: new Date(), updatedBy: by }
+    if (change.status) set.status = change.status
+    if (change.resend) set.status = 'queued'
+    const r = await db.collection<Stored>(COLLECTION).findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: set, ...(change.resend ? { $inc: { resendCount: 1 } } : {}) },
+      { returnDocument: 'after' }
+    )
+    return r ? toDoc(r) : null
   },
 
   async create(input: Pick<NotificationDoc, 'title' | 'body' | 'audience' | 'target' | 'createdBy'>): Promise<NotificationDoc | null> {

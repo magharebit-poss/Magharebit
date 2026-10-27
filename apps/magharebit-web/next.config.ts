@@ -39,6 +39,13 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
+  async redirects() {
+    return [
+      // The audit log is now /admin/audit-logs (timeline + table). A real 308, so old links and bookmarks keep working.
+      { source: '/:locale(ar|fr|en)/admin/audit-log', destination: '/:locale/admin/audit-logs', permanent: true },
+    ];
+  },
+
   async headers() {
     return [
       // Security on every route
