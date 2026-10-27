@@ -24,7 +24,27 @@ const immutableCache = [
   { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
 ]
 
+// ── Canonical site URL ───────────────────────────────────────────────────────
+// Canonical links, hreflang, sitemap, robots and JSON-LD are all built from NEXT_PUBLIC_BASE_URL at BUILD time.
+// A developer's .env.local usually says http://localhost:3004; that value must never reach a production build, or
+// Google would be told the live site's canonical is localhost. So in production builds an unset or local value is
+// replaced by the live domain (a real staging domain is respected). ALLOW_LOCAL_BASE_URL=1 keeps a local value for
+// QA of a production build on your own machine.
+const LIVE_SITE_URL = 'https://magharebit.com';
+const LOCAL_HOST = /^(https?:\/\/)?(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|\[::1\]|192\.168\.|10\.)/i;
+
+function resolveBaseUrl(): string {
+  const configured = (process.env.NEXT_PUBLIC_BASE_URL ?? '').trim().replace(/\/+$/, '');
+  if (process.env.NODE_ENV !== 'production') return configured || 'http://localhost:3004';
+  if (configured && !LOCAL_HOST.test(configured)) return configured;
+  if (configured && process.env.ALLOW_LOCAL_BASE_URL === '1') return configured;
+  if (configured) console.warn(`[config] NEXT_PUBLIC_BASE_URL="${configured}" is a local address: using ${LIVE_SITE_URL} for this production build.`);
+  return LIVE_SITE_URL;
+}
+
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_BASE_URL: resolveBaseUrl() },
+
   // Lets a second dev server (tests, review) run beside the main one without
   // sharing and corrupting the same .next cache: NEXT_DIST_DIR=.next-test next dev -p 3020
   distDir: process.env.NEXT_DIST_DIR || '.next',

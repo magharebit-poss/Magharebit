@@ -83,9 +83,9 @@ export default function Image() {
           }}
         >
           {[
-            { value: '500+', label: 'Active Stores' },
-            { value: '99.9%', label: 'Uptime' },
-            { value: '2 min', label: 'Setup Time' },
+            { value: '14 days', label: 'Free trial' },
+            { value: 'Offline', label: 'Keeps selling' },
+            { value: 'AR · FR', label: 'Bilingual' },
           ].map((stat) => (
             <div
               key={stat.label}

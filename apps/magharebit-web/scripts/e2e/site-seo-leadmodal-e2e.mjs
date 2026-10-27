@@ -37,6 +37,26 @@ for (const [l, [lang, dir, ogl]] of Object.entries(EXPECT)) {
   check(`[${l}] no request to Google Fonts in the HTML`, !/fonts\.(googleapis|gstatic)\.com/.test(h))
   check(`[${l}] geo.region=MA and manifest/theme-color present`, h.includes('name="geo.region" content="MA"') && h.includes('rel="manifest"') && h.includes('name="theme-color" content="#0A2318"'))
 }
+// Phase 4: production builds point at the live domain even when .env.local says localhost; no unverified proof numbers
+{
+  const home = await html('/fr')
+  check('canonical is https://magharebit.com/fr (a local NEXT_PUBLIC_BASE_URL never reaches a production build)', home.includes('<link rel="canonical" href="https://magharebit.com/fr"'))
+  check('hreflang links all use https://magharebit.com', [...home.matchAll(/hrefLang="[^"]+" href="([^"]+)"/g)].length === 4 && [...home.matchAll(/hrefLang="[^"]+" href="([^"]+)"/g)].every((m) => m[1].startsWith('https://magharebit.com/')))
+  const ldUrls = [...home.matchAll(/"(?:url|@id)":"([^"]+)"/g)].map((m) => m[1])
+  check('JSON-LD urls and ids all start with https://magharebit.com', ldUrls.length > 0 && ldUrls.every((u) => u.startsWith('https://magharebit.com')), ldUrls.find((u) => !u.startsWith('https://magharebit.com')) || '')
+  const sitemap = await html('/sitemap.xml'); const robotsTxt = await html('/robots.txt')
+  check('sitemap and robots.txt use the live domain, no localhost anywhere', sitemap.includes('<loc>https://magharebit.com/fr') && !/localhost|127\.0\.0\.1/.test(sitemap + robotsTxt + home) && robotsTxt.includes('Sitemap: https://magharebit.com/sitemap.xml'))
+  const og = await html('/ar'); check('og:url / twitter and metadata do not mention localhost either', !/localhost/.test(og))
+  const PAGES = ['', '/about', '/clients', '/demo', '/features', '/pricing', '/faq', '/sectors']
+  const bad = []
+  for (const l of ['ar', 'fr', 'en']) for (const p of PAGES) {
+    const h = (await html(`/${l}${p}`)).replace(/<script[\s\S]*?<\/script>/g, (m) => (m.includes('application/ld+json') ? m : '')).replace(/<style[\s\S]*?<\/style>/g, '')
+    const text = h.replace(/<[^>]+>/g, ' ')
+    const m = text.match(/(\+\s?500\b|\b500\s?\+|\b500\s(commer|merchants|stores|boutiques)|99[.,]9\s?%|\b4[.,]9\s?\/\s?5|أكثر من 500|500 تاجر|500 متجر)/)
+    if (m) bad.push(`/${l}${p}: "${m[0]}"`)
+  }
+  check('no unverified proof numbers (500+ merchants, 99.9%, 4.9/5) on 24 marketing pages in ar/fr/en', bad.length === 0, bad.slice(0, 3).join(' | '))
+}
 const city = await html('/fr/caisse-enregistreuse-casablanca')
 const cityLd = [...city.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]))
 const cityNodes = cityLd.flatMap((x) => x['@graph'] ?? [x])

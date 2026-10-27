@@ -29,10 +29,10 @@ export default async function ClientsPage({ params }: { params: Promise<{ locale
 
   const featured = MERCHANTS.filter((m) => m.testimonial);
   const stats = [
-    { value: '500+', label: t('stat1_label') },
-    { value: '12', label: t('stat2_label') },
-    { value: '99.9%', label: t('stat3_label') },
-    { value: '4.9/5', label: t('stat4_label') },
+    { value: t('stat1_value'), label: t('stat1_label') },
+    { value: t('stat2_value'), label: t('stat2_label') },
+    { value: t('stat3_value'), label: t('stat3_label') },
+    { value: t('stat4_value'), label: t('stat4_label') },
   ];
 
   return (

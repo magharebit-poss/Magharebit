@@ -95,6 +95,10 @@ async function signup(lang, local, expect) {
   const win = await get(`/api/download/windows?locale=${lang}`, cookie)
   check(`[${lang}] download/windows with session + active license -> 302 to the installer, no-store`, win.status === 302 && win.headers.get('location') === 'https://downloads.example.test/pos-setup.exe' && /no-store/.test(win.headers.get('cache-control') || ''), `${win.status} ${win.headers.get('location')}`)
   check(`[${lang}] download/android not configured yet -> 503 not_available_yet`, (await get(`/api/download/android?locale=${lang}`, cookie)).status === 503)
+  const asHtml = await fetch(B + `/api/download/android?locale=${lang}`, { redirect: 'manual', headers: { cookie, accept: 'text/html,application/xhtml+xml' } })
+  const htmlBody = await asHtml.text()
+  check(`[${lang}] installer not published: a browser gets a friendly ${lang} page with a way back, not raw JSON`, asHtml.status === 503 && /text\/html/.test(asHtml.headers.get('content-type') || '') && htmlBody.includes(`lang="${lang}"`) && htmlBody.includes(`href="/${lang}/download"`) && !htmlBody.includes('not_available_yet'))
+  check(`[${lang}] the development placeholder route does not exist in production (404)`, (await fetch(B + '/api/dev-installer/windows')).status === 404)
   const anon = await get(`/api/download/windows?locale=${lang}`)
   check(`[${lang}] download without a session -> 302 to portal login with ?next`, anon.status === 302 && new URL(anon.headers.get('location')).pathname === `/${lang}/portal/login` && (anon.headers.get('location') || '').includes('next='), anon.headers.get('location'))
   check(`[${lang}] unknown platform -> 404`, (await get('/api/download/linux', cookie)).status === 404)
@@ -110,6 +114,8 @@ async function signup(lang, local, expect) {
   const rv = await fetch(`${B}/api/admin/licenses/${lic.id}/revoke`, { method: 'POST', headers: { cookie: adminCookie, 'content-type': 'application/json' }, body: JSON.stringify({ reason: 'e2e' }) })
   const afterRevoke = await get(`/api/download/windows?locale=${lang}`, cookie)
   check(`[${lang}] after the license is revoked, download -> 403 license_required`, rv.ok && afterRevoke.status === 403)
+  const revokedHtml = await fetch(B + `/api/download/windows?locale=${lang}`, { redirect: 'manual', headers: { cookie, accept: 'text/html' } })
+  check(`[${lang}] revoked + browser: friendly 403 page`, revokedHtml.status === 403 && /text\/html/.test(revokedHtml.headers.get('content-type') || '') && (await revokedHtml.text()).includes(`href="/${lang}/download"`))
   return { phone, lic }
 }
 
