@@ -20,10 +20,14 @@ All except the unit check need a dev server on its own cache folder (`NEXT_DIST_
 
 | `phase3-admin-api-e2e.mjs` | Tipping, commission rates, catalog (shop types, cuisines, banners), notification status/resend, audit entries, old audit-log URL 308. Roles, validation, searches. | 90 passed |
 | `phase3-admin-ui-e2e.mjs` | The new admin pages in Chrome (fr + ar): grouped sidebar, tipping steppers, commission save, catalog add/toggle/thumbnail, notification send/resend/status, audit timeline, viewer read-only, 375 px, dark theme. Run the API suite first (it resets the database). | 113 passed |
-| `admin-nav-e2e.mjs` | Signs in and clicks all 12 sidebar links twice (both orders) plus direct loads; fails on any console error, exception or failed request. Guards the "JSON.parse" navigation bug. | 76 passed |
+| `admin-nav-e2e.mjs` | Signs in and clicks all 12 sidebar page links (the Command Center is covered by the Phase 5 UI suite) twice (both orders) plus direct loads; fails on any console error, exception or failed request. Guards the "JSON.parse" navigation bug. | 76 passed |
 
 | `downloads-unit.mjs` | `installerUrl()`: a configured URL wins; the placeholder exists only under `NODE_ENV=development`; production never fakes a URL. No server needed. | 6 passed |
 | `download-dev-e2e.mjs` | `next dev` with no installer URLs: sign up through the API, get the trial key, download Windows and Android through the gated route, receive the clearly labelled placeholder file. | 10 passed |
+
+| `phase5-unit.mjs` | Morocco day boundaries (incl. the Ramadan UTC+0 switch), CSV escaping (BOM, RFC 4180, formula guard), the XLSX writer (parts, RTL, frozen bold header, numbers vs text), Arabic-tolerant search patterns. No server needed. | 30 passed |
+| `phase5-api-e2e.mjs` | Command Center metrics (today vs same time yesterday, 7 Morocco days, licenses, online/24 h terminals, 30 s cache + `fresh=1`), exports (roles, audit before download, CSV + XLSX, filters, no license keys or customer ids), global search (roles, Arabic variants, literal regex). Drops its database; start the server with `MONGODB_DB=magharebit_p5`. | 41 passed |
+| `phase5-ui-e2e.mjs` | Command Center in Chrome (fr + ar): KPIs, chart order LTR/RTL, hover, table view, activity; Ctrl+K palette (pages, Arabic data search, arrows + Enter into a filtered table, Esc); Excel download; viewer cannot export; 375 px; dark theme. Run after the API suite. | 54 passed |
 
 **Run E2E against a production build, not `next dev`:** `NEXT_DIST_DIR=.next-test npx next build` (nothing else may touch that folder while it builds), then `npx next start -p 3021` with the same env. Rate limits are stored in MongoDB (`rate_limits`), so they survive a server restart: the scripts drop their database at start, which also clears them.
 

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAdmin } from './AdminShell';
-import { BTN, BTN_PRIMARY, FIELD, PLAN_STYLE, SECTOR_LABEL, type Lang } from './adminUi';
+import ExportButton from './ExportButton';
+import { BTN, BTN_PRIMARY, FIELD, PLAN_STYLE, SECTOR_LABEL, initialQuery, type Lang } from './adminUi';
 
 interface Merchant { id: string; storeName: string; phone: string; email?: string; city: string; sector: string; plan?: string; commissionRate?: number }
 
@@ -55,8 +56,8 @@ export default function CommissionTable() {
   const [rows, setRows] = useState<Merchant[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [q, setQ] = useState('');
-  const [appliedQ, setAppliedQ] = useState('');
+  const [q, setQ] = useState(initialQuery);
+  const [appliedQ, setAppliedQ] = useState(initialQuery);
   const [tick, setTick] = useState(0);
   const [state, setState] = useState<'loading' | 'ok' | 'error' | 'unavailable'>('loading');
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -127,7 +128,10 @@ export default function CommissionTable() {
           <h1 id="commission-title" className="text-2xl font-bold text-[var(--adm-text)]">{c.title}</h1>
           <p className="text-sm text-[var(--adm-muted)]">{c.subtitle}</p>
         </div>
-        <button type="button" onClick={() => reload()} className={BTN}>{c.refresh}</button>
+        <div className="flex flex-wrap items-start gap-2">
+          <ExportButton dataset="commission-rates" filters={{ q: appliedQ }} />
+          <button type="button" onClick={() => reload()} className={BTN}>{c.refresh}</button>
+        </div>
       </div>
 
       <form onSubmit={(e) => { e.preventDefault(); reload(1, q.trim()); }} className="mb-3 flex flex-wrap items-end gap-3 rounded-[8px] border border-[var(--adm-border)] bg-[var(--adm-surface)] p-3">

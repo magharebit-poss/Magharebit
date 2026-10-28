@@ -7,6 +7,7 @@ export const AUDIT_ACTIONS = [
   'reactivateMerchant', 'createCoupon', 'broadcastNotification', 'createAdmin', 'disableAdmin', 'adminLogin',
   'activateLead', 'updateLeadStatus', 'releaseTerminal',
   'updateTipping', 'updateCommission', 'createCatalogItem', 'updateCatalogItem', 'updateNotification',
+  'exportData',
 ] as const;
 
 export const ACTION_LABEL: Record<Lang, Record<string, string>> = {
@@ -17,7 +18,7 @@ export const ACTION_LABEL: Record<Lang, Record<string, string>> = {
     disableAdmin: 'تعطيل مسؤول', adminLogin: 'تسجيل دخول',
     activateLead: 'تفعيل عميل محتمل', updateLeadStatus: 'تغيير حالة عميل', releaseTerminal: 'تحرير جهاز',
     updateTipping: 'تحديث البقشيش', updateCommission: 'تحديث العمولة', createCatalogItem: 'إضافة عنصر',
-    updateCatalogItem: 'تعديل عنصر', updateNotification: 'تعديل إشعار',
+    updateCatalogItem: 'تعديل عنصر', updateNotification: 'تعديل إشعار', exportData: 'تصدير بيانات',
   },
   fr: {
     generateLicense: 'Licence générée', revokeKey: 'Clé révoquée', extendSubscription: 'Abonnement prolongé',
@@ -26,7 +27,7 @@ export const ACTION_LABEL: Record<Lang, Record<string, string>> = {
     disableAdmin: 'Admin désactivé', adminLogin: 'Connexion',
     activateLead: 'Prospect activé', updateLeadStatus: 'Statut du prospect modifié', releaseTerminal: 'Terminal libéré',
     updateTipping: 'Pourboires modifiés', updateCommission: 'Commission modifiée', createCatalogItem: 'Élément ajouté',
-    updateCatalogItem: 'Élément modifié', updateNotification: 'Notification modifiée',
+    updateCatalogItem: 'Élément modifié', updateNotification: 'Notification modifiée', exportData: 'Données exportées',
   },
   en: {
     generateLicense: 'License generated', revokeKey: 'Key revoked', extendSubscription: 'Subscription extended',
@@ -35,7 +36,7 @@ export const ACTION_LABEL: Record<Lang, Record<string, string>> = {
     disableAdmin: 'Admin disabled/enabled', adminLogin: 'Sign-in',
     activateLead: 'Lead activated', updateLeadStatus: 'Lead status changed', releaseTerminal: 'Terminal released',
     updateTipping: 'Tipping updated', updateCommission: 'Commission updated', createCatalogItem: 'Item added',
-    updateCatalogItem: 'Item edited', updateNotification: 'Notification edited',
+    updateCatalogItem: 'Item edited', updateNotification: 'Notification edited', exportData: 'Data exported',
   },
 };
 
@@ -47,7 +48,7 @@ export const ACTION_TONE: Record<string, AuditTone> = {
   revokeKey: 'red', suspendMerchant: 'red', disableAdmin: 'red', releaseTerminal: 'red',
   extendSubscription: 'gold', updateCommission: 'gold', updateTipping: 'gold',
   broadcastNotification: 'blue', updateNotification: 'blue', updateCatalogItem: 'blue', updateLeadStatus: 'blue',
-  adminLogin: 'grey',
+  adminLogin: 'grey', exportData: 'grey',
 };
 
 export const TONE_STYLE: Record<AuditTone, { tag: string; dot: string }> = {

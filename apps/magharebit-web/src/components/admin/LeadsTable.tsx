@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAdmin } from './AdminShell';
+import ExportButton from './ExportButton';
+import { initialQuery } from './adminUi';
 
 type LeadStatus = 'new' | 'contacted' | 'converted' | 'rejected' | 'activated';
 interface Lead {
@@ -115,9 +117,9 @@ export default function LeadsTable() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [qInput, setQInput] = useState('');
+  const [qInput, setQInput] = useState(initialQuery);
   const [statusInput, setStatusInput] = useState<LeadStatus | ''>('');
-  const [applied, setApplied] = useState<{ q: string; status: LeadStatus | '' }>({ q: '', status: '' });
+  const [applied, setApplied] = useState<{ q: string; status: LeadStatus | '' }>(() => ({ q: initialQuery(), status: '' }));
   const [tick, setTick] = useState(0);
   const [state, setState] = useState<'loading' | 'ok' | 'error' | 'unavailable'>('loading');
 
@@ -239,13 +241,16 @@ export default function LeadsTable() {
           <h1 id="leads-title" className="text-2xl font-bold text-[var(--adm-text)]">{c.title}</h1>
           <p className="text-sm text-[var(--adm-muted)]">{c.subtitle}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => reload()}
-          className="min-h-[44px] rounded-[4px] border border-[var(--adm-border)] bg-[var(--adm-surface)] px-4 text-sm font-semibold text-[var(--adm-text)] hover:border-[var(--adm-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--adm-accent)]"
-        >
-          {c.refresh}
-        </button>
+        <div className="flex flex-wrap items-start gap-2">
+          <ExportButton dataset="leads" filters={{ q: applied.q, status: applied.status }} />
+          <button
+            type="button"
+            onClick={() => reload()}
+            className="min-h-[44px] rounded-[4px] border border-[var(--adm-border)] bg-[var(--adm-surface)] px-4 text-sm font-semibold text-[var(--adm-text)] hover:border-[var(--adm-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--adm-accent)]"
+          >
+            {c.refresh}
+          </button>
+        </div>
       </div>
 
       <form

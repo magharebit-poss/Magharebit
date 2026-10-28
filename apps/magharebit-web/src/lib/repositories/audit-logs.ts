@@ -30,6 +30,7 @@ export type AuditAction =
   | 'createCatalogItem'
   | 'updateCatalogItem'
   | 'updateNotification'
+  | 'exportData'
 
 export interface AuditLogEntry {
   id: string
@@ -40,7 +41,7 @@ export interface AuditLogEntry {
   actorEmail?: string
   actorRole: string
   action: AuditAction
-  targetType: 'merchant' | 'license' | 'coupon' | 'notification' | 'admin' | 'session' | 'setting' | 'catalog'
+  targetType: 'merchant' | 'license' | 'coupon' | 'notification' | 'admin' | 'session' | 'setting' | 'catalog' | 'export'
   targetId: string
   meta?: Record<string, unknown>
   ip?: string

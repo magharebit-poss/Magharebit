@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAdmin } from './AdminShell';
-import { BTN, BTN_PRIMARY, DURATIONS, FIELD, PLANS, PLAN_STYLE, SECTOR_FILTER, SECTOR_LABEL, daysLeft, fmtDate, type Lang } from './adminUi';
+import { BTN, BTN_PRIMARY, DURATIONS, FIELD, PLANS, PLAN_STYLE, SECTOR_FILTER, SECTOR_LABEL, daysLeft, fmtDate, initialQuery, type Lang } from './adminUi';
 
 type MerchantStatus = 'pending' | 'approved' | 'suspended';
 interface Merchant {
@@ -92,7 +92,7 @@ export default function MerchantsTable() {
   const [rows, setRows] = useState<Merchant[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [form, setForm] = useState({ q: '', status: '', sector: '', plan: '' });
+  const [form, setForm] = useState(() => ({ q: initialQuery(), status: '', sector: '', plan: '' }));
   const [applied, setApplied] = useState(form);
   const [tick, setTick] = useState(0);
   const [state, setState] = useState<'loading' | 'ok' | 'error' | 'unavailable'>('loading');

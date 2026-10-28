@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAdmin } from './AdminShell';
-import { BTN, BTN_PRIMARY, FIELD, PLANS, fmtDate, type Lang } from './adminUi';
+import { BTN, BTN_PRIMARY, FIELD, PLANS, fmtDate, initialQuery, type Lang } from './adminUi';
 
 type Kind = 'percent' | 'fixed' | 'trial_days';
 interface Coupon {
@@ -51,8 +51,8 @@ export default function CouponsTable() {
   const [rows, setRows] = useState<Coupon[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [q, setQ] = useState('');
-  const [appliedQ, setAppliedQ] = useState('');
+  const [q, setQ] = useState(initialQuery);
+  const [appliedQ, setAppliedQ] = useState(initialQuery);
   const [tick, setTick] = useState(0);
   const [state, setState] = useState<'loading' | 'ok' | 'error' | 'unavailable'>('loading');
   const [form, setForm] = useState(EMPTY);

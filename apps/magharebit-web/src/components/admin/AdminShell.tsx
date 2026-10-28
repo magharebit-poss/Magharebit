@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { usePathname } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import Logo from '@/components/brand/Logo';
+import CommandPalette, { type PaletteLink } from './CommandPalette';
 
 export type AdminRole = 'owner' | 'operator' | 'viewer';
 export interface AdminActorInfo {
@@ -13,12 +14,31 @@ export interface AdminActorInfo {
 }
 
 type Lang = 'ar' | 'fr' | 'en';
+type NavKey = 'dashboard' | 'merchants' | 'licenses' | 'leads' | 'coupons' | 'notifications' | 'audit' | 'admins' | 'commission' | 'tipping' | 'shopTypes' | 'cuisines' | 'banners';
+type GroupKey = 'overview' | 'business' | 'catalog' | 'engagement' | 'system';
+
+// Sidebar order. `words` = extra search terms for the Ctrl+K palette (the labels in all three languages are added too).
+const LINKS: { key: NavKey; path: string; group: GroupKey; ownerOnly?: boolean; words: string }[] = [
+  { key: 'dashboard', path: '', group: 'overview', words: 'dashboard home accueil tableau de bord kpi ventes sales لوحة الرئيسية مبيعات' },
+  { key: 'merchants', path: '/merchants', group: 'business', words: 'shops stores commerces boutiques متاجر' },
+  { key: 'licenses', path: '/licenses', group: 'business', words: 'keys clés licence مفاتيح terminals terminaux' },
+  { key: 'leads', path: '/leads', group: 'business', words: 'prospects demandes requests طلبات' },
+  { key: 'commission', path: '/commission-rates', group: 'business', words: 'rate taux pourcentage percent نسبة' },
+  { key: 'tipping', path: '/tipping', group: 'business', words: 'tips pourboire إكرامية settings réglages' },
+  { key: 'shopTypes', path: '/shop-types', group: 'catalog', words: 'categories catégories secteurs sectors فئات' },
+  { key: 'cuisines', path: '/cuisines', group: 'catalog', words: 'food cuisine أطباق' },
+  { key: 'banners', path: '/banners', group: 'catalog', words: 'bannière slider images صور' },
+  { key: 'coupons', path: '/coupons', group: 'engagement', words: 'promo codes réduction discount خصم' },
+  { key: 'notifications', path: '/notifications', group: 'engagement', words: 'push messages broadcast diffusion رسائل' },
+  { key: 'audit', path: '/audit-logs', group: 'system', words: 'logs journal historique history activity activité نشاط سجل' },
+  { key: 'admins', path: '/admins', group: 'system', ownerOnly: true, words: 'users utilisateurs accounts comptes roles rôles مستخدمون' },
+];
 
 const COPY: Record<Lang, {
   title: string; username: string; usernameHint: string; password: string; signIn: string; signOut: string;
   errBad: string; errLimit: string; errConfig: string; errNet: string; loading: string;
-  nav: { merchants: string; licenses: string; leads: string; coupons: string; notifications: string; audit: string; admins: string; commission: string; tipping: string; shopTypes: string; cuisines: string; banners: string };
-  groups: { business: string; catalog: string; engagement: string; system: string };
+  nav: Record<NavKey, string>;
+  groups: Record<GroupKey, string>;
   roles: Record<AdminRole, string>; menu: string; darkMode: string;
 }> = {
   ar: {
@@ -26,8 +46,8 @@ const COPY: Record<Lang, {
     password: 'كلمة المرور', signIn: 'دخول', signOut: 'خروج',
     errBad: 'بيانات الدخول غير صحيحة', errLimit: 'محاولات كثيرة، حاول لاحقاً',
     errConfig: 'لوحة الإدارة غير مهيأة على الخادم', errNet: 'تعذّر الاتصال بالخادم', loading: 'جارٍ التحميل…',
-    nav: { merchants: 'التجار', licenses: 'التراخيص', leads: 'العملاء المحتملون', coupons: 'القسائم', notifications: 'الإشعارات', audit: 'سجل التدقيق', admins: 'المسؤولون', commission: 'نسبة العمولة', tipping: 'البقشيش', shopTypes: 'أنواع المتاجر', cuisines: 'المطابخ', banners: 'اللافتات' },
-    groups: { business: 'الأعمال', catalog: 'الفهرس', engagement: 'التفاعل', system: 'النظام' },
+    nav: { dashboard: 'مركز القيادة', merchants: 'التجار', licenses: 'التراخيص', leads: 'العملاء المحتملون', coupons: 'القسائم', notifications: 'الإشعارات', audit: 'سجل التدقيق', admins: 'المسؤولون', commission: 'نسبة العمولة', tipping: 'البقشيش', shopTypes: 'أنواع المتاجر', cuisines: 'المطابخ', banners: 'اللافتات' },
+    groups: { overview: 'نظرة عامة', business: 'الأعمال', catalog: 'الفهرس', engagement: 'التفاعل', system: 'النظام' },
     roles: { owner: 'مالك', operator: 'مشغّل', viewer: 'مشاهد' }, menu: 'القائمة', darkMode: 'الوضع الداكن',
   },
   fr: {
@@ -35,8 +55,8 @@ const COPY: Record<Lang, {
     password: 'Mot de passe', signIn: 'Se connecter', signOut: 'Déconnexion',
     errBad: 'Identifiants incorrects', errLimit: 'Trop de tentatives, réessayez plus tard',
     errConfig: 'Console non configurée sur le serveur', errNet: 'Serveur injoignable', loading: 'Chargement…',
-    nav: { merchants: 'Commerçants', licenses: 'Licences', leads: 'Prospects', coupons: 'Coupons', notifications: 'Notifications', audit: 'Journal d’audit', admins: 'Administrateurs', commission: 'Taux de commission', tipping: 'Pourboires', shopTypes: 'Types de commerce', cuisines: 'Cuisines', banners: 'Bannières' },
-    groups: { business: 'Activité', catalog: 'Catalogue', engagement: 'Communication', system: 'Système' },
+    nav: { dashboard: 'Centre de pilotage', merchants: 'Commerçants', licenses: 'Licences', leads: 'Prospects', coupons: 'Coupons', notifications: 'Notifications', audit: 'Journal d’audit', admins: 'Administrateurs', commission: 'Taux de commission', tipping: 'Pourboires', shopTypes: 'Types de commerce', cuisines: 'Cuisines', banners: 'Bannières' },
+    groups: { overview: 'Vue d’ensemble', business: 'Activité', catalog: 'Catalogue', engagement: 'Communication', system: 'Système' },
     roles: { owner: 'Propriétaire', operator: 'Opérateur', viewer: 'Lecteur' }, menu: 'Menu', darkMode: 'Mode sombre',
   },
   en: {
@@ -44,8 +64,8 @@ const COPY: Record<Lang, {
     password: 'Password', signIn: 'Sign in', signOut: 'Sign out',
     errBad: 'Incorrect credentials', errLimit: 'Too many attempts, try again later',
     errConfig: 'Console is not configured on the server', errNet: 'Cannot reach the server', loading: 'Loading…',
-    nav: { merchants: 'Merchants', licenses: 'Licenses', leads: 'Leads', coupons: 'Coupons', notifications: 'Notifications', audit: 'Audit log', admins: 'Admins', commission: 'Commission rate', tipping: 'Tipping', shopTypes: 'Shop types', cuisines: 'Cuisines', banners: 'Banners' },
-    groups: { business: 'Business', catalog: 'Catalog', engagement: 'Engagement', system: 'System' },
+    nav: { dashboard: 'Command Center', merchants: 'Merchants', licenses: 'Licenses', leads: 'Leads', coupons: 'Coupons', notifications: 'Notifications', audit: 'Audit log', admins: 'Admins', commission: 'Commission rate', tipping: 'Tipping', shopTypes: 'Shop types', cuisines: 'Cuisines', banners: 'Banners' },
+    groups: { overview: 'Overview', business: 'Business', catalog: 'Catalog', engagement: 'Engagement', system: 'System' },
     roles: { owner: 'Owner', operator: 'Operator', viewer: 'Viewer' }, menu: 'Menu', darkMode: 'Dark mode',
   },
 };
@@ -176,28 +196,20 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   }
 
   // ── Console (dark sidebar, light content) ───────────────────────────────
-  const groups: { heading: string; links: { href: string; label: string; show: boolean }[] }[] = [
-    { heading: c.groups.business, links: [
-      { href: `/${locale}/admin/merchants`, label: c.nav.merchants, show: true },
-      { href: `/${locale}/admin/licenses`, label: c.nav.licenses, show: true },
-      { href: `/${locale}/admin/leads`, label: c.nav.leads, show: true },
-      { href: `/${locale}/admin/commission-rates`, label: c.nav.commission, show: true },
-      { href: `/${locale}/admin/tipping`, label: c.nav.tipping, show: true },
-    ] },
-    { heading: c.groups.catalog, links: [
-      { href: `/${locale}/admin/shop-types`, label: c.nav.shopTypes, show: true },
-      { href: `/${locale}/admin/cuisines`, label: c.nav.cuisines, show: true },
-      { href: `/${locale}/admin/banners`, label: c.nav.banners, show: true },
-    ] },
-    { heading: c.groups.engagement, links: [
-      { href: `/${locale}/admin/coupons`, label: c.nav.coupons, show: true },
-      { href: `/${locale}/admin/notifications`, label: c.nav.notifications, show: true },
-    ] },
-    { heading: c.groups.system, links: [
-      { href: `/${locale}/admin/audit-logs`, label: c.nav.audit, show: true },
-      { href: `/${locale}/admin/admins`, label: c.nav.admins, show: actor.role === 'owner' },
-    ] },
-  ];
+  const visibleLinks = LINKS.filter((l) => !l.ownerOnly || actor.role === 'owner').map((l) => ({
+    ...l,
+    href: `/${locale}/admin${l.path}`,
+    label: c.nav[l.key],
+  }));
+  const groups = (Object.keys(c.groups) as GroupKey[]).map((g) => ({
+    heading: c.groups[g],
+    links: visibleLinks.filter((l) => l.group === g).map((l) => ({ ...l, show: true })),
+  }));
+  const paletteLinks: PaletteLink[] = visibleLinks.map((l) => ({
+    href: l.href,
+    label: l.label,
+    keywords: `${COPY.ar.nav[l.key]} ${COPY.fr.nav[l.key]} ${COPY.en.nav[l.key]} ${l.words}`,
+  }));
 
   const nav = (
     <nav aria-label={c.title} className="flex flex-col gap-1 p-3">
@@ -270,7 +282,8 @@ export default function AdminShell({ children }: { children: ReactNode }) {
               >
                 {c.menu}
               </button>
-              <span className="text-sm font-semibold text-[var(--adm-text)] md:hidden">{c.title}</span>
+              <span className="hidden text-sm font-semibold text-[var(--adm-text)] sm:inline md:hidden">{c.title}</span>
+              <CommandPalette pages={paletteLinks} />
             </div>
             <div className="flex items-center gap-3">
               <div className="text-end leading-tight">

@@ -437,6 +437,11 @@ a { color: inherit; text-decoration: none; }
   --adm-primary-text: #FFFFFF;
   --adm-accent: #B8860B;
   --adm-error: #D32F2F;
+  --adm-good: #166534;
+  /* Command Center chart: bars + "today" highlight, checked for colour-blind separation and 3:1 contrast on the surface */
+  --adm-chart: #2E8B57;
+  --adm-chart-today: #B8860B;
+  --adm-grid: #ECEEF1;
 }
 .admin-theme[data-theme='dark'] {
   --adm-bg: #0A2318;
@@ -451,4 +456,8 @@ a { color: inherit; text-decoration: none; }
   --adm-primary-text: #0A2318;
   --adm-accent: #F0B429;
   --adm-error: #FCA5A5;
+  --adm-good: #5EC485;
+  --adm-chart: #3FA36C;
+  --adm-chart-today: #BF8714;
+  --adm-grid: rgba(255, 255, 255, 0.1);
 }

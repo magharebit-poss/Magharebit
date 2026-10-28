@@ -70,8 +70,9 @@ for (const lang of (process.env.LANGS || 'fr,ar').split(',')) {
   problems = []
   check(`[${lang}] owner signs in`, await login(lang))
   const groups = await js(`[...document.querySelectorAll('nav p')].length`)
-  const links = await js(`[...document.querySelectorAll('nav a')].map(a => a.getAttribute('href').split('/admin/')[1])`)
-  check(`[${lang}] sidebar: 4 group headings and 12 links incl. the new pages`, groups === 4 && ['merchants', 'licenses', 'leads', 'commission-rates', 'tipping', 'shop-types', 'cuisines', 'banners', 'coupons', 'notifications', 'audit-logs', 'admins'].every((s) => links.includes(s)) && !links.includes('audit-log'), JSON.stringify(links))
+  const links = await js(`[...document.querySelectorAll('nav a')].map(a => a.getAttribute('href').split('/admin/')[1] ?? 'command-center')`)
+  // Phase 5 added the Overview group with the Command Center (/admin) at the top.
+  check(`[${lang}] sidebar: 5 group headings and 13 links incl. the new pages`, groups === 5 && links.length === 13 && links[0] === 'command-center' && ['merchants', 'licenses', 'leads', 'commission-rates', 'tipping', 'shop-types', 'cuisines', 'banners', 'coupons', 'notifications', 'audit-logs', 'admins'].every((s) => links.includes(s)) && !links.includes('audit-log'), JSON.stringify(links))
 
   // ── Tipping ────────────────────────────────────────────────────────────────
   check(`[${lang}] click Tipping`, await clickSidebar('tipping'))

@@ -14,6 +14,7 @@ const ACTIONS: AuditAction[] = [
   'reactivateMerchant', 'createCoupon', 'broadcastNotification', 'createAdmin', 'disableAdmin', 'adminLogin',
   'activateLead', 'updateLeadStatus', 'releaseTerminal',
   'updateTipping', 'updateCommission', 'createCatalogItem', 'updateCatalogItem', 'updateNotification',
+  'exportData',
 ]
 
 function parseDate(v: string | null): Date | undefined {

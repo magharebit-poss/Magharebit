@@ -23,6 +23,24 @@ export function fmtDate(value: string | Date | undefined | null, lang: Lang): st
   return d.toLocaleDateString(lang === 'en' ? 'en-GB' : 'fr-FR');
 }
 
+/**
+ * The `?q=` of the current URL, so a global-search result can open a table already filtered.
+ * Admin pages render only after the client-side session check, so `window` always exists here.
+ */
+export function initialQuery(): string {
+  if (typeof window === 'undefined') return '';
+  return (new URLSearchParams(window.location.search).get('q') ?? '').slice(0, 100);
+}
+
+/** Text folded for loose matching: lower case, no accents or tashkeel, Arabic letter variants unified. */
+export function foldText(s: string): string {
+  return s
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[ً-ْٰـ]/g, '')
+    .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
 export function daysLeft(value: string | Date | undefined | null): number | null {
   if (!value) return null;
   const t = new Date(value).getTime();
@@ -41,9 +59,9 @@ export const PLAN_STYLE: Record<string, string> = {
 
 /** Shop types: the sign-up sectors plus the lead business types. */
 export const SECTOR_LABEL: Record<Lang, Record<string, string>> = {
-  ar: { 'cafe-restaurant': 'مقهى / مطعم', cafe: 'مقهى', restaurant: 'مطعم', epicerie: 'بقالة', grocery: 'بقالة', boulangerie: 'مخبزة', bakery: 'مخبزة', boucherie: 'جزارة', pharmacie: 'صيدلية', pharmacy: 'صيدلية', textile: 'ملابس', electronique: 'إلكترونيات', other: 'أخرى' },
-  fr: { 'cafe-restaurant': 'Café / Restaurant', cafe: 'Café', restaurant: 'Restaurant', epicerie: 'Épicerie', grocery: 'Épicerie', boulangerie: 'Boulangerie', bakery: 'Boulangerie', boucherie: 'Boucherie', pharmacie: 'Pharmacie', pharmacy: 'Pharmacie', textile: 'Textile', electronique: 'Électronique', other: 'Autre' },
-  en: { 'cafe-restaurant': 'Café / Restaurant', cafe: 'Café', restaurant: 'Restaurant', epicerie: 'Grocery', grocery: 'Grocery', boulangerie: 'Bakery', bakery: 'Bakery', boucherie: 'Butcher', pharmacie: 'Pharmacy', pharmacy: 'Pharmacy', textile: 'Clothing', electronique: 'Electronics', other: 'Other' },
+  ar: { 'cafe-restaurant': 'مقهى / مطعم', cafe: 'مقهى', restaurant: 'مطعم', epicerie: 'بقالة', grocery: 'بقالة', boulangerie: 'مخبزة', bakery: 'مخبزة', boucherie: 'جزارة', pharmacie: 'صيدلية', pharmacy: 'صيدلية', textile: 'ملابس', fashion: 'ملابس', electronique: 'إلكترونيات', beauty: 'تجميل', vegetables: 'خضر وفواكه', general: 'متجر عام', multi: 'متعدد الأنشطة', other: 'أخرى' },
+  fr: { 'cafe-restaurant': 'Café / Restaurant', cafe: 'Café', restaurant: 'Restaurant', epicerie: 'Épicerie', grocery: 'Épicerie', boulangerie: 'Boulangerie', bakery: 'Boulangerie', boucherie: 'Boucherie', pharmacie: 'Pharmacie', pharmacy: 'Pharmacie', textile: 'Textile', fashion: 'Mode', electronique: 'Électronique', beauty: 'Beauté', vegetables: 'Fruits et légumes', general: 'Commerce général', multi: 'Multi-activités', other: 'Autre' },
+  en: { 'cafe-restaurant': 'Café / Restaurant', cafe: 'Café', restaurant: 'Restaurant', epicerie: 'Grocery', grocery: 'Grocery', boulangerie: 'Bakery', bakery: 'Bakery', boucherie: 'Butcher', pharmacie: 'Pharmacy', pharmacy: 'Pharmacy', textile: 'Clothing', fashion: 'Fashion', electronique: 'Electronics', beauty: 'Beauty', vegetables: 'Fruit and vegetables', general: 'General store', multi: 'Multi-activity', other: 'Other' },
 };
 
 /** Filter choices (sign-up sectors). */

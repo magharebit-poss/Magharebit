@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAdmin } from './AdminShell';
-import { BTN, BTN_PRIMARY, DURATIONS, FIELD, PLAN_STYLE, daysLeft, fmtDate, type Lang } from './adminUi';
+import { BTN, BTN_PRIMARY, DURATIONS, FIELD, PLAN_STYLE, daysLeft, fmtDate, initialQuery, type Lang } from './adminUi';
 
 type LicStatus = 'active' | 'expired' | 'revoked';
 interface Terminal { machineId: string; firstSeenAt: string; lastSeenAt: string }
@@ -79,7 +79,7 @@ export default function LicensesTable() {
   const [rows, setRows] = useState<License[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [form, setForm] = useState({ q: '', status: '' });
+  const [form, setForm] = useState(() => ({ q: initialQuery(), status: '' }));
   const [applied, setApplied] = useState(form);
   const [tick, setTick] = useState(0);
   const [state, setState] = useState<'loading' | 'ok' | 'error' | 'unavailable'>('loading');
