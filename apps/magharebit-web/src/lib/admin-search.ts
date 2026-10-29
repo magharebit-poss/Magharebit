@@ -37,7 +37,8 @@ export function searchPattern(q: string): string {
   }).join('')
 }
 
-export interface SearchHit { id: string; title: string; subtitle: string; q: string }
+/** `details` are shown as is (phone, city, plan...); `status` is a code the palette translates (STATUS_LABEL). */
+export interface SearchHit { id: string; title: string; details: string[]; status?: string; q: string }
 export interface SearchResults { merchants: SearchHit[]; licenses: SearchHit[]; leads: SearchHit[]; coupons: SearchHit[] }
 
 export async function searchAdmin(db: Db, q: string): Promise<SearchResults> {
@@ -56,11 +57,11 @@ export async function searchAdmin(db: Db, q: string): Promise<SearchResults> {
       .find({ $or: [{ code: re }, { description: re }] }, { projection: { _id: 0, id: 1, code: 1, description: 1, active: 1 } })
       .sort({ createdAt: -1 }).limit(PER_GROUP).toArray(),
   ])
-  const join = (...parts: unknown[]) => parts.filter((p) => typeof p === 'string' && p).join(' · ')
+  const details = (...parts: unknown[]) => parts.filter((p): p is string => typeof p === 'string' && p !== '')
   return {
-    merchants: merchants.map((m) => ({ id: m._id.toHexString(), title: String(m.storeName ?? ''), subtitle: join(m.phone || m.email, m.city, m.status), q: String(m.phone || m.email || m.storeName || '') })),
-    licenses: licenses.map((l) => ({ id: String(l.id), title: String(l.key ?? ''), subtitle: join(l.storeName, l.plan, l.status), q: String(l.key ?? '') })),
-    leads: leads.map((l) => ({ id: String(l.id), title: String(l.storeName ?? ''), subtitle: join(l.phone, l.city, l.status), q: String(l.phone || l.storeName || '') })),
-    coupons: coupons.map((c) => ({ id: String(c.id), title: String(c.code ?? ''), subtitle: join(c.description, c.active === false ? 'inactive' : 'active'), q: String(c.code ?? '') })),
+    merchants: merchants.map((m) => ({ id: m._id.toHexString(), title: String(m.storeName ?? ''), details: details(m.phone || m.email, m.city), status: String(m.status ?? ''), q: String(m.phone || m.email || m.storeName || '') })),
+    licenses: licenses.map((l) => ({ id: String(l.id), title: String(l.key ?? ''), details: details(l.storeName, l.plan), status: String(l.status ?? ''), q: String(l.key ?? '') })),
+    leads: leads.map((l) => ({ id: String(l.id), title: String(l.storeName ?? ''), details: details(l.phone, l.city), status: String(l.status ?? ''), q: String(l.phone || l.storeName || '') })),
+    coupons: coupons.map((c) => ({ id: String(c.id), title: String(c.code ?? ''), details: details(c.description), status: c.active === false ? 'inactive' : 'active', q: String(c.code ?? '') })),
   }
 }

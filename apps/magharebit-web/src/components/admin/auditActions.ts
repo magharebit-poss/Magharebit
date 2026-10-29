@@ -17,7 +17,7 @@ export const ACTION_LABEL: Record<Lang, Record<string, string>> = {
     createCoupon: 'إنشاء قسيمة', broadcastNotification: 'بث إشعار', createAdmin: 'إنشاء مسؤول',
     disableAdmin: 'تعطيل مسؤول', adminLogin: 'تسجيل دخول',
     activateLead: 'تفعيل عميل محتمل', updateLeadStatus: 'تغيير حالة عميل', releaseTerminal: 'تحرير جهاز',
-    updateTipping: 'تحديث البقشيش', updateCommission: 'تحديث العمولة', createCatalogItem: 'إضافة عنصر',
+    updateTipping: 'تحديث الإكرامية', updateCommission: 'تحديث العمولة', createCatalogItem: 'إضافة عنصر',
     updateCatalogItem: 'تعديل عنصر', updateNotification: 'تعديل إشعار', exportData: 'تصدير بيانات',
   },
   fr: {

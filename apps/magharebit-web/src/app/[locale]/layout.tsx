@@ -1,4 +1,5 @@
 import { preload } from 'react-dom';
+import { staticParams } from '@/lib/static-params';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -7,6 +8,7 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import TrustBarConditional from '@/components/TrustBarConditional';
 import TrustRibbon from '@/components/TrustRibbon';
 import LeadModalHost from '@/components/leads/LeadModalHost';
+import SiteChrome from '@/components/SiteChrome';
 import { siteGraph } from '@/lib/schemas';
 import { FONT_FILES } from '@/lib/font-files';
 
@@ -14,7 +16,7 @@ import { FONT_FILES } from '@/lib/font-files';
 // next-intl takes the locale from params instead of request headers, so marketing pages
 // are served as static HTML instead of being rendered on every request.
 export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
+  return staticParams(routing.locales.map((locale) => ({ locale })));
 }
 
 export default async function LocaleLayout({
@@ -57,10 +59,12 @@ export default async function LocaleLayout({
           />
           {/* No JS-gated page fade: content must paint before hydration (LCP). */}
           {children}
-          <TrustRibbon />
-          <WhatsAppButton />
-          <TrustBarConditional />
-          <LeadModalHost />
+          <SiteChrome>
+            <TrustRibbon />
+            <WhatsAppButton />
+            <TrustBarConditional />
+            <LeadModalHost />
+          </SiteChrome>
         </NextIntlClientProvider>
       </body>
     </html>

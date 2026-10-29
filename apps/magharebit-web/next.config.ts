@@ -45,6 +45,11 @@ function resolveBaseUrl(): string {
 const nextConfig: NextConfig = {
   env: { NEXT_PUBLIC_BASE_URL: resolveBaseUrl() },
 
+  // This app is its own project: dependencies come from its own node_modules (installed from its own
+  // package-lock.json, exactly as Vercel does) and Next must not trace or resolve files above this folder.
+  // A checkout whose node_modules linked to another worktree made Next follow the link out of the workspace.
+  outputFileTracingRoot: __dirname,
+
   // Lets a second dev server (tests, review) run beside the main one without
   // sharing and corrupting the same .next cache: NEXT_DIST_DIR=.next-test next dev -p 3020
   distDir: process.env.NEXT_DIST_DIR || '.next',

@@ -68,6 +68,8 @@ for (const lang of (process.env.LANGS || 'fr,ar').split(',')) {
   problems = []
   check(`[${lang}] owner signs in at /admin and lands on the Command Center`, await login(lang))
   check(`[${lang}] sidebar: Overview group + 13 links, Command Center current`, await js(`(() => { const a = [...document.querySelectorAll('nav a')]; return document.querySelectorAll('nav p').length === 5 && a.length === 13 && a[0].getAttribute('href') === '/${lang}/admin' && a[0].getAttribute('aria-current') === 'page' })()`))
+  check(`[${lang}] no WhatsApp button, trust ribbon or trust bar in the console`, await js(`!document.querySelector('.wa-ring-wrapper') && !document.querySelector('a[href*="wa.me"]')`))
+  if (rtl) check('[ar] Tipping is called «الإكرامية» in the sidebar, «البقشيش» appears nowhere', await js(`[...document.querySelectorAll('nav a')].some(a => a.innerText.trim() === 'الإكرامية') && !document.body.innerText.includes('بقشيش')`))
   await waitFor(`document.querySelectorAll('[data-day]').length === 7`)
   const kpi = await js(`Object.fromEntries([...document.querySelectorAll('[data-kpi]')].map(e => [e.dataset.kpi, e.innerText.replace(/\\s+/g, ' ').trim()]))`)
   check(`[${lang}] KPI: portal sales today 200,00 MAD, change shown with arrow and sign`, /200,00/.test(kpi['revenue-today']) && /▲\s*\+233,3\s*%/.test(kpi['revenue-change']), JSON.stringify(kpi))
@@ -98,6 +100,8 @@ for (const lang of (process.env.LANGS || 'fr,ar').split(',')) {
   await waitFor(`!!document.querySelector('dialog[open] input')`, 5000)
   await setVal('dialog[open] input', 'احمد')
   check(`[${lang}] "احمد" finds the lead "أحمد للخضر" (alef variant) from the server`, await waitFor(`[...document.querySelectorAll('dialog[open] [role=option]')].some(o => o.innerText.includes('أحمد للخضر'))`, 8000))
+  const statusWord = rtl ? 'تم التواصل' : 'Contacté'
+  check(`[${lang}] the lead's status is shown in the UI language (${statusWord}), never the raw "contacted"`, await js(`(() => { const o = [...document.querySelectorAll('dialog[open] [role=option]')].find(o => o.innerText.includes('أحمد للخضر')); return !!o && o.innerText.includes(${JSON.stringify(statusWord)}) && !/contacted/i.test(o.innerText) })()`))
   await shot(`${lang}-2-palette`)
   const idx = await js(`[...document.querySelectorAll('dialog[open] [role=option]')].findIndex(o => o.innerText.includes('أحمد للخضر'))`)
   for (let i = 0; i < idx; i++) await key('ArrowDown', 'ArrowDown')

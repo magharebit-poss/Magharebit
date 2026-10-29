@@ -64,5 +64,28 @@ export const SECTOR_LABEL: Record<Lang, Record<string, string>> = {
   en: { 'cafe-restaurant': 'Café / Restaurant', cafe: 'Café', restaurant: 'Restaurant', epicerie: 'Grocery', grocery: 'Grocery', boulangerie: 'Bakery', bakery: 'Bakery', boucherie: 'Butcher', pharmacie: 'Pharmacy', pharmacy: 'Pharmacy', textile: 'Clothing', fashion: 'Fashion', electronique: 'Electronics', beauty: 'Beauty', vegetables: 'Fruit and vegetables', general: 'General store', multi: 'Multi-activity', other: 'Other' },
 };
 
+/** Record statuses, worded as the tables show them. Shared by the tables and the Ctrl+K search results. */
+export type StatusKind = 'merchant' | 'license' | 'lead' | 'coupon';
+export const STATUS_LABEL: Record<Lang, Record<StatusKind, Record<string, string>>> = {
+  ar: {
+    merchant: { approved: 'نشط', pending: 'قيد الانتظار', suspended: 'معلّق' },
+    license: { active: 'نشط', expired: 'منتهي', revoked: 'ملغى' },
+    lead: { new: 'جديد', contacted: 'تم التواصل', converted: 'محوّل', rejected: 'مرفوض', activated: 'مُفعَّل' },
+    coupon: { active: 'نشطة', inactive: 'متوقفة' },
+  },
+  fr: {
+    merchant: { approved: 'Actif', pending: 'En attente', suspended: 'Suspendu' },
+    license: { active: 'Active', expired: 'Expirée', revoked: 'Révoquée' },
+    lead: { new: 'Nouveau', contacted: 'Contacté', converted: 'Converti', rejected: 'Refusé', activated: 'Activé' },
+    coupon: { active: 'Actif', inactive: 'Désactivé' },
+  },
+  en: {
+    merchant: { approved: 'Active', pending: 'Pending', suspended: 'Suspended' },
+    license: { active: 'Active', expired: 'Expired', revoked: 'Revoked' },
+    lead: { new: 'New', contacted: 'Contacted', converted: 'Converted', rejected: 'Rejected', activated: 'Activated' },
+    coupon: { active: 'Active', inactive: 'Disabled' },
+  },
+};
+
 /** Filter choices (sign-up sectors). */
 export const SECTOR_FILTER = ['epicerie', 'cafe-restaurant', 'boulangerie', 'boucherie', 'pharmacie', 'textile', 'electronique', 'other'] as const;

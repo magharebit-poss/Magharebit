@@ -46,7 +46,7 @@ const COPY: Record<Lang, {
     password: 'كلمة المرور', signIn: 'دخول', signOut: 'خروج',
     errBad: 'بيانات الدخول غير صحيحة', errLimit: 'محاولات كثيرة، حاول لاحقاً',
     errConfig: 'لوحة الإدارة غير مهيأة على الخادم', errNet: 'تعذّر الاتصال بالخادم', loading: 'جارٍ التحميل…',
-    nav: { dashboard: 'مركز القيادة', merchants: 'التجار', licenses: 'التراخيص', leads: 'العملاء المحتملون', coupons: 'القسائم', notifications: 'الإشعارات', audit: 'سجل التدقيق', admins: 'المسؤولون', commission: 'نسبة العمولة', tipping: 'البقشيش', shopTypes: 'أنواع المتاجر', cuisines: 'المطابخ', banners: 'اللافتات' },
+    nav: { dashboard: 'مركز القيادة', merchants: 'التجار', licenses: 'التراخيص', leads: 'العملاء المحتملون', coupons: 'القسائم', notifications: 'الإشعارات', audit: 'سجل التدقيق', admins: 'المسؤولون', commission: 'نسبة العمولة', tipping: 'الإكرامية', shopTypes: 'أنواع المتاجر', cuisines: 'المطابخ', banners: 'اللافتات' },
     groups: { overview: 'نظرة عامة', business: 'الأعمال', catalog: 'الفهرس', engagement: 'التفاعل', system: 'النظام' },
     roles: { owner: 'مالك', operator: 'مشغّل', viewer: 'مشاهد' }, menu: 'القائمة', darkMode: 'الوضع الداكن',
   },

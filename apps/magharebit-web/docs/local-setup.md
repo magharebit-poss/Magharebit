@@ -25,12 +25,14 @@ These routes return **HTTP 503** when the database is unreachable, so on a machi
 Other portal and admin-merchant routes use MongoDB repositories with no JSON fallback either. OTP codes and sessions live in the `otp_sessions` and `auth_sessions` collections. `/api/health` shows the state: `{"server":"ok","db":"ok|error"}`, status 503 when `db` is `error`.
 
 ## 2. Install
-Node 20+ (tested on Node 24, npm 12). `apps/magharebit-web` is an npm workspace of the repo root, so dependencies install into the **root** `node_modules`.
+Node 20+ (tested on Node 24, npm 12). The app installs **its own** dependencies from its own `package-lock.json`, exactly as Vercel does:
 ```bash
 cd apps/magharebit-web
-npm install --no-package-lock
+npm ci
 ```
-First run takes ~10 minutes. It warns that install scripts were blocked for `sharp`, `argon2`, `rxdb`, `esbuild`, etc.; that is harmless for this app. `--no-package-lock` is used because the committed `package-lock.json` is stale (it pins React 18 / Tailwind 4 while `package.json` wants React 19 / Tailwind 3).
+npm warns that the install scripts of `sharp` and `unrs-resolver` were blocked; both ship prebuilt binaries and load fine, so this is harmless.
+
+**Never link `node_modules` to another checkout or worktree** (for example a junction from `GreenGo-web/node_modules` to `GreenGo pos/node_modules`). Next then loads React and itself from the other tree and its file watcher walks outside the workspace. `next.config.ts` pins `outputFileTracingRoot` to this folder for the same reason.
 
 ## 3. Environment: `apps/magharebit-web/.env.local` (git-ignored; never commit)
 Sanitized template. Replace every `<...>`; get real values from the owner over a secure channel.
@@ -72,11 +74,12 @@ CRON_SECRET=                      # /api/cron/daily-report only
 **`NEXT_PUBLIC_ADMIN_PASSWORD` no longer exists.** If it is still in your `.env.local`, delete it (it is ignored by the code now). The code reads `NEXT_PUBLIC_BASE_URL` for sitemap/robots; `DEPLOY.md`'s old mention of `NEXT_PUBLIC_SITE_URL` is not read.
 
 ## 4. Run
-From the **repo root**:
+From `apps/magharebit-web`:
 ```bash
-npm run dev -w magharebit-web
+npm run dev
 ```
-Verified: this runs only `next dev -p 3004`. **Do not run `npm run dev` at the repo root**: it runs `turbo run dev` and starts every workspace. The app's own `.claude/launch.json` entry has the same trap.
+This runs `next dev -p 3004`. (In the full monorepo checkout, `npm run dev` at the repo root runs `turbo run dev` and starts every workspace: use `npm run dev -w magharebit-web` there.)
+- Dev server crash `SyntaxError: Unexpected end of JSON input` / `Unexpected non-whitespace character after JSON` (from `next-dev-server.js`): Next's dev server corrupted `.next/prerender-manifest.json` when two routes compiled at once. Fixed in code (`src/lib/static-params.ts`: static params are only generated for `next build`). If you still have a cache from before the fix, stop the server, delete `.next` and start again.
 - Frontend: **http://localhost:3004** (default locale `/ar`; also `/fr`, `/en`). No separate API port.
 - The first request to each route compiles it (15-60 s). Dev serves `/_next/static/*` with `Cache-Control: immutable`, so after code changes do a **hard refresh** (Ctrl+Shift+R) or you may see stale JavaScript.
 - Stop it with Ctrl-C in the terminal that runs it. See Troubleshooting if the port stays busy.

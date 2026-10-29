@@ -8,13 +8,14 @@ import { SECTORS } from '@/data/sectors';
 import { setRequestLocale } from 'next-intl/server';
 import { pageAlternates, ogBase } from '@/lib/seo';
 import { breadcrumbSchema } from '@/lib/schemas';
+import { staticParams } from '@/lib/static-params';
 
 export async function generateStaticParams() {
   const locales = ['ar', 'fr', 'en'];
   const slugs = SECTORS.map((s) => s.slug);
-  return locales.flatMap((locale) =>
+  return staticParams(locales.flatMap((locale) =>
     slugs.map((sector) => ({ locale, sector }))
-  );
+  ));
 }
 
 export async function generateMetadata({

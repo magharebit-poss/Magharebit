@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAdmin } from './AdminShell';
 import ExportButton from './ExportButton';
-import { initialQuery } from './adminUi';
+import { STATUS_LABEL, initialQuery } from './adminUi';
 
 type LeadStatus = 'new' | 'contacted' | 'converted' | 'rejected' | 'activated';
 interface Lead {
@@ -51,7 +51,7 @@ const COPY: Record<Lang, {
     allStatuses: 'كل الحالات', apply: 'تطبيق', refresh: 'تحديث', store: 'المتجر', phone: 'الهاتف', type: 'النشاط', city: 'المدينة',
     lang: 'اللغة', status: 'الحالة', date: 'التاريخ', key: 'المفتاح', empty: 'لا يوجد عملاء مطابقون', loading: 'جارٍ التحميل…',
     error: 'تعذّر تحميل العملاء', unavailable: 'قاعدة البيانات غير متاحة', total: 'عميل', prev: 'السابق', next: 'التالي', page: 'صفحة',
-    statuses: { new: 'جديد', contacted: 'تم التواصل', converted: 'محوّل', rejected: 'مرفوض', activated: 'مُفعَّل' },
+    statuses: STATUS_LABEL.ar.lead as Record<LeadStatus, string>,
     close: 'إغلاق', details: 'تفاصيل العميل', changeStatus: 'تغيير الحالة', readOnly: 'حسابك للقراءة فقط',
     activate: 'تفعيل الاشتراك', activateHelp: 'يُنشأ مفتاح ترخيص حقيقي على الخادم ويُسجَّل في سجل التدقيق.', plan: 'الباقة', duration: 'المدة',
     months: (n) => (n === 1 ? 'شهر' : n === 12 ? 'سنة' : n === 24 ? 'سنتان' : `${n} أشهر`), generate: 'إنشاء مفتاح الترخيص', generating: 'جارٍ الإنشاء…',
@@ -68,7 +68,7 @@ const COPY: Record<Lang, {
     allStatuses: 'Tous les statuts', apply: 'Appliquer', refresh: 'Actualiser', store: 'Commerce', phone: 'Téléphone', type: 'Activité', city: 'Ville',
     lang: 'Langue', status: 'Statut', date: 'Date', key: 'Clé', empty: 'Aucun prospect correspondant', loading: 'Chargement…',
     error: 'Impossible de charger les prospects', unavailable: 'Base de données indisponible', total: 'prospects', prev: 'Précédent', next: 'Suivant', page: 'Page',
-    statuses: { new: 'Nouveau', contacted: 'Contacté', converted: 'Converti', rejected: 'Refusé', activated: 'Activé' },
+    statuses: STATUS_LABEL.fr.lead as Record<LeadStatus, string>,
     close: 'Fermer', details: 'Détail du prospect', changeStatus: 'Changer le statut', readOnly: 'Votre compte est en lecture seule',
     activate: 'Activer l’abonnement', activateHelp: 'Une vraie clé de licence est créée côté serveur et inscrite au journal d’audit.', plan: 'Formule', duration: 'Durée',
     months: (n) => (n === 1 ? '1 mois' : n === 12 ? '1 an' : n === 24 ? '2 ans' : `${n} mois`), generate: 'Générer la clé de licence', generating: 'Génération…',
@@ -85,7 +85,7 @@ const COPY: Record<Lang, {
     allStatuses: 'All statuses', apply: 'Apply', refresh: 'Refresh', store: 'Shop', phone: 'Phone', type: 'Business', city: 'City',
     lang: 'Language', status: 'Status', date: 'Date', key: 'Key', empty: 'No matching leads', loading: 'Loading…',
     error: 'Could not load leads', unavailable: 'Database unavailable', total: 'leads', prev: 'Previous', next: 'Next', page: 'Page',
-    statuses: { new: 'New', contacted: 'Contacted', converted: 'Converted', rejected: 'Rejected', activated: 'Activated' },
+    statuses: STATUS_LABEL.en.lead as Record<LeadStatus, string>,
     close: 'Close', details: 'Lead details', changeStatus: 'Change status', readOnly: 'Your account is read-only',
     activate: 'Activate subscription', activateHelp: 'A real license key is created on the server and written to the audit log.', plan: 'Plan', duration: 'Duration',
     months: (n) => (n === 1 ? '1 month' : n === 12 ? '1 year' : n === 24 ? '2 years' : `${n} months`), generate: 'Generate license key', generating: 'Generating…',

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { setRequestLocale, getTranslations, getLocale } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
+import { staticParams } from '@/lib/static-params';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
 import AOSInit from '@/components/AOSInit';
@@ -8,7 +9,7 @@ import { faqSchema } from '@/lib/schemas';
 import { pageAlternates, ogBase } from '@/lib/seo';
 
 export async function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
+  return staticParams(routing.locales.map((locale) => ({ locale })));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {

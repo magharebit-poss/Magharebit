@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useAdmin } from './AdminShell';
-import { foldText, type Lang } from './adminUi';
+import { STATUS_LABEL, foldText, type Lang, type StatusKind } from './adminUi';
 
 /** An admin page or setting the palette can jump to. `keywords` = the label in every language, plus synonyms. */
 export interface PaletteLink { href: string; label: string; keywords: string }
 
 type Group = 'pages' | 'merchants' | 'licenses' | 'leads' | 'coupons';
-interface Hit { id: string; title: string; subtitle: string; q: string }
+interface Hit { id: string; title: string; details: string[]; status?: string; q: string }
 interface Item { key: string; group: Group; title: string; subtitle?: string; href: string }
 
 const COPY: Record<Lang, {
@@ -35,11 +35,11 @@ const COPY: Record<Lang, {
   },
 };
 
-const DATA_GROUPS: { group: Exclude<Group, 'pages'>; path: string }[] = [
-  { group: 'merchants', path: 'merchants' },
-  { group: 'licenses', path: 'licenses' },
-  { group: 'leads', path: 'leads' },
-  { group: 'coupons', path: 'coupons' },
+const DATA_GROUPS: { group: Exclude<Group, 'pages'>; path: string; kind: StatusKind }[] = [
+  { group: 'merchants', path: 'merchants', kind: 'merchant' },
+  { group: 'licenses', path: 'licenses', kind: 'license' },
+  { group: 'leads', path: 'leads', kind: 'lead' },
+  { group: 'coupons', path: 'coupons', kind: 'coupon' },
 ];
 
 function isMacLike(): boolean {
@@ -121,14 +121,16 @@ function PaletteDialog({ pages, onClose }: { pages: PaletteLink[]; onClose: () =
       .filter((p) => !folded || foldText(`${p.label} ${p.keywords}`).includes(folded))
       .map((p) => ({ key: `page:${p.href}`, group: 'pages', title: p.label, href: p.href }));
     if (server && server.q === dataQuery && server.state === 'ok') {
-      for (const { group, path } of DATA_GROUPS) {
+      for (const { group, path, kind } of DATA_GROUPS) {
         for (const h of server.results[group] ?? []) {
-          out.push({ key: `${group}:${h.id}`, group, title: h.title, subtitle: h.subtitle, href: `/${locale}/admin/${path}?q=${encodeURIComponent(h.q)}` });
+          const status = h.status ? STATUS_LABEL[lang][kind][h.status] ?? h.status : '';
+          const subtitle = [...(h.details ?? []), status].filter(Boolean).join(' · ');
+          out.push({ key: `${group}:${h.id}`, group, title: h.title, subtitle, href: `/${locale}/admin/${path}?q=${encodeURIComponent(h.q)}` });
         }
       }
     }
     return out;
-  }, [pages, folded, server, dataQuery, locale]);
+  }, [pages, folded, server, dataQuery, locale, lang]);
 
   const current = Math.min(active, Math.max(0, items.length - 1));
   const searching = Boolean(dataQuery) && server?.q !== dataQuery;

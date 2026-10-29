@@ -158,6 +158,7 @@ const s = (cookie, q) => api('GET', `/api/admin/search?q=${encodeURIComponent(q)
 check('search: anonymous -> 401; one character -> 422', (await s(null, 'ab')).status === 401 && (await s(owner, 'a')).status === 422)
 const sAr = await s(viewer, 'احمد')
 check('search (viewer allowed): "احمد" finds the lead "أحمد للخضر"', sAr.status === 200 && sAr.json?.results?.leads.some((h) => h.title === 'أحمد للخضر' && h.q === '0661000003'))
+check('search: status is a code for the UI to translate, details kept apart (no raw English subtitle)', sAr.json?.results?.leads.some((h) => h.status === 'contacted' && Array.isArray(h.details) && h.details.includes('0661000003') && !('subtitle' in h)))
 const sMer = await s(owner, 'مخبزه')
 check('search: "مخبزه" finds the merchant "مخبزة الأمل" (and its license)', sMer.json?.results?.merchants.some((h) => h.title === 'مخبزة الأمل' && h.q === '212600000001') && sMer.json?.results?.licenses.some((h) => h.title === 'MGH-202610-AAAA1111-BBBB-C1'))
 const sKey = await s(owner, 'cccc2222')
@@ -165,6 +166,13 @@ check('search: license key fragment, case-insensitive', sKey.json?.results?.lice
 check('search: coupon code', (await s(owner, 'ramadan')).json?.results?.coupons.some((h) => h.title === 'RAMADAN25'))
 check('search: regex characters are literal (no 500)', (await s(owner, '.*(')).status === 200 && (await s(owner, '.*(')).json?.results?.merchants.length === 0)
 check('search: results never include license keys of leads', !JSON.stringify((await s(owner, '0661')).json).includes('MGH-SECRET'))
+
+// ── Admin pages carry no marketing chrome; public pages still do ──────────────
+for (const lang of ['fr', 'ar']) {
+  const admin = await (await fetch(`${B}/${lang}/admin`)).text()
+  const home = await (await fetch(`${B}/${lang}`)).text()
+  check(`[${lang}] /admin HTML has no WhatsApp button or trust ribbon; the home page still has the button`, !admin.includes('wa-ring-wrapper') && !admin.includes('wa.me/') && home.includes('wa-ring-wrapper'))
+}
 
 console.log(`\n${pass} passed, ${fail} failed`)
 await mongo.close()

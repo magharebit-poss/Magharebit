@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAdmin } from './AdminShell';
-import { BTN, BTN_PRIMARY, DURATIONS, FIELD, PLAN_STYLE, daysLeft, fmtDate, initialQuery, type Lang } from './adminUi';
+import { BTN, BTN_PRIMARY, DURATIONS, FIELD, PLAN_STYLE, STATUS_LABEL, daysLeft, fmtDate, initialQuery, type Lang } from './adminUi';
 
 type LicStatus = 'active' | 'expired' | 'revoked';
 interface Terminal { machineId: string; firstSeenAt: string; lastSeenAt: string }
@@ -42,7 +42,7 @@ const COPY: Record<Lang, {
   ar: {
     title: 'التراخيص', subtitle: 'مفاتيح الترخيص، الأجهزة المسجّلة، التمديد والإلغاء', search: 'بحث بالمفتاح أو المتجر', status: 'الحالة', allStatuses: 'كل الحالات', apply: 'تطبيق', refresh: 'تحديث',
     key: 'المفتاح', store: 'المتجر', plan: 'الباقة', expires: 'ينتهي', terminals: 'الأجهزة', empty: 'لا توجد تراخيص مطابقة', loading: 'جارٍ التحميل…', error: 'تعذّر تحميل التراخيص', unavailable: 'قاعدة البيانات غير متاحة',
-    total: 'ترخيص', prev: 'السابق', next: 'التالي', page: 'صفحة', statuses: { active: 'نشط', expired: 'منتهي', revoked: 'ملغى' }, trial: 'تجريبي', days: (n) => `${n} يوم`,
+    total: 'ترخيص', prev: 'السابق', next: 'التالي', page: 'صفحة', statuses: STATUS_LABEL.ar.license as Record<LicStatus, string>, trial: 'تجريبي', days: (n) => `${n} يوم`,
     details: 'تفاصيل الترخيص', close: 'إغلاق', copy: 'نسخ المفتاح', copied: 'تم النسخ', issued: 'أُصدر', noTerminals: 'لا توجد أجهزة مسجّلة', release: 'تحرير', lastSeen: 'آخر ظهور',
     extend: 'تمديد الاشتراك', extendHelp: 'يُضاف من تاريخ الانتهاء الحالي (أو من اليوم إن انتهى).', byMonths: 'بالأشهر', byDays: 'بالأيام', amount: 'المقدار', reason: 'السبب (اختياري)', extendBtn: 'تمديد',
     revoke: 'إلغاء الترخيص', revokeHelp: 'نهائي: لا يمكن التراجع. التاجر وتراخيصه الأخرى لا تتأثر.', revokeBtn: 'إلغاء هذا الترخيص', confirmRevoke: 'أؤكد إلغاء هذا الترخيص نهائياً',
@@ -52,7 +52,7 @@ const COPY: Record<Lang, {
   fr: {
     title: 'Licences', subtitle: 'Clés de licence, terminaux enregistrés, prolongation et révocation', search: 'Rechercher clé ou commerce', status: 'Statut', allStatuses: 'Tous les statuts', apply: 'Appliquer', refresh: 'Actualiser',
     key: 'Clé', store: 'Commerce', plan: 'Formule', expires: 'Expire', terminals: 'Terminaux', empty: 'Aucune licence correspondante', loading: 'Chargement…', error: 'Impossible de charger les licences', unavailable: 'Base de données indisponible',
-    total: 'licences', prev: 'Précédent', next: 'Suivant', page: 'Page', statuses: { active: 'Active', expired: 'Expirée', revoked: 'Révoquée' }, trial: 'Essai', days: (n) => `${n} j`,
+    total: 'licences', prev: 'Précédent', next: 'Suivant', page: 'Page', statuses: STATUS_LABEL.fr.license as Record<LicStatus, string>, trial: 'Essai', days: (n) => `${n} j`,
     details: 'Détail de la licence', close: 'Fermer', copy: 'Copier la clé', copied: 'Copié', issued: 'Émise', noTerminals: 'Aucun terminal enregistré', release: 'Libérer', lastSeen: 'Vu le',
     extend: 'Prolonger l’abonnement', extendHelp: 'Ajouté à partir de l’échéance actuelle (ou d’aujourd’hui si expirée).', byMonths: 'En mois', byDays: 'En jours', amount: 'Quantité', reason: 'Motif (facultatif)', extendBtn: 'Prolonger',
     revoke: 'Révoquer la licence', revokeHelp: 'Définitif. Le commerçant et ses autres licences ne sont pas touchés.', revokeBtn: 'Révoquer cette licence', confirmRevoke: 'Je confirme la révocation définitive de cette licence',
@@ -62,7 +62,7 @@ const COPY: Record<Lang, {
   en: {
     title: 'Licenses', subtitle: 'License keys, registered terminals, extend and revoke', search: 'Search key or shop', status: 'Status', allStatuses: 'All statuses', apply: 'Apply', refresh: 'Refresh',
     key: 'Key', store: 'Shop', plan: 'Plan', expires: 'Expires', terminals: 'Terminals', empty: 'No matching licenses', loading: 'Loading…', error: 'Could not load licenses', unavailable: 'Database unavailable',
-    total: 'licenses', prev: 'Previous', next: 'Next', page: 'Page', statuses: { active: 'Active', expired: 'Expired', revoked: 'Revoked' }, trial: 'Trial', days: (n) => `${n} d`,
+    total: 'licenses', prev: 'Previous', next: 'Next', page: 'Page', statuses: STATUS_LABEL.en.license as Record<LicStatus, string>, trial: 'Trial', days: (n) => `${n} d`,
     details: 'License details', close: 'Close', copy: 'Copy key', copied: 'Copied', issued: 'Issued', noTerminals: 'No terminals registered', release: 'Release', lastSeen: 'Last seen',
     extend: 'Extend subscription', extendHelp: 'Added from the current expiry (or from today if expired).', byMonths: 'In months', byDays: 'In days', amount: 'Amount', reason: 'Reason (optional)', extendBtn: 'Extend',
     revoke: 'Revoke license', revokeHelp: 'Permanent. The merchant and its other licenses are not affected.', revokeBtn: 'Revoke this license', confirmRevoke: 'I confirm the permanent revocation of this license',

@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
+import { staticParams } from '@/lib/static-params'
 import Link from 'next/link'
 import { routing } from '@/i18n/routing'
 import { getLocale, getTranslations, setRequestLocale } from 'next-intl/server'
 import Logo from '@/components/brand/Logo'
 
 export async function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }))
+  return staticParams(routing.locales.map((locale) => ({ locale })))
 }
 
 export const metadata: Metadata = {
