@@ -22,14 +22,18 @@ let cachedDb: Db | null = null
 const RETRY_AFTER_MS = process.env.NODE_ENV === 'development' ? 8_000 : 30_000
 let connectionFailedAt: number | null = null
 let lastError: string | null = null
+let warnedMissingUri = false
 
 export async function getDb(): Promise<Db | null> {
   const uri = process.env.MONGODB_URI
   const dbName = process.env.MONGODB_DB ?? 'magharebit'
 
   if (!uri) {
-    if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
-      console.warn('[mongodb] MONGODB_URI not set — falling back to JSON storage')
+    // Once per process: every DB-backed route answers 503 without it, and the
+    // browser only shows "database unavailable".
+    if (!warnedMissingUri && typeof window === 'undefined') {
+      warnedMissingUri = true
+      console.warn('[mongodb] MONGODB_URI not set: DB-backed routes return 503 (set it in .env.development.local, see docs/local-setup.md)')
     }
     return null
   }

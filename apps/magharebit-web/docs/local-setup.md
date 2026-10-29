@@ -87,7 +87,13 @@ This runs `next dev -p 3004`. (In the full monorepo checkout, `npm run dev` at t
 
 ## 5. Database, test flows and credentials
 - **No automatic seeding.** Options: `npx tsx scripts/test-mongodb.ts` (connection check) and `npx tsx scripts/migrate-json-to-mongodb.ts` (copies `data/*.json` into Mongo), run from `apps/magharebit-web` **(not run)**. `POST /api/portal/products/seed` seeds demo products for a logged-in merchant.
-- **Local Mongo instead of Atlas:** a plain `mongodb://127.0.0.1:27017/magharebit` URI should work with the driver **(not run; Docker/mongod not tested here)**.
+- **Local Mongo instead of Atlas (tested):** `docker run -d --name greengo-mongo -p 27017:27017 mongo:latest`, then in `apps/magharebit-web/.env.development.local` (git-ignored; it wins over `.env.local` under `next dev`):
+  ```
+  MONGODB_URI=mongodb://127.0.0.1:27017
+  MONGODB_DB=magharebit
+  ```
+  No user, password or Atlas IP list: the container runs without auth and the app creates its collections on first use. Use `127.0.0.1`, not `localhost` (Node can try `::1` first). `next dev` reloads env files on save; `GET /api/admin/health` should then say `"connected": true`.
+- **"قاعدة البيانات غير متاحة" / 503 on every admin API in ~200 ms:** `MONGODB_URI` is not set at all (the server log says `[mongodb] MONGODB_URI not set`). A slow 503 after ~3 s is a real connection failure instead (container down, Atlas IP list, see Troubleshooting).
 - **OTP in development:** use the **email** OTP option in the sign-up/login UI. With no `RESEND_API_KEY` the server console prints `[send-otp-email] ── DEV MODE ──` with the code. The **WhatsApp** OTP route stores only a hash and never prints the code, so it cannot be completed without a working Green API. SMS needs Twilio.
 - **There are no built-in test accounts or bypass flags** in the code.
 

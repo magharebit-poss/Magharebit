@@ -248,11 +248,13 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ actor, lang, isRTL, locale }}>
       <div dir={isRTL ? 'rtl' : 'ltr'} className={`${font} min-h-screen bg-[var(--adm-bg)] md:flex admin-theme`} data-theme={theme}>
-        {/* Sidebar: static on md+, drawer below */}
-        <aside className={`${menuOpen ? 'block' : 'hidden'} border-b border-brand-900 bg-brand-950 md:sticky md:top-0 md:flex md:h-screen md:flex-col md:w-[240px] md:shrink-0 md:border-b-0 md:border-e`}>
+        {/* Sidebar: static on md+, drawer below. One continuous column: the theme switch follows the last
+            group (no mt-auto, no divider), and the column scrolls inside the dark panel when it is taller
+            than the screen (13 links + switch are ~930 px, more than a 768 px laptop). */}
+        <aside className={`${menuOpen ? 'block' : 'hidden'} border-b border-brand-900 bg-brand-950 md:sticky md:top-0 md:flex md:h-screen md:flex-col md:w-[240px] md:shrink-0 md:overflow-y-auto md:overscroll-contain md:border-b-0 md:border-e`}>
           <div className="hidden items-center px-4 py-5 md:flex"><Logo height={26} on="dark" variant="horizontal" /></div>
           {nav}
-          <div className="mt-auto border-t border-brand-900 p-3">
+          <div className="px-3 pb-3">
             <button
               type="button"
               role="switch"
