@@ -23,6 +23,7 @@ export interface MerchantSettings {
   storeName:           string
   storePhone:          string       // WhatsApp number for outbound alerts (e.g. '0612345678')
   sector:              string
+  logoUrl:             string       // '' or /api/stores/{merchantId}/logo?v=…; set only by the logo upload route
   currency:            'MAD'
   timezone:            string       // IANA tz — default 'Africa/Casablanca'
 
@@ -58,6 +59,7 @@ const DEFAULTS: Omit<MerchantSettings, 'merchantId' | 'updatedAt'> = {
   storeName:          '',
   storePhone:         '',
   sector:             '',
+  logoUrl:            '',
   currency:           'MAD',
   timezone:           'Africa/Casablanca',
   whatsappEnabled:    false,
@@ -79,8 +81,9 @@ const DEFAULTS: Omit<MerchantSettings, 'merchantId' | 'updatedAt'> = {
 }
 
 // ── Whitelisted PATCH fields (API enforces this list) ─────────────────────────
+// logoUrl is deliberately absent: it must point at bytes we stored (PUT /api/portal/settings/logo).
 
-export const SETTINGS_PATCHABLE: ReadonlyArray<keyof Omit<MerchantSettings, 'merchantId' | 'updatedAt'>> = [
+export const SETTINGS_PATCHABLE: ReadonlyArray<keyof Omit<MerchantSettings, 'merchantId' | 'updatedAt' | 'logoUrl'>> = [
   'storeName',
   'storePhone',
   'sector',
@@ -171,6 +174,25 @@ export const settingsRepo = {
     const { _id: _removed, ...rest } = result as Record<string, unknown>
     void _removed
     // Merge defaults for any fields missing in old documents
+    return { ...DEFAULTS, ...(rest as Partial<MerchantSettings>), merchantId } as MerchantSettings
+  },
+
+  /** Set or clear ('') the store logo URL. Throws when the database is down. */
+  async setLogoUrl(merchantId: string, logoUrl: string): Promise<MerchantSettings> {
+    const db = await getDb()
+    if (!db) throw new Error('DB unavailable')
+    await ensureIndexes(db)
+    // $setOnInsert must not name logoUrl too, or MongoDB rejects the update (path conflict)
+    const { logoUrl: _omit, ...insertDefaults } = DEFAULTS
+    void _omit
+    const result = await db.collection('settings').findOneAndUpdate(
+      { merchantId },
+      { $set: { logoUrl, updatedAt: new Date() }, $setOnInsert: insertDefaults },
+      { upsert: true, returnDocument: 'after' }
+    )
+    if (!result) throw new Error('settings_update_failed')
+    const { _id: _removed, ...rest } = result as Record<string, unknown>
+    void _removed
     return { ...DEFAULTS, ...(rest as Partial<MerchantSettings>), merchantId } as MerchantSettings
   },
 

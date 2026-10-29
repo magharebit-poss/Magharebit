@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import NotificationsDrawer from '@/components/portal/NotificationsDrawer';
 import Logo from '@/components/brand/Logo';
+import { STORE_LOGO_EVENT } from '@/lib/store-logo';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface MeData {
   storeName:    string;
+  logoUrl:      string | null;
   plan:         string | null;
   lowStockCount: number;
 }
@@ -58,6 +60,9 @@ export default function Sidebar() {
 
   useEffect(() => {
     void (async () => { fetchMe(); })();
+    // The settings page fires this after uploading or removing the store logo
+    window.addEventListener(STORE_LOGO_EVENT, fetchMe);
+    return () => window.removeEventListener(STORE_LOGO_EVENT, fetchMe);
   }, [fetchMe]);
 
   // ── Logout ────────────────────────────────────────────────────────────────
@@ -100,17 +105,20 @@ export default function Sidebar() {
       <div style={{ padding: '20px 16px 16px' }}>
         {/* Top row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          {/* Store initial avatar */}
+          {/* Store avatar: the uploaded logo, else the store's initial */}
           <div style={{
             width: '36px', height: '36px', borderRadius: '50%',
-            background: 'rgba(240,180,41,0.20)',
+            background: me?.logoUrl ? '#FFFFFF' : 'rgba(240,180,41,0.20)',
             border: '2px solid rgba(240,180,41,0.40)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '14px', fontWeight: 700, color: '#F0B429',
             flexShrink: 0, fontFamily: 'Noto Naskh Arabic, serif',
-            transition: 'opacity 0.2s',
+            transition: 'opacity 0.2s', overflow: 'hidden',
           }}>
-            {storeInitial}
+            {me?.logoUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img data-testid="sidebar-store-logo" src={me.logoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              : storeInitial}
           </div>
 
           {/* Notification bell */}

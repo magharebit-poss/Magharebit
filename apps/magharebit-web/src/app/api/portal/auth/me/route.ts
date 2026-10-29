@@ -11,6 +11,7 @@ import { merchantsRepo } from '@/lib/repositories/merchants'
 import { licensesRepo } from '@/lib/repositories/licenses'
 import { productsRepo } from '@/lib/repositories/products'
 import { transactionsRepo } from '@/lib/repositories/transactions'
+import { settingsRepo } from '@/lib/repositories/settings'
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const session = getPortalSession(req)
@@ -25,15 +26,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const license = licenses[0] ?? null
 
   // Lightweight aggregates for dashboard quick-load
-  const [todaySummary, lowStockCount] = await Promise.all([
+  const [todaySummary, lowStockCount, settings] = await Promise.all([
     transactionsRepo.getTodaySummary(session.merchantId),
     productsRepo.getLowStockCount(session.merchantId),
+    settingsRepo.get(session.merchantId),
   ])
 
   return NextResponse.json({
     merchantId:    session.merchantId,
     storeName:     merchant.storeName,
-    sector:        merchant.sector,
+    logoUrl:       settings.logoUrl || null,
+    sector:       merchant.sector,
     city:          merchant.city,
     locale:        merchant.locale,
     plan:          merchant.plan ?? license?.plan ?? null,

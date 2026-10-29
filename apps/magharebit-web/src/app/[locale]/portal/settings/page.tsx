@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import PortalBreadcrumb from '@/components/portal/PortalBreadcrumb';
+import { LOGO_MAX_SIDE, LOGO_MAX_SOURCE_BYTES, STORE_LOGO_EVENT } from '@/lib/store-logo';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Settings {
   storeName:           string;
   storePhone:          string;
   sector:              string;
+  logoUrl:             string;
   currency:            string;
   timezone:            string;
   whatsappEnabled:     boolean;
@@ -30,6 +32,7 @@ const EMPTY_SETTINGS: Settings = {
   storeName:           '',
   storePhone:          '',
   sector:              '',
+  logoUrl:             '',
   currency:            'MAD',
   timezone:            'Africa/Casablanca',
   whatsappEnabled:     false,
@@ -165,6 +168,27 @@ function SaveButton({ label, savedLabel = '✓ تم الحفظ', saved, saving, 
   );
 }
 
+// ─── Logo resize (browser) ────────────────────────────────────────────────────
+// Longest side LOGO_MAX_SIDE, WebP when the browser can encode it (keeps transparency), PNG otherwise.
+// Drawing through a canvas also drops EXIF data (GPS etc.) from phone photos.
+async function resizeLogo(file: File): Promise<Blob> {
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, LOGO_MAX_SIDE / Math.max(bmp.width, bmp.height));
+  const canvas = document.createElement('canvas');
+  canvas.width  = Math.max(1, Math.round(bmp.width * scale));
+  canvas.height = Math.max(1, Math.round(bmp.height * scale));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('no_canvas');
+  ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+  bmp.close();
+  const encode = (type: string, quality?: number) =>
+    new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+  const webp = await encode('image/webp', 0.9);
+  const blob = webp && webp.type === 'image/webp' ? webp : await encode('image/png');
+  if (!blob) throw new Error('encode_failed');
+  return blob;
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const router = useRouter();
@@ -173,7 +197,8 @@ export default function SettingsPage() {
 
   const [settings, setSettings]         = useState<Settings>(EMPTY_SETTINGS);
   const [loading, setLoading]           = useState(true);
-  const [logoPreview, setLogoPreview]   = useState<string | null>(null);
+  const [logoBusy, setLogoBusy]         = useState(false);
+  const [logoError, setLogoError]       = useState('');
   const [uploadHovered, setUploadHovered] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -238,12 +263,42 @@ export default function SettingsPage() {
       .finally(() => setSaving(false));
   }
 
+  // ── Store logo: resize in the browser, then PUT the bytes (DELETE to remove) ──
+  function sendLogo(init: RequestInit) {
+    setLogoBusy(true);
+    setLogoError('');
+    fetch('/api/portal/settings/logo', { credentials: 'include', ...init })
+      .then(async (res) => {
+        if (res.status === 401) { router.push(`/${locale}/portal/login`); return; }
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({})) as { error?: string };
+          setLogoError(
+            d.error === 'unsupported_type' ? 'الصيغة غير مدعومة: استعمل PNG أو JPG أو WebP'
+            : d.error === 'too_large'      ? 'الصورة كبيرة جداً'
+            : d.error === 'rate_limited'   ? 'محاولات كثيرة، حاول بعد قليل'
+            : 'تعذّر حفظ الشعار، حاول مرة أخرى'
+          );
+          return;
+        }
+        const d = await res.json() as { logoUrl: string };
+        setSettings(s => ({ ...s, logoUrl: d.logoUrl }));
+        window.dispatchEvent(new Event(STORE_LOGO_EVENT));
+      })
+      .catch(() => setLogoError('تعذّر حفظ الشعار، حاول مرة أخرى'))
+      .finally(() => setLogoBusy(false));
+  }
+
   function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = ''; // picking the same file again must fire onChange again
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setLogoPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { setLogoError('الصيغة غير مدعومة: استعمل PNG أو JPG أو WebP'); return; }
+    if (file.size > LOGO_MAX_SOURCE_BYTES) { setLogoError('الصورة كبيرة جداً (الحد 8 ميغابايت)'); return; }
+    setLogoBusy(true);
+    setLogoError('');
+    resizeLogo(file)
+      .then((blob) => sendLogo({ method: 'PUT', headers: { 'Content-Type': blob.type }, body: blob }))
+      .catch(() => { setLogoBusy(false); setLogoError('تعذّرت قراءة الصورة، جرّب ملفاً آخر'); });
   }
 
   if (loading) {
@@ -292,34 +347,57 @@ export default function SettingsPage() {
             />
           </div>
 
-          {/* Logo upload — preview only, not persisted to DB yet */}
+          {/* Logo: saved on pick (no need to press "save"), shown in the portal sidebar */}
           <div>
-            <label style={LABEL}>شعار المتجر</label>
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFilePick} style={{ display: 'none' }} />
-            <div
+            <label htmlFor="store-logo-input" style={LABEL}>شعار المتجر</label>
+            <input id="store-logo-input" ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleFilePick} style={{ display: 'none' }} />
+            <button
+              type="button"
+              data-testid="store-logo-pick"
               onClick={() => fileInputRef.current?.click()}
               onMouseEnter={() => setUploadHovered(true)}
               onMouseLeave={() => setUploadHovered(false)}
+              disabled={logoBusy}
+              aria-busy={logoBusy}
               style={{
+                width: '100%', fontFamily: 'inherit',
                 border: `2px dashed ${uploadHovered ? '#0F3D2A' : '#E5E7EB'}`,
                 borderRadius: '12px', padding: '32px', textAlign: 'center',
-                cursor: 'pointer', background: '#F9FAFB', transition: 'border-color 0.2s ease',
+                cursor: logoBusy ? 'wait' : 'pointer', background: '#F9FAFB', transition: 'border-color 0.2s ease',
               }}
             >
-              {logoPreview ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              {logoBusy ? (
+                <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151', margin: 0 }}>جارٍ رفع الشعار…</p>
+              ) : settings.logoUrl ? (
+                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={logoPreview} alt="شعار المتجر" style={{ maxWidth: '120px', maxHeight: '80px', objectFit: 'contain', borderRadius: '8px' }} />
+                  <img data-testid="store-logo-img" src={settings.logoUrl} alt="شعار المتجر" style={{ maxWidth: '120px', maxHeight: '80px', objectFit: 'contain', borderRadius: '8px' }} />
                   <span style={{ fontSize: '12px', color: '#6B7280' }}>انقر لتغيير الصورة</span>
-                </div>
+                </span>
               ) : (
                 <>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>📷</div>
-                  <p style={{ fontSize: '14px', fontWeight: 600, color: '#374151', margin: '0 0 4px' }}>انقر لرفع الشعار</p>
-                  <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>PNG, JPG حتى 2MB</p>
+                  <span style={{ display: 'block', fontSize: '32px', marginBottom: '8px' }}>📷</span>
+                  <span style={{ display: 'block', fontSize: '14px', fontWeight: 600, color: '#374151', margin: '0 0 4px' }}>انقر لرفع الشعار</span>
+                  <span style={{ display: 'block', fontSize: '12px', color: '#9CA3AF', margin: 0 }}>PNG أو JPG أو WebP حتى 8MB، تُصغَّر تلقائياً</span>
                 </>
               )}
-            </div>
+            </button>
+            {logoError && (
+              <p role="alert" style={{ fontSize: '13px', color: '#DC2626', marginTop: '8px', marginBottom: 0 }}>{logoError}</p>
+            )}
+            {settings.logoUrl && !logoBusy && (
+              <button
+                type="button"
+                data-testid="store-logo-remove"
+                onClick={() => { if (window.confirm('إزالة شعار المتجر؟')) sendLogo({ method: 'DELETE' }); }}
+                style={{
+                  marginTop: '8px', minHeight: '44px', background: 'none', border: 'none', padding: '0 4px',
+                  color: '#DC2626', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                إزالة الشعار
+              </button>
+            )}
           </div>
 
           <div>

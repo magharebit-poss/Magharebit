@@ -95,7 +95,7 @@ This runs `next dev -p 3004`. (In the full monorepo checkout, `npm run dev` at t
   No user, password or Atlas IP list: the container runs without auth and the app creates its collections on first use. Use `127.0.0.1`, not `localhost` (Node can try `::1` first). `next dev` reloads env files on save; `GET /api/admin/health` should then say `"connected": true`.
 - **"قاعدة البيانات غير متاحة" / 503 on every admin API in ~200 ms:** `MONGODB_URI` is not set at all (the server log says `[mongodb] MONGODB_URI not set`). A slow 503 after ~3 s is a real connection failure instead (container down, Atlas IP list, see Troubleshooting).
 - **OTP in development:** use the **email** OTP option in the sign-up/login UI. With no `RESEND_API_KEY` the server console prints `[send-otp-email] ── DEV MODE ──` with the code. The **WhatsApp** OTP route stores only a hash and never prints the code, so it cannot be completed without a working Green API. SMS needs Twilio.
-- **There are no built-in test accounts or bypass flags** in the code.
+- **There are no built-in test accounts or bypass flags** in the code. Step-by-step merchant test (sign-up or lead → key → portal login → store logo): `docs/merchant-journey-testing.md`.
 
 ### Admin sign-in (local)
 Open `http://localhost:3004/fr/admin/leads`. **Identifiant:** leave empty (or type `owner`). **Mot de passe:** the value of `ADMIN_SECRET` in your `apps/magharebit-web/.env.local`. There is deliberately no shared default password: each machine sets its own. Print yours in your own terminal with `grep ADMIN_SECRET apps/magharebit-web/.env.local`. Per-admin accounts (operator/viewer) are created by the owner under Admins.
