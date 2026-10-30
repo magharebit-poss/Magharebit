@@ -51,7 +51,8 @@ export default function TrustBar() {
               fontSize: '13px',
               fontFamily,
               fontWeight: 500,
-              borderRight:
+              // inline-end, so the separators sit between items in Arabic (RTL) too
+              borderInlineEnd:
                 i < items.length - 1
                   ? '1px solid rgba(255,255,255,0.15)'
                   : 'none',

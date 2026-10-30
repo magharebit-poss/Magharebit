@@ -5,6 +5,7 @@ import { BRAND } from '@/lib/brand';
 import Logo from '@/components/brand/Logo';
 import SocialLinks from '@/components/SocialLinks';
 import NewsletterSignup from '@/components/NewsletterSignup';
+import TrustBar from '@/components/TrustBar';
 
 export default function Footer() {
   const t = useTranslations('footer');
@@ -14,6 +15,9 @@ export default function Footer() {
   const l = locale;
 
   return (
+    <>
+    {/* Trust bar: the band above every public footer (one place, so it can no longer land below it) */}
+    <TrustBar />
     <footer className="bg-brand-950 border-t border-white/[0.08] py-16 px-6" style={{ background: '#0A2318' }}>
       <div className="max-w-[1100px] mx-auto" style={{ direction: locale === 'ar' ? 'rtl' : 'ltr' }}>
 
@@ -155,5 +159,6 @@ export default function Footer() {
         </div>
       </div>
     </footer>
+    </>
   );
 }

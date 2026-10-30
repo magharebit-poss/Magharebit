@@ -5,8 +5,6 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import WhatsAppButton from '@/components/WhatsAppButton';
-import TrustBarConditional from '@/components/TrustBarConditional';
-import TrustRibbon from '@/components/TrustRibbon';
 import LeadModalHost from '@/components/leads/LeadModalHost';
 import SiteChrome from '@/components/SiteChrome';
 import { siteGraph } from '@/lib/schemas';
@@ -59,10 +57,10 @@ export default async function LocaleLayout({
           />
           {/* No JS-gated page fade: content must paint before hydration (LCP). */}
           {children}
+          {/* The trust bar lives in the Footer (top band): rendered here it landed after every page's footer,
+              on the bare <body>, including auth pages that have no footer. */}
           <SiteChrome>
-            <TrustRibbon />
             <WhatsAppButton />
-            <TrustBarConditional />
             <LeadModalHost />
           </SiteChrome>
         </NextIntlClientProvider>

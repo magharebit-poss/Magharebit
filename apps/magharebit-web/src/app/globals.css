@@ -287,6 +287,13 @@ body {
   background: #ffffff;
 }
 
+/* Public marketing pages render <Navbar/><main/><Footer/> straight into <body> (admin, portal and auth wrap
+   theirs in a layout div, so these two rules never reach them). The dark shell behind the page means no white
+   band can show above, between or below the dark sections; a short page still fills one screen, which keeps
+   its footer at the bottom instead of riding up under the fixed navbar. */
+body:has(> main) { background: #0A2318; }
+body > main { min-height: 100dvh; }
+
 * {
   box-sizing: border-box;
   padding: 0;
