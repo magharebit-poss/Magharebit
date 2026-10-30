@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import type { Lang } from './useLang';
 import { SCREENS, type ScreenId, type Sketch } from '@/content/media';
-import { CheckoutScreen, DashboardScreen, MobileScreen } from './ScreenMockups';
+import { CheckoutScreen, DashboardScreen, MobileScreen, WhatsAppScreen } from './ScreenMockups';
 
 /**
  * A screenshot inside a drawn device: desktop till (screen on a stand), laptop, tablet or phone.
@@ -119,5 +119,6 @@ function Mockup({ kind, lang }: { kind: Sketch; lang: Lang }) {
   if (kind === 'checkout') return <CheckoutScreen lang={lang} variant="shop" />;
   if (kind === 'order') return <CheckoutScreen lang={lang} variant="cafe" />;
   if (kind === 'mobile') return <MobileScreen lang={lang} />;
+  if (kind === 'whatsapp') return <WhatsAppScreen lang={lang} />;
   return <DashboardScreen lang={lang} />;
 }

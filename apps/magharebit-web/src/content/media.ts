@@ -18,7 +18,7 @@ import type { Lang } from '@/components/landing/useLang'
 
 export type Device = 'desktop' | 'laptop' | 'tablet' | 'phone'
 /** Which illustrative screen (ScreenMockups.tsx) is drawn while there is no screenshot yet. */
-export type Sketch = 'checkout' | 'order' | 'mobile' | 'dashboard'
+export type Sketch = 'checkout' | 'order' | 'mobile' | 'dashboard' | 'whatsapp'
 
 export interface ScreenSlot {
   device: Device
@@ -34,7 +34,7 @@ export interface ScreenSlot {
   shot: Record<Lang, string>
 }
 
-export type ScreenId = 'pos-sale' | 'tablet-order' | 'phone-pos' | 'portal-dashboard'
+export type ScreenId = 'pos-sale' | 'tablet-order' | 'phone-pos' | 'phone-whatsapp' | 'portal-dashboard'
 
 export const SCREENS: Record<ScreenId, ScreenSlot> = {
   'pos-sale': {
@@ -63,6 +63,15 @@ export const SCREENS: Record<ScreenId, ScreenSlot> = {
       en: 'MAGHAREBIT app on a phone',
     },
     shot: { ar: 'الهاتف: البيع والمبيعات', fr: 'Téléphone : vente et chiffres du jour', en: 'Phone: sale and today’s figures' },
+  },
+  'phone-whatsapp': {
+    device: 'phone', sketch: 'whatsapp', src: null, width: 780, height: 1688,
+    alt: {
+      ar: 'محادثة واتساب بين متجر وزبون: وصل رقمي وعرض لنهاية الأسبوع',
+      fr: 'Conversation WhatsApp entre une boutique et un client : ticket numérique et offre du week-end',
+      en: 'WhatsApp chat between a shop and a customer: digital receipt and a weekend offer',
+    },
+    shot: { ar: 'واتساب: وصل وعرض', fr: 'WhatsApp : ticket et offre', en: 'WhatsApp: receipt and offer' },
   },
   'portal-dashboard': {
     device: 'laptop', sketch: 'dashboard', src: null, width: 1600, height: 1000,

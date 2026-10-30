@@ -357,7 +357,112 @@ export function DashboardScreen({ lang, compact = false }: { lang: Lang; compact
   );
 }
 
-// ── 4. Printed receipt (bento tile) ───────────────────────────────────────────
+// ── 4. WhatsApp conversation (phone) ─────────────────────────────────────────
+
+const CHAT: Record<Lang, { shop: string; status: string; day: string; hello: string; receiptTitle: string; thanks: string; promo: string; promoBody: string; reply: string; input: string }> = {
+  fr: {
+    shop: 'Épicerie Atlas', status: 'Compte professionnel', day: 'Aujourd’hui',
+    hello: 'Bonjour Salma, voici votre ticket :', receiptTitle: 'Ticket n° 0132', thanks: 'Merci de votre visite !',
+    promo: 'Ce week-end', promoBody: '−10 % sur les dattes et l’huile d’olive, vendredi et samedi.',
+    reply: 'Merci, à samedi 👍', input: 'Message',
+  },
+  en: {
+    shop: 'Atlas Grocery', status: 'Business account', day: 'Today',
+    hello: 'Hello Salma, here is your receipt:', receiptTitle: 'Receipt #0132', thanks: 'Thank you for your visit!',
+    promo: 'This weekend', promoBody: '10% off dates and olive oil, Friday and Saturday.',
+    reply: 'Thanks, see you Saturday 👍', input: 'Message',
+  },
+  ar: {
+    shop: 'بقالة الأطلس', status: 'حساب تجاري', day: 'اليوم',
+    hello: 'مرحباً سلمى، هذا وصلك:', receiptTitle: 'وصل رقم 0132', thanks: 'شكراً لزيارتكم!',
+    promo: 'نهاية هذا الأسبوع', promoBody: 'تخفيض 10% على التمر وزيت الزيتون، الجمعة والسبت.',
+    reply: 'شكراً، إلى السبت 👍', input: 'رسالة',
+  },
+};
+
+function Ticks() {
+  return (
+    <svg viewBox="0 0 18 12" className="inline-block h-[2.6cqw] w-[3.8cqw] text-[#53BDEB]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 6.5 4 9.5 10 2.5M7 9.5l1 0.8 6-7.8" />
+    </svg>
+  );
+}
+
+/** A shop's chat with a customer: the digital receipt sent after a sale, then a weekend offer (WhatsApp campaign). */
+export function WhatsAppScreen({ lang }: { lang: Lang }) {
+  const c = CHAT[lang];
+  const k = CHECKOUT[lang];
+  const m = money[lang];
+  const lines = [{ i: 0, q: 2 }, { i: 1, q: 1 }, { i: 5, q: 1 }];
+  const total = lines.reduce((s, l) => s + k.shop[l.i].price * l.q, 0);
+  const out = 'self-end rounded-[3.5cqw] rounded-ee-[1cqw] bg-[#005C4B]'; // sent by the shop
+  const inc = 'self-start rounded-[3.5cqw] rounded-es-[1cqw] bg-[#1F2C34]'; // sent by the customer
+  return (
+    <div aria-hidden="true" className="absolute inset-0 flex flex-col bg-[#0B141A] text-white" style={CQ}>
+      {/* header */}
+      <div className="flex items-center gap-[3cqw] bg-[#1F2C34] px-[4cqw] pb-[3cqw] pt-[13cqw]">
+        <svg viewBox="0 0 24 24" className="h-[5cqw] w-[5cqw] shrink-0 text-white/70 rtl:-scale-x-100" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
+        <span className="grid h-[10cqw] w-[10cqw] shrink-0 place-items-center rounded-full bg-[#0A2318] text-[5cqw] font-extrabold text-gold-400 ring-1 ring-gold-400/40">A</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[4.2cqw] font-bold">{c.shop}</span>
+          <span className="flex items-center gap-[1.4cqw] text-[3cqw] text-white/55">
+            <svg viewBox="0 0 24 24" className="h-[3.2cqw] w-[3.2cqw] text-[#25D366]" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z" /></svg>
+            {c.status}
+          </span>
+        </span>
+      </div>
+
+      {/* conversation */}
+      <div className="flex min-h-0 flex-1 flex-col gap-[2.6cqw] overflow-hidden px-[4cqw] py-[3cqw]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.035) 1px, transparent 1px)', backgroundSize: '5cqw 5cqw' }}>
+        <span className="self-center rounded-[2cqw] bg-[#1F2C34] px-[3cqw] py-[1cqw] text-[2.8cqw] text-white/60">{c.day}</span>
+
+        <div className={`${out} w-[86%] p-[2.6cqw] shadow-lg`}>
+          <p className="mb-[2cqw] text-[3.4cqw] leading-snug">{c.hello}</p>
+          <div className="rounded-[2.4cqw] bg-[#FBFAF6] p-[3cqw] text-[#1A1A1A]">
+            <div className="mb-[1.6cqw] flex items-center justify-between">
+              <span className="text-[3.3cqw] font-extrabold">{c.shop}</span>
+              <span className="text-[2.6cqw] text-black/50">{c.receiptTitle}</span>
+            </div>
+            <div className="space-y-[1cqw] border-y border-dashed border-black/20 py-[1.6cqw] text-[2.9cqw]">
+              {lines.map((l) => (
+                <div key={l.i} className="flex justify-between gap-[2cqw]"><span className="truncate">{l.q}× {k.shop[l.i].name}</span><span dir="ltr">{m(k.shop[l.i].price * l.q)}</span></div>
+              ))}
+            </div>
+            <div className="mt-[1.6cqw] flex justify-between text-[3.4cqw] font-extrabold"><span>{k.total}</span><span dir="ltr">{m(total)}</span></div>
+          </div>
+          <p className="mt-[1.6cqw] text-[3.2cqw] text-white/85">{c.thanks}</p>
+          <p className="mt-[0.6cqw] flex items-center justify-end gap-[1cqw] text-[2.6cqw] text-white/55"><span dir="ltr">18:42</span><Ticks /></p>
+        </div>
+
+        <div className={`${inc} max-w-[70%] px-[3cqw] py-[2cqw]`}>
+          <p className="text-[3.4cqw]">{c.reply}</p>
+          <p className="text-end text-[2.6cqw] text-white/45" dir="ltr">18:45</p>
+        </div>
+
+        <div className={`${out} w-[86%] overflow-hidden shadow-lg`}>
+          <div className="flex h-[16cqw] items-center justify-center bg-gradient-to-br from-[#5A4A1E] to-[#2A3A1E]">
+            <span className="rounded-full bg-gold-400 px-[3cqw] py-[1cqw] text-[3.6cqw] font-extrabold text-brand-950">−10 %</span>
+          </div>
+          <div className="p-[2.6cqw]">
+            <p className="text-[3.5cqw] font-bold">{c.promo}</p>
+            <p className="text-[3.2cqw] leading-snug text-white/80">{c.promoBody}</p>
+            <p className="mt-[0.6cqw] flex items-center justify-end gap-[1cqw] text-[2.6cqw] text-white/55"><span dir="ltr">09:15</span><Ticks /></p>
+          </div>
+        </div>
+      </div>
+
+      {/* input bar */}
+      <div className="flex items-center gap-[2.4cqw] bg-[#0B141A] px-[3cqw] pb-[6cqw] pt-[2cqw]">
+        <span className="flex-1 rounded-full bg-[#1F2C34] px-[4cqw] py-[2.6cqw] text-[3.4cqw] text-white/45">{c.input}</span>
+        <span className="grid h-[10cqw] w-[10cqw] place-items-center rounded-full bg-[#00A884]">
+          <svg viewBox="0 0 24 24" className="h-[4.6cqw] w-[4.6cqw] rtl:-scale-x-100" fill="#fff"><path d="M3 20.5 21 12 3 3.5l1.5 7L14 12l-9.5 1.5z" /></svg>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── 5. Printed receipt (bento tile) ───────────────────────────────────────────
 
 const RECEIPT: Record<Lang, { shop: string; city: string; thanks: string }> = {
   fr: { shop: 'Épicerie Atlas', city: 'Fès · ICE 0000000000', thanks: 'Merci de votre visite !' },

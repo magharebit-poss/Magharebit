@@ -1,104 +1,117 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { ScanIllustration } from './illustrations';
 import { DashboardScreen, ReceiptScreen } from './ScreenMockups';
 import { useLang, type Lang } from './useLang';
 
-type TileId = 'offline' | 'checkout' | 'whatsapp' | 'stock' | 'receipt' | 'insights' | 'bilingual' | 'hardware';
+type TileId = 'offline' | 'checkout' | 'whatsapp' | 'darija' | 'nocontract' | 'stock' | 'setup' | 'data';
 
 interface Tile { id: TileId; title: string; body: string }
 
+/*
+ * Claims, as approved by the coordinator (30/10/2026) and kept to what the product does:
+ * - offline: sales continue and sync later. Not "100 %": card payments above the CMI offline floor are declined
+ *   while offline (cash-only fallback), so the copy promises selling, not every payment method.
+ * - darija: the support team speaks Darija (the interface itself is Arabic and French).
+ * - data: what is verifiable today (encrypted on the device, no card data ever stored). "Hosted in Morocco" is NOT
+ *   claimed: the database and the site are hosted outside Morocco today. Change DATA_HOSTED_IN_MOROCCO only once
+ *   that is no longer true.
+ */
+const DATA_HOSTED_IN_MOROCCO = false;
+
 const COPY: Record<Lang, {
   badge: string; title: string; subtitle: string; more: string;
-  tiles: Tile[]; offline: { online: string; offline: string; synced: string };
+  tiles: Tile[]; dataMorocco: Tile; offline: { online: string; offline: string; synced: string };
 }> = {
-  ar: {
-    badge: 'لماذا MAGHAREBIT',
-    title: 'كل ما يحتاجه متجرك، في مكان واحد',
-    subtitle: 'مصمم لواقع التجارة في المغرب: الإنترنت المتقطع، الدفع نقداً، والعربية والفرنسية معاً.',
-    more: 'المزيد',
-    tiles: [
-      { id: 'offline', title: 'البيع لا يتوقف بدون إنترنت', body: 'تُسجَّل العمليات على الجهاز وتُزامن تلقائياً عند عودة الاتصال.' },
-      { id: 'checkout', title: 'دفع في ثوانٍ', body: 'باركود، ميزان، نقد أو بطاقة أو QR.' },
-      { id: 'whatsapp', title: 'تقرير كل مساء على واتساب', body: 'المبيعات والهامش وتنبيهات المخزون، دون فتح أي تطبيق.' },
-      { id: 'stock', title: 'مخزون في الوقت الفعلي', body: 'كل بيع يُخصم من المخزون، مع تنبيه قبل النفاد.' },
-      { id: 'receipt', title: 'وصل باسم متجرك', body: 'طابعة حرارية 80 مم وشعارك في أعلى الوصل.' },
-      { id: 'insights', title: 'افهم ما يُباع', body: 'المنتجات الأكثر مبيعاً ومقارنة الأيام والأسابيع.' },
-      { id: 'bilingual', title: 'عربية وفرنسية', body: 'واجهة ووصولات باللغتين، وأسعار بالدرهم.' },
-      { id: 'hardware', title: 'معدات متوافقة', body: 'طابعات وقارئات وموازين شائعة في المغرب.' },
-    ],
-    offline: { online: 'متصل', offline: 'بدون إنترنت — البيع مستمر', synced: 'تمت المزامنة' },
-  },
   fr: {
     badge: 'Pourquoi MAGHAREBIT',
-    title: 'Tout ce qu’il faut à votre commerce, au même endroit',
-    subtitle: 'Pensé pour le commerce au Maroc : internet qui coupe, paiement en espèces, arabe et français ensemble.',
+    title: 'Pensé pour le commerce au Maroc, pas adapté après coup',
+    subtitle: 'Internet qui coupe, paiement en espèces, arabe et français au quotidien : MAGHAREBIT part de la réalité de votre boutique.',
     more: 'En savoir plus',
     tiles: [
-      { id: 'offline', title: 'La vente continue sans internet', body: 'Les ventes sont enregistrées sur l’appareil et synchronisées automatiquement au retour du réseau.' },
-      { id: 'checkout', title: 'Encaisser en quelques secondes', body: 'Code-barres, balance, espèces, carte ou QR.' },
-      { id: 'whatsapp', title: 'Un rapport chaque soir sur WhatsApp', body: 'Ventes, marge et alertes de stock, sans ouvrir d’application.' },
-      { id: 'stock', title: 'Stock en temps réel', body: 'Chaque vente déduit le stock, avec une alerte avant la rupture.' },
-      { id: 'receipt', title: 'Un ticket à votre nom', body: 'Imprimante thermique 80 mm et votre logo en haut du ticket.' },
-      { id: 'insights', title: 'Comprendre ce qui se vend', body: 'Meilleures ventes, comparaison des jours et des semaines.' },
-      { id: 'bilingual', title: 'Arabe et français', body: 'Interface et tickets dans les deux langues, prix en dirhams.' },
-      { id: 'hardware', title: 'Matériel compatible', body: 'Imprimantes, lecteurs et balances courants au Maroc.' },
+      { id: 'offline', title: 'La vente ne s’arrête jamais', body: 'Coupure d’internet ? Vous continuez d’encaisser. Tout se synchronise tout seul dès que le réseau revient.' },
+      { id: 'checkout', title: 'Encaisser en quelques secondes', body: 'Code-barres, balance, espèces ou QR, et un ticket imprimé à votre nom.' },
+      { id: 'whatsapp', title: 'Votre journée, chaque soir sur WhatsApp', body: 'Ventes, marge et alertes de stock arrivent sur votre téléphone. Aucune application à ouvrir.' },
+      { id: 'darija', title: 'Un support qui parle darija', body: 'Une équipe au Maroc qui vous répond dans votre langue, par téléphone ou WhatsApp.' },
+      { id: 'nocontract', title: 'Sans engagement, sans surprise', body: 'Pas de contrat à signer, pas de frais cachés. Vous arrêtez quand vous voulez.' },
+      { id: 'stock', title: 'Stock et ventes en temps réel', body: 'Chaque vente met le stock à jour. Vous savez ce qui se vend, et ce qu’il faut commander.' },
+      { id: 'setup', title: 'Prêt en quelques minutes', body: 'Vous installez, vous ajoutez vos produits, vous vendez. Sans technicien.' },
+      { id: 'data', title: 'Vos données sous clé', body: 'Chiffrées sur l’appareil, et aucune donnée de carte bancaire n’est jamais enregistrée.' },
     ],
+    dataMorocco: { id: 'data', title: 'Vos données restent au Maroc', body: 'Hébergées au Maroc, chiffrées, et aucune donnée de carte bancaire n’est jamais enregistrée.' },
     offline: { online: 'En ligne', offline: 'Hors ligne — la vente continue', synced: 'Synchronisé' },
+  },
+  ar: {
+    badge: 'لماذا MAGHAREBIT',
+    title: 'صُمِّم للتجارة في المغرب، لا مُكيَّف لها لاحقاً',
+    subtitle: 'إنترنت ينقطع، دفع نقدي، عربية وفرنسية كل يوم: MAGHAREBIT ينطلق من واقع متجرك.',
+    more: 'المزيد',
+    tiles: [
+      { id: 'offline', title: 'البيع لا يتوقف أبداً', body: 'انقطع الإنترنت؟ تواصل البيع، وتتم المزامنة تلقائياً فور عودة الشبكة.' },
+      { id: 'checkout', title: 'الدفع في ثوانٍ', body: 'باركود، ميزان، نقداً أو QR، ووصل مطبوع باسم متجرك.' },
+      { id: 'whatsapp', title: 'يومك كل مساء على واتساب', body: 'المبيعات والهامش وتنبيهات المخزون تصل إلى هاتفك، دون فتح أي تطبيق.' },
+      { id: 'darija', title: 'دعم يتحدث الدارجة', body: 'فريق في المغرب يجيبك بلغتك، عبر الهاتف أو واتساب.' },
+      { id: 'nocontract', title: 'بدون التزام، بدون مفاجآت', body: 'لا عقد توقّعه ولا رسوم خفية. توقّف متى شئت.' },
+      { id: 'stock', title: 'المخزون والمبيعات لحظة بلحظة', body: 'كل بيع يُحدِّث المخزون. تعرف ما يُباع وما يجب طلبه.' },
+      { id: 'setup', title: 'جاهز في دقائق', body: 'ثبّت، أضف منتجاتك، وابدأ البيع. بدون تقني.' },
+      { id: 'data', title: 'بياناتك في أمان', body: 'مشفّرة على الجهاز، ولا تُحفظ أي بيانات بطاقة بنكية أبداً.' },
+    ],
+    dataMorocco: { id: 'data', title: 'بياناتك تبقى في المغرب', body: 'مستضافة في المغرب ومشفّرة، ولا تُحفظ أي بيانات بطاقة بنكية أبداً.' },
+    offline: { online: 'متصل', offline: 'بدون إنترنت — البيع مستمر', synced: 'تمت المزامنة' },
   },
   en: {
     badge: 'Why MAGHAREBIT',
-    title: 'Everything your shop needs, in one place',
-    subtitle: 'Built for trade in Morocco: patchy internet, cash payments, Arabic and French side by side.',
+    title: 'Built for trade in Morocco, not adapted afterwards',
+    subtitle: 'Patchy internet, cash payments, Arabic and French every day: MAGHAREBIT starts from how your shop really works.',
     more: 'Learn more',
     tiles: [
-      { id: 'offline', title: 'Selling continues without internet', body: 'Sales are saved on the device and synced automatically when the network returns.' },
-      { id: 'checkout', title: 'Check out in seconds', body: 'Barcode, scale, cash, card or QR.' },
-      { id: 'whatsapp', title: 'A report every evening on WhatsApp', body: 'Sales, margin and stock alerts, without opening an app.' },
-      { id: 'stock', title: 'Real-time stock', body: 'Every sale updates stock, with an alert before you run out.' },
-      { id: 'receipt', title: 'A receipt with your name', body: '80 mm thermal printer and your logo at the top.' },
-      { id: 'insights', title: 'See what sells', body: 'Best sellers, day and week comparisons.' },
-      { id: 'bilingual', title: 'Arabic and French', body: 'Interface and receipts in both languages, prices in dirhams.' },
-      { id: 'hardware', title: 'Compatible hardware', body: 'Printers, scanners and scales common in Morocco.' },
+      { id: 'offline', title: 'Selling never stops', body: 'Internet down? Keep ringing up sales. Everything syncs on its own when the network returns.' },
+      { id: 'checkout', title: 'Check out in seconds', body: 'Barcode, scale, cash or QR, and a printed receipt with your name.' },
+      { id: 'whatsapp', title: 'Your day, every evening on WhatsApp', body: 'Sales, margin and stock alerts land on your phone. No app to open.' },
+      { id: 'darija', title: 'Support that speaks Darija', body: 'A team in Morocco answers in your language, by phone or WhatsApp.' },
+      { id: 'nocontract', title: 'No commitment, no surprises', body: 'No contract to sign, no hidden fees. Stop whenever you want.' },
+      { id: 'stock', title: 'Real-time stock and sales', body: 'Every sale updates stock. You know what sells and what to reorder.' },
+      { id: 'setup', title: 'Ready in minutes', body: 'Install, add your products, start selling. No technician needed.' },
+      { id: 'data', title: 'Your data under lock', body: 'Encrypted on the device, and no card data is ever stored.' },
     ],
+    dataMorocco: { id: 'data', title: 'Your data stays in Morocco', body: 'Hosted in Morocco, encrypted, and no card data is ever stored.' },
     offline: { online: 'Online', offline: 'Offline — selling continues', synced: 'Synced' },
   },
 };
 
-/** Where each tile leads ('#…' = a section of the home page). bilingual has no detail page. */
+/** Where each tile leads ('#…' = a section of the home page). null = no detail page. */
 const TARGET: Record<TileId, string | null> = {
   offline: '/features#offline',
   checkout: '#pos',
   whatsapp: '#reports',
+  darija: '/demo',
+  nocontract: '/pricing',
   stock: '/features#inventory',
-  receipt: '#hardware',
-  insights: '/features#ai',
-  bilingual: null,
-  hardware: '/materiel',
+  setup: '/download',
+  data: null,
 };
 
-/** Grid placement on lg (12 columns); md is 2 columns with the visual tiles spanning both. */
+/** Grid placement on lg (12 columns): 7+5 / 4+4+4 / 6+3+3. md is 2 columns, the wide visual tiles span both. */
 const SPAN: Record<TileId, string> = {
   offline: 'md:col-span-2 lg:col-span-7',
   checkout: 'lg:col-span-5',
   whatsapp: 'lg:col-span-4',
-  stock: 'lg:col-span-4',
-  receipt: 'lg:col-span-4',
-  insights: 'md:col-span-2 lg:col-span-6',
-  bilingual: 'lg:col-span-3',
-  hardware: 'lg:col-span-3',
+  darija: 'lg:col-span-4',
+  nocontract: 'lg:col-span-4',
+  stock: 'md:col-span-2 lg:col-span-6',
+  setup: 'lg:col-span-3',
+  data: 'lg:col-span-3',
 };
 
 const ICON: Record<TileId, ReactNode> = {
   offline: <path d="M2 8.8a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01" />,
   checkout: <path d="M4 6v12M7 6v12M10 6v12M14 6v12M17 6v12M20 6v12" />,
   whatsapp: <><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.6-5A8.5 8.5 0 1 1 21 11.5Z" /><path d="M8.5 10.5h7M8.5 13.5h4.5" /></>,
+  darija: <><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" /><path d="M19 9h1a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-1v3l-3.5-3" /></>,
+  nocontract: <><path d="M14 3H6v18h12V7z" /><path d="M14 3v4h4M9 12l6 6M15 12l-6 6" /></>,
   stock: <><path d="M21 8 12 3 3 8v8l9 5 9-5z" /><path d="M3 8l9 5 9-5M12 13v8" /></>,
-  receipt: <><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" /><path d="M9 8h6M9 12h6" /></>,
-  insights: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
-  bilingual: <><path d="M4 5h9M8.5 5v2c0 4-2.5 7-5 8" /><path d="M6 10c1.5 2.5 4 4.5 7 5" /><path d="m13 20 4-9 4 9M14.5 17h5" /></>,
-  hardware: <><rect x="5" y="3" width="14" height="10" rx="1.5" /><path d="M7 13v4h10v-4M9 21h6M12 17v4" /></>,
+  setup: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
+  data: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></>,
 };
 
 function OfflineDemo({ labels }: { labels: { online: string; offline: string; synced: string } }) {
@@ -135,12 +148,12 @@ function WhatsAppBubbles() {
 export default function FeatureBento() {
   const { lang, isRTL, locale } = useLang();
   const c = COPY[lang];
+  const tiles = DATA_HOSTED_IN_MOROCCO ? c.tiles.map((t) => (t.id === 'data' ? c.dataMorocco : t)) : c.tiles;
 
   const visual = (id: TileId): ReactNode => {
     if (id === 'offline') return <OfflineDemo labels={c.offline} />;
-    if (id === 'checkout') return <ScanIllustration />;
-    if (id === 'receipt') return <ReceiptScreen lang={lang} />;
-    if (id === 'insights') return <DashboardScreen lang={lang} compact />;
+    if (id === 'checkout') return <ReceiptScreen lang={lang} />;
+    if (id === 'stock') return <DashboardScreen lang={lang} compact />;
     if (id === 'whatsapp') return <WhatsAppBubbles />;
     return null;
   };
@@ -161,11 +174,11 @@ export default function FeatureBento() {
           <h2 id="bento-heading" className="mb-3 font-bold text-white" style={{ fontSize: 'clamp(1.5rem, 4vw, 2.25rem)', lineHeight: 1.25 }}>
             {c.title}
           </h2>
-          <p className="mx-auto max-w-[620px] text-base leading-[1.8] text-white/65">{c.subtitle}</p>
+          <p className="mx-auto max-w-[640px] text-base leading-[1.8] text-white/65">{c.subtitle}</p>
         </div>
 
         <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
-          {c.tiles.map((tile) => {
+          {tiles.map((tile) => {
             const v = visual(tile.id);
             const target = TARGET[tile.id];
             const href = target === null ? null : target.startsWith('#') ? target : `/${locale}${target}`;
@@ -174,8 +187,8 @@ export default function FeatureBento() {
                 {v && (
                   <div aria-hidden="true" className="relative mb-5 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-brand-900 to-brand-950 ring-1 ring-white/5 sm:h-44">
                     <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 55% at 50% 55%, rgba(240,180,41,0.14), transparent 70%)' }} />
-                    {/* mock-up screens fill the plate; line illustrations keep a small inset */}
-                    <div className={`relative h-full w-full ${tile.id === 'insights' ? '!absolute inset-3 !h-auto !w-auto overflow-hidden rounded-lg ring-1 ring-white/10' : 'p-3'}`}>{v}</div>
+                    {/* the dashboard screen fills the plate; the other visuals keep a small inset */}
+                    <div className={`relative h-full w-full ${tile.id === 'stock' ? '!absolute inset-3 !h-auto !w-auto overflow-hidden rounded-lg ring-1 ring-white/10' : 'p-3'}`}>{v}</div>
                   </div>
                 )}
                 <span aria-hidden="true" className="mb-3 grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-brand-900 text-gold-400">
