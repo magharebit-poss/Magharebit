@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 
 /**
- * Lead capture modal: benefits on the start side (Pine Green), the form on the end side (white).
+ * Lead capture modal: benefits on the start side (Deep Forest), the form on the end side (Pine Green).
+ * Both sides are the dark shell, so the fields use .field-dark (globals.css) for the select popup and autofill.
  * Stacks on phones. Native <dialog>: focus trap, Esc and the backdrop come from the browser.
  * Posts to /api/leads (validated and rate limited server-side).
  */
@@ -90,10 +91,12 @@ export default function LeadModal({ onClose }: { onClose: () => void }) {
   }
 
   const field =
-    'w-full min-h-[48px] rounded-[10px] border bg-white px-4 text-[15px] text-[#0A2318] placeholder:text-[#0A2318]/40 outline-none transition-shadow ' +
-    'focus:border-[#B8860B] focus:shadow-[0_0_0_3px_rgba(240,180,41,0.35)]';
-  const bad = 'border-[#D32F2F]';
-  const ok = 'border-[#0A2318]/20';
+    'field-dark w-full min-h-[48px] rounded-[10px] border bg-[#0A2318] px-4 text-[15px] placeholder:text-white/45 outline-none transition-shadow ' +
+    'focus:border-[#F0B429] focus:shadow-[0_0_0_3px_rgba(240,180,41,0.35)]';
+  const bad = 'border-[#FCA5A5]';
+  const ok = 'border-white/20 hover:border-white/35';
+  const label = 'mb-1.5 block text-[13.5px] font-bold text-white/90';
+  const errText = 'mt-1 text-[12.5px] font-semibold text-[#FCA5A5]';
 
   const benefits = [
     { icon: 'offline' as const, title: t('b1_t'), desc: t('b1_d') },
@@ -110,12 +113,12 @@ export default function LeadModal({ onClose }: { onClose: () => void }) {
       className="m-auto w-[min(960px,calc(100vw-24px))] max-h-[calc(100dvh-24px)] overflow-hidden rounded-[20px] border-0 bg-transparent p-0 backdrop:bg-[#0A2318]/70 backdrop:backdrop-blur-[3px]"
       style={{ direction: isRTL ? 'rtl' : 'ltr', fontFamily: fontBody }}
     >
-      <div className="relative grid max-h-[calc(100dvh-24px)] grid-cols-1 overflow-y-auto rounded-[20px] bg-white shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:grid-cols-[1fr_1fr] md:overflow-hidden">
+      <div className="relative grid max-h-[calc(100dvh-24px)] grid-cols-1 overflow-y-auto rounded-[20px] border border-white/10 bg-[#0F3D2A] shadow-[0_24px_80px_rgba(0,0,0,0.45)] md:grid-cols-[1fr_1fr] md:overflow-hidden">
         <button
           type="button"
           onClick={close}
           aria-label={t('close')}
-          className="absolute end-3 top-3 z-20 grid h-11 w-11 place-items-center rounded-full text-[#0A2318]/60 hover:bg-[#0A2318]/5 hover:text-[#0A2318] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B8860B] max-md:text-white/70 max-md:hover:bg-white/10 max-md:hover:text-white"
+          className="absolute end-3 top-3 z-20 grid h-11 w-11 place-items-center rounded-full text-white/70 hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#F0B429]"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
@@ -172,92 +175,92 @@ export default function LeadModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {/* Form: white */}
-        <div className="bg-white px-6 py-6 md:px-10 md:py-12">
+        {/* Form: Pine Green */}
+        <div className="bg-[#0F3D2A] px-6 py-6 text-white md:px-10 md:py-12">
           {done ? (
             <div role="status" className="grid h-full content-center justify-items-center py-10 text-center">
               <span className="grid h-16 w-16 place-items-center rounded-full bg-[#0A2318] text-[#F0B429]">
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5 10 17.5 19 7.5" /></svg>
               </span>
-              <h3 className="mt-5 text-[22px] font-extrabold text-[#0A2318]">{t('success_title')}</h3>
-              <p className="mt-2 max-w-[340px] text-[15px] leading-[1.8] text-[#0A2318]/70">{t('success_sub')}</p>
+              <h3 className="mt-5 text-[22px] font-extrabold text-white">{t('success_title')}</h3>
+              <p className="mt-2 max-w-[340px] text-[15px] leading-[1.8] text-white/75">{t('success_sub')}</p>
               <a
                 href={`/${locale}/auth/signup`}
-                className="mt-6 inline-flex min-h-[48px] items-center rounded-full bg-[#F0B429] px-7 text-[15px] font-bold text-[#0A2318] shadow-[0_6px_20px_rgba(240,180,41,0.4)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A2318]"
+                className="mt-6 inline-flex min-h-[48px] items-center rounded-full bg-[#F0B429] px-7 text-[15px] font-bold text-[#0A2318] shadow-[0_6px_20px_rgba(240,180,41,0.4)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
                 {t('success_cta')}
               </a>
             </div>
           ) : (
             <form onSubmit={submit} noValidate>
-              <h3 className="text-[22px] font-extrabold text-[#0A2318] md:text-[26px]">{t('form_title')}</h3>
-              <p className="mt-1 text-[14px] text-[#0A2318]/60">{t('form_sub')}</p>
+              <h3 className="text-[22px] font-extrabold text-white md:text-[26px]">{t('form_title')}</h3>
+              <p className="mt-1 text-[14px] text-white/65">{t('form_sub')}</p>
 
               <div className="mt-6 space-y-4">
                 <div>
-                  <label htmlFor="lm-store" className="mb-1.5 block text-[13.5px] font-bold text-[#0A2318]">{t('store')}</label>
+                  <label htmlFor="lm-store" className={label}>{t('store')}</label>
                   <input
                     ref={firstFieldRef} id="lm-store" autoComplete="organization" value={store} maxLength={100}
                     onChange={(e) => setStore(e.target.value)} placeholder={t('store_ph')}
                     aria-invalid={!!errors.store} aria-describedby={errors.store ? 'lm-store-err' : undefined}
-                    className={`${field} ${errors.store ? bad : ok}`}
+                    className={`${field} text-white ${errors.store ? bad : ok}`}
                   />
-                  {errors.store && <p id="lm-store-err" className="mt-1 text-[12.5px] font-semibold text-[#D32F2F]">{errors.store}</p>}
+                  {errors.store && <p id="lm-store-err" className={errText}>{errors.store}</p>}
                 </div>
 
                 <div>
-                  <label htmlFor="lm-phone" className="mb-1.5 block text-[13.5px] font-bold text-[#0A2318]">{t('phone')}</label>
+                  <label htmlFor="lm-phone" className={label}>{t('phone')}</label>
                   <input
                     id="lm-phone" type="tel" inputMode="tel" autoComplete="tel" dir="ltr" value={phone} maxLength={20}
                     onChange={(e) => setPhone(e.target.value)} placeholder={t('phone_ph')}
                     style={{ textAlign: isRTL ? 'right' : 'left' }}
                     aria-invalid={!!errors.phone} aria-describedby={errors.phone ? 'lm-phone-err' : undefined}
-                    className={`${field} ${errors.phone ? bad : ok}`}
+                    className={`${field} text-white ${errors.phone ? bad : ok}`}
                   />
-                  {errors.phone && <p id="lm-phone-err" className="mt-1 text-[12.5px] font-semibold text-[#D32F2F]">{errors.phone}</p>}
+                  {errors.phone && <p id="lm-phone-err" className={errText}>{errors.phone}</p>}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label htmlFor="lm-type" className="mb-1.5 block text-[13.5px] font-bold text-[#0A2318]">{t('type')}</label>
+                    <label htmlFor="lm-type" className={label}>{t('type')}</label>
                     <select
                       id="lm-type" value={type} onChange={(e) => setType(e.target.value)}
                       aria-invalid={!!errors.type} aria-describedby={errors.type ? 'lm-type-err' : undefined}
-                      className={`${field} ${errors.type ? bad : ok}`}
+                      className={`${field} ${errors.type ? bad : ok} ${type ? 'text-white' : 'text-white/45'}`}
                     >
                       <option value="">{t('type_ph')}</option>
                       {TYPES.map((k) => <option key={k} value={k}>{t(`t_${k}`)}</option>)}
                     </select>
-                    {errors.type && <p id="lm-type-err" className="mt-1 text-[12.5px] font-semibold text-[#D32F2F]">{errors.type}</p>}
+                    {errors.type && <p id="lm-type-err" className={errText}>{errors.type}</p>}
                   </div>
                   <div>
-                    <label htmlFor="lm-city" className="mb-1.5 block text-[13.5px] font-bold text-[#0A2318]">
-                      {t('city')} <span className="font-medium text-[#0A2318]/45">({t('optional')})</span>
+                    <label htmlFor="lm-city" className={label}>
+                      {t('city')} <span className="font-medium text-white/50">({t('optional')})</span>
                     </label>
                     <input
                       id="lm-city" autoComplete="address-level2" value={city} maxLength={100}
                       onChange={(e) => setCity(e.target.value)} placeholder={t('city_ph')}
-                      className={`${field} ${ok}`}
+                      className={`${field} text-white ${ok}`}
                     />
                   </div>
                 </div>
               </div>
 
               {formError && (
-                <p role="alert" className="mt-4 rounded-[10px] border border-[#D32F2F]/30 bg-[#D32F2F]/6 px-4 py-3 text-[13.5px] font-semibold text-[#D32F2F]">{formError}</p>
+                <p role="alert" className="mt-4 rounded-[10px] border border-[#FCA5A5]/40 bg-[#D32F2F]/15 px-4 py-3 text-[13.5px] font-semibold text-[#FCA5A5]">{formError}</p>
               )}
 
               <button
                 type="submit" disabled={busy}
-                className="mt-6 inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-[#F0B429] px-6 text-[16px] font-bold text-[#0A2318] shadow-[0_6px_20px_rgba(240,180,41,0.4)] transition-[filter] hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A2318] disabled:opacity-70"
+                className="mt-6 inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-[#F0B429] px-6 text-[16px] font-bold text-[#0A2318] shadow-[0_6px_20px_rgba(240,180,41,0.4)] transition-[filter] hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-70"
               >
                 {busy ? t('submitting') : t('submit')}
               </button>
-              <p className="mt-4 text-[12px] leading-[1.7] text-[#0A2318]/55">
+              <p className="mt-4 text-[12px] leading-[1.7] text-white/60">
                 {t('privacy')}{' '}
-                <a href={`/${locale}/privacy`} className="font-semibold text-[#8A6508] underline underline-offset-2">{t('privacy_link')}</a>
+                <a href={`/${locale}/privacy`} className="font-semibold text-[#F0B429] underline underline-offset-2">{t('privacy_link')}</a>
               </p>
-              <p className="mt-3 text-[12.5px] font-semibold text-[#0A2318]/55 md:hidden">{t('trust')}</p>
+              <p className="mt-3 text-[12.5px] font-semibold text-white/60 md:hidden">{t('trust')}</p>
             </form>
           )}
         </div>

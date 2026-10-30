@@ -27,8 +27,9 @@ export default function DemoForm() {
   const [submitted, setSubmitted]   = useState(false);
   const [errors, setErrors]         = useState<Record<string, boolean>>({});
 
+  // field-dark (globals.css): dark select popup with readable options, and autofill in the field's own colour
   const inputClass = (field: string) =>
-    `w-full px-4 py-3 bg-white/[0.06] border rounded-[10px] text-white font-arabic placeholder:text-white/35 outline-none transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(240,180,41,0.15)] ${
+    `field-dark w-full px-4 py-3 bg-white/[0.06] border rounded-[10px] text-white font-arabic placeholder:text-white/35 outline-none transition-all duration-200 focus:shadow-[0_0_0_3px_rgba(240,180,41,0.15)] ${
       errors[field]
         ? 'border-red-400 animate-[shake_0.4s_ease]'
         : 'border-white/[0.12] focus:border-gold-400'
@@ -107,7 +108,7 @@ export default function DemoForm() {
 
         <div
           className={`bg-white/[0.04] border border-white/10 rounded-2xl p-8 md:p-10 backdrop-blur-sm ${locale === 'ar' ? 'text-right' : 'text-left'}`}
-          style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.3)' }}
+          style={{ boxShadow: '0 8px 40px rgba(0,0,0,0.3)', ['--field-autofill-bg' as string]: '#26503F' }}
         >
 
           {submitted ? (

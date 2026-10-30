@@ -461,3 +461,20 @@ a { color: inherit; text-decoration: none; }
   --adm-chart-today: #BF8714;
   --adm-grid: rgba(255, 255, 255, 0.1);
 }
+
+/* Form fields on the dark shell (lead modal, sign-up). Without this the browser picks the colours itself:
+   the <select> popup stays light while the options inherit white text (white on white), and Chrome autofill
+   paints saved fields (shop name, phone) as light blocks. --field-autofill-bg = the field's visible background. */
+.field-dark { color-scheme: dark; }
+.field-dark option { background-color: #0A2318; color: #FFFFFF; }
+.field-dark:-webkit-autofill,
+.field-dark:-webkit-autofill:hover {
+  -webkit-text-fill-color: #FFFFFF;
+  caret-color: #FFFFFF;
+  box-shadow: 0 0 0 1000px var(--field-autofill-bg, #0A2318) inset;
+  transition: background-color 9999s ease-out 0s;
+}
+.field-dark:-webkit-autofill:focus {
+  -webkit-text-fill-color: #FFFFFF;
+  box-shadow: 0 0 0 1000px var(--field-autofill-bg, #0A2318) inset, 0 0 0 3px rgba(240, 180, 41, 0.35);
+}

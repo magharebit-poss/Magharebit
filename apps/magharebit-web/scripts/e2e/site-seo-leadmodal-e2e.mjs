@@ -110,7 +110,11 @@ for (const lang of ['fr', 'ar']) {
     const r = (e) => e.getBoundingClientRect();
     return { dir: cs.direction, leftBg: getComputedStyle(left).backgroundColor, rightBg: getComputedStyle(right).backgroundColor, leftX: r(left).x, rightX: r(right).x, labelledby: d.getAttribute('aria-labelledby'), h2: d.querySelector('#lead-modal-title')?.innerText, benefits: d.querySelectorAll('ul li').length,
       submitH: r(d.querySelector('button[type=submit]')).height, closeW: r(d.querySelector('button[aria-label]')).width, focus: document.activeElement?.id } })()`)
-  check(`[${lang}] left panel Pine Green #0A2318, right panel white`, info.leftBg === 'rgb(10, 35, 24)' && info.rightBg === 'rgb(255, 255, 255)', `${info.leftBg} | ${info.rightBg}`)
+  check(`[${lang}] benefits panel Deep Forest #0A2318, form panel Pine Green #0F3D2A`, info.leftBg === 'rgb(10, 35, 24)' && info.rightBg === 'rgb(15, 61, 42)', `${info.leftBg} | ${info.rightBg}`)
+  // Fields on the dark shell: dark background, white text, dark native popup, options readable (not white on white)
+  const fields = await js(`(() => { const c = (e) => { const s = getComputedStyle(e); return [s.backgroundColor, s.color, s.colorScheme].join(' / ') }; const sel = document.getElementById('lm-type'); return { store: c(document.getElementById('lm-store')), phone: c(document.getElementById('lm-phone')), select: c(sel), option: c(sel.options[1]) } })()`)
+  check(`[${lang}] inputs are dark with white text (no white blocks)`, fields.store === 'rgb(10, 35, 24) / rgb(255, 255, 255) / dark' && fields.phone === fields.store, fields.store)
+  check(`[${lang}] select options: white text on Deep Forest, dark popup`, fields.option === 'rgb(10, 35, 24) / rgb(255, 255, 255) / dark' && fields.select.endsWith('/ dark'), `${fields.select} | ${fields.option}`)
   check(`[${lang}] benefits panel sits on the ${lang === 'ar' ? 'right (RTL start)' : 'left'} side`, lang === 'ar' ? info.leftX > info.rightX : info.leftX < info.rightX, `${info.leftX}/${info.rightX}`)
   check(`[${lang}] dialog is labelled, first field focused, direction ${lang === 'ar' ? 'rtl' : 'ltr'}`, info.labelledby === 'lead-modal-title' && !!info.h2 && info.focus === 'lm-store' && info.dir === (lang === 'ar' ? 'rtl' : 'ltr'))
   check(`[${lang}] touch targets: submit >= 48px, close >= 44px`, info.submitH >= 48 && info.closeW >= 44, `${info.submitH}/${info.closeW}`)

@@ -107,14 +107,22 @@ export default function LoginPage() {
       }}
         className="login-brand-col"
       >
-        {/* Subtle background hexagon pattern */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          opacity: 0.04,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='70'%3E%3Cpolygon points='30,2 58,17 58,53 30,68 2,53 2,17' fill='none' stroke='%23F0B429' stroke-width='1'/%3E%3C/svg%3E")`,
-          backgroundSize: '60px 70px',
-        }} />
+        {/* Zellige watermark, the brand pattern used by the hero and the auth shell (design system: 4-6% opacity) */}
+        <div
+          aria-hidden="true"
+          data-testid="login-zellige"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            pointerEvents: 'none',
+            backgroundColor: '#F0B429',
+            WebkitMaskImage: "url('/brand/zellige-pattern.svg')",
+            maskImage: "url('/brand/zellige-pattern.svg')",
+            WebkitMaskSize: '368px 506.7px',
+            maskSize: '368px 506.7px',
+            opacity: 0.05,
+          }}
+        />
 
         <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: '420px' }}>
 

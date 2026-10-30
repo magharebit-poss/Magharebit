@@ -325,6 +325,8 @@ export default function SignupPage() {
     borderRadius: '10px', color: '#FFFFFF', fontSize: '1rem',
     outline: 'none', fontFamily: 'inherit',
     boxSizing: 'border-box', direction: 'ltr', transition: 'border-color 0.18s',
+    // .field-dark (globals.css): dark select popup, white options, autofill painted in this field's colour
+    ['--field-autofill-bg' as string]: '#1B3228',
   }
   const ctaStyle: React.CSSProperties = {
     width: '100%', padding: '14px', minHeight: '52px',
@@ -387,7 +389,7 @@ export default function SignupPage() {
                 id="su-phone" type="tel" value={phone}
                 onChange={e => setPhone(formatPhone(e.target.value))}
                 placeholder="06 XX XX XX XX" required autoComplete="tel"
-                style={inputStyle}
+                className="field-dark" style={inputStyle}
                 onFocus={e => { e.currentTarget.style.borderColor = '#F0B429' }}
                 onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
               />
@@ -405,7 +407,7 @@ export default function SignupPage() {
                 id="su-email" type="email" value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder={t('email_placeholder')} required autoComplete="email"
-                style={inputStyle}
+                className="field-dark" style={inputStyle}
                 onFocus={e => { e.currentTarget.style.borderColor = '#F0B429' }}
                 onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
               />
@@ -508,7 +510,7 @@ export default function SignupPage() {
               id="store-name" type="text" value={storeName}
               onChange={e => setStoreName(e.target.value)}
               placeholder={t('store_name_ph')} required
-              style={inputStyle}
+              className="field-dark" style={inputStyle}
               onFocus={e => { e.currentTarget.style.borderColor = '#F0B429' }}
               onBlur={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)' }}
             />
@@ -516,7 +518,7 @@ export default function SignupPage() {
           <div style={{ marginBottom: '16px' }}>
             <label htmlFor="sector" style={labelStyle}>{t('sector_label')}</label>
             <select id="sector" value={sector} onChange={e => setSector(e.target.value)}
-              style={{ ...inputStyle, color: sector ? '#FFFFFF' : 'rgba(255,255,255,0.40)' }}>
+              className="field-dark" style={{ ...inputStyle, color: sector ? '#FFFFFF' : 'rgba(255,255,255,0.40)' }}>
               <option value="">{t('sector_placeholder')}</option>
               {SECTORS.map(s => (
                 <option key={s.value} value={s.value}>
@@ -528,7 +530,7 @@ export default function SignupPage() {
           <div style={{ marginBottom: '24px' }}>
             <label htmlFor="city" style={labelStyle}>{t('city_label')}</label>
             <select id="city" value={city} onChange={e => setCity(e.target.value)}
-              style={{ ...inputStyle, color: city ? '#FFFFFF' : 'rgba(255,255,255,0.40)' }}>
+              className="field-dark" style={{ ...inputStyle, color: city ? '#FFFFFF' : 'rgba(255,255,255,0.40)' }}>
               <option value="">{t('city_placeholder')}</option>
               {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>

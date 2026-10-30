@@ -14,6 +14,7 @@
 import { Db } from 'mongodb'
 import { getDb } from '../mongodb'
 import type { TaxRate } from '../transaction-totals'
+import { merchantsRepo } from './merchants'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -113,6 +114,12 @@ async function ensureIndexes(db: Db) {
   indexesCreated = true
 }
 
+/** Store name on the merchant record (sign-up step 3, or the lead when an admin activates it). '' if unknown. */
+async function merchantStoreName(merchantId: string): Promise<string> {
+  const merchant = await merchantsRepo.findById(merchantId)
+  return merchant?.storeName?.trim() ?? ''
+}
+
 // ── Repository ────────────────────────────────────────────────────────────────
 
 export const settingsRepo = {
@@ -134,11 +141,23 @@ export const settingsRepo = {
       const { _id: _removed, ...rest } = existing as Record<string, unknown>
       void _removed
       // Merge defaults so older documents (pre-Sprint 3) get new field defaults
-      return { ...DEFAULTS, ...(rest as Partial<MerchantSettings>), merchantId } as MerchantSettings
+      const merged = { ...DEFAULTS, ...(rest as Partial<MerchantSettings>), merchantId } as MerchantSettings
+      if (!merged.storeName.trim()) {
+        // Documents created before the store name was copied over: fill it once, only while it is still blank
+        const name = await merchantStoreName(merchantId)
+        if (name) {
+          await db.collection('settings').updateOne(
+            { merchantId, $or: [{ storeName: '' }, { storeName: { $exists: false } }] },
+            { $set: { storeName: name, updatedAt: new Date() } },
+          )
+          merged.storeName = name
+        }
+      }
+      return merged
     }
 
-    // First access — create defaults
-    const doc: MerchantSettings = { merchantId, ...DEFAULTS, updatedAt: new Date() }
+    // First access — create defaults, with the store name given at sign-up or on the lead
+    const doc: MerchantSettings = { merchantId, ...DEFAULTS, storeName: await merchantStoreName(merchantId), updatedAt: new Date() }
     await db.collection('settings').insertOne({ ...doc })
     return doc
   },

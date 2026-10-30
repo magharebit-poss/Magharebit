@@ -1,4 +1,5 @@
-// Store logo (merchant portal): API rules (session, real type from the bytes, size cap, versioned public URL,
+// Store profile in the merchant portal. Store name: settings start with the name from sign-up or the activated
+// lead, old blank documents are filled, a typed name is kept. Store logo: API rules (session, real type from the bytes, size cap, versioned public URL,
 // caching, settings whitelist, delete, rate limit) and the settings page in headless Chrome (pick a large PNG,
 // browser resizes to <= 512 px WebP, preview + sidebar avatar update without reload, survives reload, remove).
 // Start (production build): MONGODB_URI=mongodb://127.0.0.1:27018 MONGODB_DB=magharebit_logo NEXT_DIST_DIR=.next-test npx next start -p 3021
@@ -14,7 +15,9 @@ import { crc32, deflateSync } from 'node:zlib'
 const B = process.env.BASE || 'http://localhost:3021'
 const APP = resolve(process.env.APP_DIR || process.cwd())
 const OUT = process.env.OUT; if (OUT) mkdirSync(OUT, { recursive: true })
-const SECRET = (readFileSync(`${APP}/.env.local`, 'utf8').match(/^NEXTAUTH_SECRET=(.*)$/m) || [])[1]?.trim()
+// The secrets the server uses: .env.local for `next start`; set ENV_FILE=.env.development.local for `next dev` (it wins there)
+const ENV_FILE = resolve(APP, process.env.ENV_FILE || '.env.local')
+const SECRET = (readFileSync(ENV_FILE, 'utf8').match(/^NEXTAUTH_SECRET=(.*)$/m) || [])[1]?.trim()
 const { MongoClient } = createRequire(`${APP}/package.json`)('mongodb')
 const mongo = new MongoClient('mongodb://127.0.0.1:27018'); await mongo.connect()
 const db = mongo.db(process.env.MONGODB_DB || 'magharebit_logo')
@@ -55,7 +58,27 @@ const m1 = await signup('متجر الشعار')
 check('sign-up opens a portal session', /portal_session=/.test(m1.cookie), m1.key)
 const me1 = await (await fetch(`${B}/api/portal/auth/me`, { headers: { cookie: m1.cookie } })).json()
 const id1 = me1.merchantId
-check('new merchant has no logo (settings + me)', (await (await fetch(`${B}/api/portal/settings`, { headers: { cookie: m1.cookie } })).json()).logoUrl === '' && me1.logoUrl === null)
+const s0 = await (await fetch(`${B}/api/portal/settings`, { headers: { cookie: m1.cookie } })).json()
+check('new merchant has no logo (settings + me)', s0.logoUrl === '' && me1.logoUrl === null)
+
+// ── store name: settings start with the name given at sign-up / on the lead ─
+check('settings.storeName = the sign-up store name', s0.storeName === 'متجر الشعار', s0.storeName)
+const ADMIN = (readFileSync(ENV_FILE, 'utf8').match(/^ADMIN_SECRET=(.*)$/m) || [])[1]?.trim()
+const leadPhone = '06' + String(Date.now()).slice(-8)
+await post('/api/leads', { storeName: 'Primeur Lead', phone: leadPhone, businessType: 'vegetables', city: 'Fès', locale: 'fr' })
+const leadRow = await db.collection('leads').findOne({ phone: leadPhone })
+const act = await (await fetch(`${B}/api/admin/leads/${leadRow.id}/activate`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-admin-secret': ADMIN }, body: JSON.stringify({ plan: 'Starter', durationMonths: 1, notify: false }) })).json()
+const leadLogin = await post('/api/portal/auth/login', { identifier: leadPhone, licenseKey: act.lead?.licenseKey })
+const sLead = await (await fetch(`${B}/api/portal/settings`, { headers: { cookie: cookieOf(leadLogin) } })).json()
+check('settings.storeName = the lead store name after admin activation', leadLogin.ok && sLead.storeName === 'Primeur Lead', sLead.storeName)
+// a settings document created before this fix (blank name) is filled on the next read, once
+const leadMerchant = await db.collection('merchants').findOne({ phone: '212' + leadPhone.slice(1) })
+await db.collection('settings').updateOne({ merchantId: leadMerchant._id.toString() }, { $set: { storeName: '' } })
+const sOld = await (await fetch(`${B}/api/portal/settings`, { headers: { cookie: cookieOf(leadLogin) } })).json()
+check('an old blank settings document is filled from the merchant and saved', sOld.storeName === 'Primeur Lead' && (await db.collection('settings').findOne({ merchantId: leadMerchant._id.toString() })).storeName === 'Primeur Lead')
+await fetch(`${B}/api/portal/settings`, { method: 'PATCH', headers: { 'content-type': 'application/json', cookie: cookieOf(leadLogin) }, body: JSON.stringify({ storeName: 'Primeur Atlas' }) })
+const sTyped = await (await fetch(`${B}/api/portal/settings`, { headers: { cookie: cookieOf(leadLogin) } })).json()
+check('a name the merchant typed is kept (not replaced by the sign-up name)', sTyped.storeName === 'Primeur Atlas')
 
 // ── upload rules ─────────────────────────────────────────────────────────────
 const small = png(64, 40)
