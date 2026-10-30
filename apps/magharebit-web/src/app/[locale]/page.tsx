@@ -8,11 +8,12 @@ import AOSInit from '@/components/AOSInit';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
 import ProofStrip from '@/components/landing/ProofStrip';
-import IntentCards from '@/components/landing/IntentCards';
 import { pageAlternates, ogBase } from '@/lib/seo';
 
 // ─── below-the-fold: dynamic imports (code splitting) ─────────────────────────
-const FeatureStories        = dynamic(() => import('@/components/landing/FeatureStories'));
+const VideoSection          = dynamic(() => import('@/components/landing/VideoSection'));
+const FeatureBento          = dynamic(() => import('@/components/landing/FeatureBento'));
+const ProductShowcase       = dynamic(() => import('@/components/landing/ProductShowcase'));
 const HardwareShowcase      = dynamic(() => import('@/components/landing/HardwareShowcase'));
 const ComparisonSection     = dynamic(() => import('@/components/landing/ComparisonSection'));
 const WhatsAppReportPreview = dynamic(() => import('@/components/landing/WhatsAppReportPreview'));
@@ -66,8 +67,10 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
       <main id="main-content">
         <HeroSection />
         <ProofStrip />
-        <IntentCards />
-        <FeatureStories />
+        <VideoSection />
+        {/* id="products": the navbar's /#products lands here */}
+        <FeatureBento />
+        <ProductShowcase />
         <HardwareShowcase />
         <ComparisonSection />
         <WhatsAppReportPreview />

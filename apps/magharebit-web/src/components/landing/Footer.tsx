@@ -51,7 +51,7 @@ export default function Footer() {
               {([
                 [t('pos'),         `/${l}/features`],
                 [t('inventory'),   `/${l}/features#inventory`],
-                [t('analytics'),   `/${l}/features#analytics`],
+                [t('analytics'),   `/${l}/features#ai`],
                 [t('hardware'),    `/${l}/materiel`],
                 [t('comparaison'), `/${l}/comparaison`],
                 [t('pricing'),     `/${l}/pricing`],
@@ -76,8 +76,8 @@ export default function Footer() {
                 [t('about'),    `/${l}/about`],
                 [t('clients'),  `/${l}/clients`],
                 [t('blog'),     `/${l}/blog`],
-                [t('partners'), '#'],
-                [t('careers'),  '#'],
+                // Partners and careers (keys footer.partners / footer.careers) come back once those pages exist:
+                // a link to "#" or to an empty page is worse than no link.
               ] as [string, string][]).map(([label, href]) => (
                 <li key={label}>
                   <a href={href} className="font-arabic text-sm text-white/55 hover:text-gold-400 transition-colors">

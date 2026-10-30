@@ -31,6 +31,8 @@ All except the unit check need a dev server on its own cache folder (`NEXT_DIST_
 
 | `store-logo-e2e.mjs` | Merchant store logo: session required, type from the bytes (SVG/GIF/text refused), 512 KB cap, versioned public URL with year-long cache, 304, settings PATCH cannot set `logoUrl`, per-merchant isolation, delete, rate limit; settings page in Chrome (portal login with phone + key, a 1600x900 PNG is resized to a 512 px WebP, preview and sidebar avatar update without reload, survives reload, remove, GIF error). Drops its database; start the server with `MONGODB_DB=magharebit_logo`. | 32 passed |
 
+| `site-links-e2e.mjs` | Every link on the public pages resolves: home (ar/fr/en) and `/fr/features`, desktop with both navbar menus opened by their chevrons, 375 px with the mobile menu expanded. Same-origin targets answer 200, every `#anchor` exists on its page, no `#`/empty links; navbar labels are links and Escape closes the menu. Read-only (GETs), no database. | see the Phase 7 report |
+
 **Run E2E against a production build, not `next dev`:** `NEXT_DIST_DIR=.next-test npx next build` (nothing else may touch that folder while it builds), then `npx next start -p 3021` with the same env. Rate limits are stored in MongoDB (`rate_limits`), so they survive a server restart: the scripts drop their database at start, which also clears them.
 
 Warm the pages first (first compile can take minutes on a slow machine), start a **fresh** database per run.

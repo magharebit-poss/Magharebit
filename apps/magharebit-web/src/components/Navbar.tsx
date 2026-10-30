@@ -29,7 +29,7 @@ const PRODUCT_ITEMS = [
     descAr: 'تتبع المخزون في الوقت الفعلي',
     descFr: 'Suivi des stocks en temps réel',
     descEn: 'Real-time stock tracking',
-    path: '/features',
+    path: '/features#inventory',
   },
   {
     key: 'reports',
@@ -40,7 +40,7 @@ const PRODUCT_ITEMS = [
     descAr: 'قرارات مبنية على بيانات حقيقية',
     descFr: 'Décisions basées sur des données',
     descEn: 'Data-driven decisions',
-    path: '/features',
+    path: '/features#ai',
   },
   {
     key: 'materiel',
@@ -130,6 +130,18 @@ export default function Navbar() {
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
 
+  // A menu opened with the chevron (click/touch/keyboard) closes on Escape or a click elsewhere
+  useEffect(() => {
+    if (!openDropdown) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpenDropdown(null); };
+    const onDown = (e: PointerEvent) => {
+      if (!(e.target as Element | null)?.closest?.('[data-nav-dropdown]')) setOpenDropdown(null);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown); };
+  }, [openDropdown]);
+
   // Dropdown hover handlers with delay on leave
   const handleDropdownEnter = (key: DropdownKey) => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -216,32 +228,19 @@ export default function Navbar() {
             {/* Products dropdown */}
             <div
               style={{ position: 'relative' }}
+              data-nav-dropdown
               onMouseEnter={() => handleDropdownEnter('products')}
               onMouseLeave={handleDropdownLeave}
             >
-              <button
-                style={{
-                  ...fontBody,
-                  fontSize: '0.875rem',
-                  fontWeight: isProductsActive ? 600 : 400,
-                  color: isProductsActive ? '#F0B429' : 'rgba(255,255,255,0.70)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  paddingBottom: '3px',
-                  borderBottom: isProductsActive ? '2px solid #F0B429' : '2px solid transparent',
-                  transition: 'color 0.15s ease, border-color 0.15s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#F0B429'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isProductsActive ? '#F0B429' : 'rgba(255,255,255,0.70)'; }}
-              >
-                {t('products')}
-                <span style={{ fontSize: '9px', opacity: 0.7, lineHeight: 1 }}>▾</span>
-              </button>
+              <DropdownTrigger
+                href={`/${locale}/features`}
+                label={t('products')}
+                menuLabel={MENU_LABEL[locale as keyof typeof MENU_LABEL]?.(t('products')) ?? t('products')}
+                active={isProductsActive}
+                open={openDropdown === 'products'}
+                onToggle={() => setOpenDropdown(openDropdown === 'products' ? null : 'products')}
+                fontBody={fontBody}
+              />
 
               {openDropdown === 'products' && (
                 <div
@@ -324,32 +323,19 @@ export default function Navbar() {
             {/* Sectors dropdown */}
             <div
               style={{ position: 'relative' }}
+              data-nav-dropdown
               onMouseEnter={() => handleDropdownEnter('sectors')}
               onMouseLeave={handleDropdownLeave}
             >
-              <button
-                style={{
-                  ...fontBody,
-                  fontSize: '0.875rem',
-                  fontWeight: isSectorsActive ? 600 : 400,
-                  color: isSectorsActive ? '#F0B429' : 'rgba(255,255,255,0.70)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  paddingBottom: '3px',
-                  borderBottom: isSectorsActive ? '2px solid #F0B429' : '2px solid transparent',
-                  transition: 'color 0.15s ease, border-color 0.15s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  whiteSpace: 'nowrap',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#F0B429'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = isSectorsActive ? '#F0B429' : 'rgba(255,255,255,0.70)'; }}
-              >
-                {t('sectors')}
-                <span style={{ fontSize: '9px', opacity: 0.7, lineHeight: 1 }}>▾</span>
-              </button>
+              <DropdownTrigger
+                href={`/${locale}/sectors`}
+                label={t('sectors')}
+                menuLabel={MENU_LABEL[locale as keyof typeof MENU_LABEL]?.(t('sectors')) ?? t('sectors')}
+                active={isSectorsActive}
+                open={openDropdown === 'sectors'}
+                onToggle={() => setOpenDropdown(openDropdown === 'sectors' ? null : 'sectors')}
+                fontBody={fontBody}
+              />
 
               {openDropdown === 'sectors' && (
                 <div
@@ -788,6 +774,84 @@ function NavLink({
     >
       {children}
     </a>
+  );
+}
+
+// Accessible name of the chevron button that opens a menu ("Produits" → "Menu Produits").
+const MENU_LABEL = {
+  ar: (name: string) => `قائمة ${name}`,
+  fr: (name: string) => `Menu ${name}`,
+  en: (name: string) => `${name} menu`,
+} as const;
+
+/**
+ * Desktop menu trigger: the label is a real link (Produits → /features, Secteurs → /sectors), the chevron is a
+ * button that opens the menu. Hover still opens it (handled by the wrapper); the button makes it work on touch
+ * and with the keyboard, which a hover-only label did not.
+ */
+function DropdownTrigger({
+  href,
+  label,
+  menuLabel,
+  active,
+  open,
+  onToggle,
+  fontBody,
+}: {
+  href: string;
+  label: string;
+  menuLabel: string;
+  active: boolean;
+  open: boolean;
+  onToggle: () => void;
+  fontBody: React.CSSProperties;
+}) {
+  const color = active ? '#F0B429' : 'rgba(255,255,255,0.70)';
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+      <a
+        href={href}
+        style={{
+          ...fontBody,
+          fontSize: '0.875rem',
+          fontWeight: active ? 600 : 400,
+          color,
+          textDecoration: 'none',
+          paddingBottom: '3px',
+          borderBottom: active ? '2px solid #F0B429' : '2px solid transparent',
+          transition: 'color 0.15s ease, border-color 0.15s ease',
+          whiteSpace: 'nowrap',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#F0B429'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = color; }}
+      >
+        {label}
+      </a>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label={menuLabel}
+        className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-400"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color,
+          minWidth: '24px',
+          minHeight: '32px',
+          padding: '0 4px',
+          fontSize: '9px',
+          lineHeight: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <span aria-hidden="true" style={{ opacity: 0.7, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>▾</span>
+      </button>
+    </span>
   );
 }
 

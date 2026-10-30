@@ -8,6 +8,7 @@ import ProductTourTabs from '@/components/landing/ProductTourTabs';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import WasteTracker from '@/components/landing/WasteTracker';
 import WhatsAppReportPreview from '@/components/landing/WhatsAppReportPreview';
+import ProductShowcase from '@/components/landing/ProductShowcase';
 import { pageAlternates, ogBase } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -96,6 +97,9 @@ export default async function FeaturesPage({ params }: { params: Promise<{ local
         <ErrorBoundary>
           <ProductTourTabs />
         </ErrorBoundary>
+
+        {/* Each device with its screenshot slot (src/content/media.ts) */}
+        <ProductShowcase currentPath="/features" />
 
         {/* Feature grid */}
         <section style={{ padding: '0 24px 80px' }}>

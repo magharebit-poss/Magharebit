@@ -1,4 +1,29 @@
-# Public site: layout fix (done) and rich-media + routing plan (for approval)
+# Public site: layout fix, rich-media components and routing
+
+**Status (30/10/2026): approved and delivered** with the defaults in section 3, except D2: Partenaires/Carrières
+are **hidden** until real pages exist (the coordinator's "hide temporarily" option), not built as empty pages.
+
+## How to add the real media (no code change beyond one line each)
+- **Screenshots:** save the file in `public/media/` at the size listed in `src/content/media.ts` (no device frame
+  in the image; the site draws it) and set that slot's `src`, e.g. `src: '/media/pos-sale.webp'`.
+  Slots: `pos-sale` (desktop till, 1600×1000), `tablet-order` (1600×1200), `phone-pos` (780×1688),
+  `portal-dashboard` (laptop, 1600×1000).
+- **Video:** set `NEXT_PUBLIC_DEMO_VIDEO_URL` (Vercel env + local `.env.local`) to a YouTube or Vimeo link, or a
+  same-origin `/media/….mp4`. Rebuild. Optional cover: `DEMO_VIDEO.poster` in the same file.
+
+## What was built
+| Piece | File | Where |
+|---|---|---|
+| Media manifest + video URL parser | `src/content/media.ts` | everywhere |
+| Device frames (desktop till, laptop, tablet, phone) with sketched placeholder screens | `src/components/landing/DeviceFrame.tsx` | showcase |
+| Video section (cover + play) and the dialog player (native `<dialog>`, click-to-load, youtube-nocookie) | `VideoSection.tsx`, `src/components/VideoModal.tsx` | home, after the hero; the hero's ▶ button uses the same dialog |
+| Feature bento (8 tiles, 12-column grid, illustrations in the large tiles), keeps `#products` | `FeatureBento.tsx` | home (replaces `IntentCards`) |
+| Product showcase (4 alternating rows: till, tablet, phone, portal) | `ProductShowcase.tsx` | home (replaces `FeatureStories`) and `/features` |
+| Navbar: "Produits"/"Secteurs" are links, chevron button opens the menu (Esc / click outside close); menu items go to `#inventory` / `#ai` | `Navbar.tsx` | all public pages |
+| Footer: Partenaires/Carrières hidden, Analytique → `/features#ai` | `Footer.tsx` | all public pages |
+| Link guard | `scripts/e2e/site-links-e2e.mjs` | test |
+
+---
 
 Continues `docs/landing-ux-plan.md` (media specs, Inyad teardown). That plan's decisions D1-D6 are still open;
 this one is scoped to what the coordinator asked for on 30/10/2026: rich-media components **with placeholders**
