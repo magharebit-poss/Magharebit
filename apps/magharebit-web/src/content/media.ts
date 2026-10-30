@@ -3,20 +3,22 @@
  *
  * To publish a real screenshot: put the file in `public/media/` (PNG or WebP at the size below, no device frame
  * around it: the site draws the frame), then set `src` to its path, e.g. '/media/pos-sale.webp'. Until then the
- * site shows a labelled placeholder in the same frame and size, so nothing moves when the real image arrives.
+ * site draws an illustrative screen (ScreenMockups.tsx, labelled "Aperçu") in the same frame and size, so nothing
+ * moves when the real image arrives.
  * next/image serves AVIF/WebP and lazy-loads everything below the fold.
  *
  * The demo video is set with NEXT_PUBLIC_DEMO_VIDEO_URL (a YouTube or Vimeo link, or a same-origin .mp4/.webm).
  * Nothing is requested from YouTube/Vimeo until a visitor presses play.
  *
- * Rules: real screens only (no mock-ups passed off as the product), no real merchant data, no AI "customers".
+ * Rules: the drawn screens are labelled as previews and use demo data only (generic products, no brands, no real
+ * merchant figures); no AI "customers". Replace them with real screenshots as they become available.
  */
 
 import type { Lang } from '@/components/landing/useLang'
 
 export type Device = 'desktop' | 'laptop' | 'tablet' | 'phone'
-/** What the placeholder sketches inside the frame while there is no screenshot yet. */
-export type Sketch = 'pos' | 'dashboard' | 'mobile'
+/** Which illustrative screen (ScreenMockups.tsx) is drawn while there is no screenshot yet. */
+export type Sketch = 'checkout' | 'order' | 'mobile' | 'dashboard'
 
 export interface ScreenSlot {
   device: Device
@@ -36,7 +38,7 @@ export type ScreenId = 'pos-sale' | 'tablet-order' | 'phone-pos' | 'portal-dashb
 
 export const SCREENS: Record<ScreenId, ScreenSlot> = {
   'pos-sale': {
-    device: 'desktop', sketch: 'pos', src: null, width: 1600, height: 1000,
+    device: 'desktop', sketch: 'checkout', src: null, width: 1600, height: 1000,
     alt: {
       ar: 'شاشة البيع في صندوق MAGHAREBIT: المنتجات والسلة والمجموع',
       fr: 'Écran de vente de la caisse MAGHAREBIT : produits, panier et total',
@@ -45,7 +47,7 @@ export const SCREENS: Record<ScreenId, ScreenSlot> = {
     shot: { ar: 'الصندوق: شاشة البيع', fr: 'Caisse : écran de vente', en: 'Till: sale screen' },
   },
   'tablet-order': {
-    device: 'tablet', sketch: 'pos', src: null, width: 1600, height: 1200,
+    device: 'tablet', sketch: 'order', src: null, width: 1600, height: 1200,
     alt: {
       ar: 'تطبيق MAGHAREBIT على لوحة: أخذ طلب',
       fr: 'MAGHAREBIT sur tablette : prise de commande',

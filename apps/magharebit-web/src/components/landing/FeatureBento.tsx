@@ -1,7 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { InsightsIllustration, ReceiptIllustration, ScanIllustration } from './illustrations';
+import { ScanIllustration } from './illustrations';
+import { DashboardScreen, ReceiptScreen } from './ScreenMockups';
 import { useLang, type Lang } from './useLang';
 
 type TileId = 'offline' | 'checkout' | 'whatsapp' | 'stock' | 'receipt' | 'insights' | 'bilingual' | 'hardware';
@@ -138,8 +139,8 @@ export default function FeatureBento() {
   const visual = (id: TileId): ReactNode => {
     if (id === 'offline') return <OfflineDemo labels={c.offline} />;
     if (id === 'checkout') return <ScanIllustration />;
-    if (id === 'receipt') return <ReceiptIllustration />;
-    if (id === 'insights') return <InsightsIllustration />;
+    if (id === 'receipt') return <ReceiptScreen lang={lang} />;
+    if (id === 'insights') return <DashboardScreen lang={lang} compact />;
     if (id === 'whatsapp') return <WhatsAppBubbles />;
     return null;
   };
@@ -173,7 +174,8 @@ export default function FeatureBento() {
                 {v && (
                   <div aria-hidden="true" className="relative mb-5 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-brand-900 to-brand-950 ring-1 ring-white/5 sm:h-44">
                     <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 55% at 50% 55%, rgba(240,180,41,0.14), transparent 70%)' }} />
-                    <div className="relative h-full w-full p-3">{v}</div>
+                    {/* mock-up screens fill the plate; line illustrations keep a small inset */}
+                    <div className={`relative h-full w-full ${tile.id === 'insights' ? '!absolute inset-3 !h-auto !w-auto overflow-hidden rounded-lg ring-1 ring-white/10' : 'p-3'}`}>{v}</div>
                   </div>
                 )}
                 <span aria-hidden="true" className="mb-3 grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-brand-900 text-gold-400">
