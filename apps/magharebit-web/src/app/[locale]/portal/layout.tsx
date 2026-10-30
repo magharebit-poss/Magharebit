@@ -1,11 +1,11 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import PortalLayout from '@/components/portal/PortalLayout';
+import { useParams, usePathname } from 'next/navigation';
+import PortalShell from '@/components/portal/shell/PortalShell';
 
 /**
  * Portal segment layout.
- * Renders the sidebar+main shell for all portal pages EXCEPT the login
+ * Renders the app shell (sidebar, header, network states) for all portal pages EXCEPT the login
  * and the root redirect — those render their own full-screen UI.
  */
 export default function PortalSegmentLayout({
@@ -14,6 +14,8 @@ export default function PortalSegmentLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const params = useParams();
+  const locale = (params?.locale as string) ?? 'ar';
 
   // Auth / redirect pages — pass through with no wrapper
   const isAuthPage =
@@ -22,5 +24,5 @@ export default function PortalSegmentLayout({
 
   if (isAuthPage) return <>{children}</>;
 
-  return <PortalLayout>{children}</PortalLayout>;
+  return <PortalShell locale={locale}>{children}</PortalShell>;
 }

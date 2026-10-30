@@ -422,6 +422,18 @@ a { color: inherit; text-decoration: none; }
   .offline-demo__state:nth-child(3) { opacity: 1; }
 }
 
+/* ---------- merchant portal shell ----------
+   Drawer slides in from the inline-start edge (left in French/English, right in Arabic); toasts rise in.
+   transform/opacity only, so they stay on the compositor; reduced motion is covered by the rule above. */
+@keyframes portal-drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes portal-drawer-in-rtl { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes portal-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes portal-toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.portal-drawer[open] { animation: portal-drawer-in 0.2s ease-out; }
+.portal-drawer--rtl[open] { animation-name: portal-drawer-in-rtl; }
+.portal-drawer[open]::backdrop { animation: portal-backdrop-in 0.2s ease-out; }
+.portal-toast { animation: portal-toast-in 0.18s ease-out; }
+
 /* ---------- hero mockup: newly added cart row ---------- */
 @keyframes fade-in-row {
   from { opacity: 0; transform: translateY(-4px); }

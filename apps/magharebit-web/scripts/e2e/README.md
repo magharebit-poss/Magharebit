@@ -33,6 +33,8 @@ All except the unit check need a dev server on its own cache folder (`NEXT_DIST_
 
 | `site-links-e2e.mjs` | Every link on the public pages resolves: home (ar/fr/en) and `/fr/features`, desktop with both navbar menus opened by their chevrons, 375 px with the mobile menu expanded. Same-origin targets answer 200, every `#anchor` exists on its page, no `#`/empty links; navbar labels are links and Escape closes the menu. Read-only (GETs), no database. | see the Phase 7 report |
 
+| `portal-shell-e2e.mjs` | Merchant portal app shell (fr + ar): real login (phone + key), all 8 nav links (title + active item), LTR/RTL and sidebar edge per language, icon rail at 1100 px remembered across reloads, 375 px drawer from the inline-start edge (focus inside, Escape, focus return), offline (amber banner, write refused + auto-dismissing toast, nothing written, recovery), server down (health 503 → degraded), session expiry (401 → toast → login), no console errors. Drops its database; `ENV_FILE=.env.development.local` when the server is `next dev`. | 39 passed |
+
 **Run E2E against a production build, not `next dev`:** `NEXT_DIST_DIR=.next-test npx next build` (nothing else may touch that folder while it builds), then `npx next start -p 3021` with the same env. Rate limits are stored in MongoDB (`rate_limits`), so they survive a server restart: the scripts drop their database at start, which also clears them.
 
 Warm the pages first (first compile can take minutes on a slow machine), start a **fresh** database per run.
