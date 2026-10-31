@@ -70,13 +70,13 @@ await js(`document.querySelector('form button[type=submit]').click()`)
 check('portal login (phone + key) lands in the shell', await waitFor(`location.pathname === '/fr/portal/dashboard'`) && await waitFor(shellReady))
 
 // ── fr desktop ───────────────────────────────────────────────────────────────
-const layout = `(() => { const a = document.querySelector('[data-testid=shell-sidebar]'); const r = a.getBoundingClientRect(); const act = a.querySelector('[aria-current=page]'); const bar = act?.querySelector('span[aria-hidden=true]'); const br = bar?.getBoundingClientRect(), ar = act?.getBoundingClientRect(); return { dir: document.querySelector('[data-testid=shell-title]').closest('[dir]').getAttribute('dir'), left: Math.round(r.left), right: Math.round(r.right), w: Math.round(r.width), vw: document.documentElement.clientWidth, title: document.querySelector('[data-testid=shell-title]').textContent, groups: [...a.querySelectorAll('nav p')].map(p => p.textContent), active: act?.textContent.trim(), barSide: br && ar ? (Math.abs(br.left - ar.left) < 2 ? 'left' : Math.abs(br.right - ar.right) < 2 ? 'right' : '?') : null, barOpacity: bar && getComputedStyle(bar).opacity, store: a.querySelector('[data-testid=shell-store-name]').textContent, status: document.querySelector('[data-testid=shell-status]').dataset.state, bodyDir: document.querySelector('#main-content > div').getAttribute('dir') } })()`
+const layout = `(() => { const a = document.querySelector('[data-testid=shell-sidebar]'); const r = a.getBoundingClientRect(); const act = a.querySelector('[aria-current=page]'); const bar = act?.querySelector('span[aria-hidden=true]'); const br = bar?.getBoundingClientRect(), ar = act?.getBoundingClientRect(); return { dir: document.querySelector('[data-testid=shell-title]').closest('[dir]').getAttribute('dir'), left: Math.round(r.left), right: Math.round(r.right), w: Math.round(r.width), vw: document.documentElement.clientWidth, title: document.querySelector('[data-testid=shell-title]').textContent, groups: [...a.querySelectorAll('nav p')].map(p => p.textContent), active: act?.textContent.trim(), barSide: br && ar ? (Math.abs(br.left - ar.left) < 2 ? 'left' : Math.abs(br.right - ar.right) < 2 ? 'right' : '?') : null, barOpacity: bar && getComputedStyle(bar).opacity, store: a.querySelector('[data-testid=shell-store-name]').textContent, status: document.querySelector('[data-testid=shell-status]').dataset.state, bodyDir: document.querySelector('#main-content > div').getAttribute('dir') || 'page:' + document.querySelector('#main-content > div').dataset.pageLang } })()`
 let L = await js(layout)
 check('fr: shell is LTR, sidebar docked on the left at 264 px', L.dir === 'ltr' && L.left === 0 && L.w === 264, JSON.stringify({ left: L.left, w: L.w }))
 check('fr: French title, 4 group headers', L.title === 'Tableau de bord' && L.groups.join('|') === 'Vente|Gestion|Croissance|Compte', L.groups.join('|'))
 check('fr: active item has the gold start-edge bar on the left', L.active === 'Tableau de bord' && L.barSide === 'left' && L.barOpacity === '1', `${L.active} ${L.barSide}`)
 check('fr: store card shows the signed-up name, status online', L.store === 'Épicerie Atlas' && L.status === 'online', `${L.store} ${L.status}`)
-check('page bodies stay Arabic RTL inside the French shell (D1)', L.bodyDir === 'rtl')
+check('translated page (dashboard) follows the shell language (Phase 3.1)', L.bodyDir === 'page:fr', L.bodyDir)
 await shot('fr-1440-dashboard')
 
 const slugs = ['products', 'customers', 'purchases', 'employees', 'marketing', 'reports', 'settings', 'dashboard']
@@ -86,6 +86,13 @@ for (const s of slugs) {
   const ok = await waitFor(`location.pathname === '/fr/portal/${s}' && document.querySelector('[data-testid=shell-title]').textContent === ${JSON.stringify(titles[s])} && document.querySelector('[data-testid=shell-sidebar] [aria-current=page]')?.getAttribute('href') === '/fr/portal/${s}'`, 120000)
   check(`nav → ${s}: page, title and active item follow`, ok)
 }
+
+await js(`document.querySelector('[data-testid=shell-sidebar] a[href="/fr/portal/purchases"]').click()`)
+await waitFor(`location.pathname === '/fr/portal/purchases'`)
+check('untranslated page (purchases) still renders Arabic RTL inside the French shell', await waitFor(`document.querySelector('#main-content > div')?.getAttribute('dir') === 'rtl'`, 30000))
+// back to the dashboard: the next step switches language and expects to stay on it
+await js(`document.querySelector('[data-testid=shell-sidebar] a[href="/fr/portal/dashboard"]').click()`)
+await waitFor(`location.pathname === '/fr/portal/dashboard'`)
 
 // ── ar desktop ───────────────────────────────────────────────────────────────
 await js(`[...document.querySelectorAll('header nav a')].find(a => a.textContent === 'AR').click()`)

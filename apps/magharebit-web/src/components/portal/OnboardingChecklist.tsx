@@ -1,266 +1,157 @@
 'use client';
 
 /**
- * OnboardingChecklist — API-driven version
- *
- * Completion is auto-detected from real data via GET /api/portal/onboarding.
- * No manual toggles. Re-fetches whenever the browser tab regains focus so
- * completing a step on another page is reflected immediately on return.
- *
- * Dismissal is stored in sessionStorage (resets each new tab/session) so
- * the checklist reappears each session until all steps are done.
+ * Onboarding checklist. Completion comes from real data (GET /api/portal/onboarding) and is re-read when the tab
+ * regains focus. Labels are translated here by step id (the API's own labels are Arabic-only).
+ * Dismissal lasts for the browser session; the card disappears for good once every step is done.
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import type { Lang } from '@/components/landing/useLang';
+import { portalJson } from '@/components/portal/shell/portalFetch';
+import { CARD } from '@/components/portal/PortalDialog';
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+interface Step { id: string; href: string; done: boolean }
+interface Status { steps: Step[]; completedCount: number; totalCount: number; allDone: boolean }
 
-interface OnboardingStep {
-  id:          string;
-  label:       string;
-  description: string;
-  href:        string;
-  done:        boolean;
-}
+type StepId = 'settings' | 'product' | 'employee' | 'whatsapp' | 'sale';
 
-interface OnboardingStatus {
-  steps:          OnboardingStep[];
-  completedCount: number;
-  totalCount:     number;
-  allDone:        boolean;
-}
+const COPY: Record<Lang, {
+  title: string; progress: (d: number, t: number) => string; hide: string; done: string; doneSub: string; tip: string; tipCta: string;
+  steps: Record<StepId, { label: string; desc: string }>;
+}> = {
+  fr: {
+    title: 'Bien démarrer avec MAGHAREBIT', progress: (d, t) => `${d} sur ${t} terminées`, hide: 'Masquer la liste de démarrage',
+    done: 'Bravo, votre boutique est prête !', doneSub: 'Toutes les étapes de démarrage sont terminées. Bonnes ventes !',
+    tip: 'Activez WhatsApp pour recevoir chaque soir le rapport de ventes et les alertes de stock.', tipCta: 'Configurer',
+    steps: {
+      settings: { label: 'Compléter les informations de la boutique', desc: 'Nom et secteur de votre commerce' },
+      product: { label: 'Ajouter un premier produit', desc: 'Créez votre catalogue' },
+      employee: { label: 'Ajouter un employé', desc: 'Enregistrez votre équipe' },
+      whatsapp: { label: 'Activer les notifications WhatsApp', desc: 'Numéro et rapport du soir' },
+      sale: { label: 'Faire une première vente', desc: 'Encaissez depuis l’application de caisse' },
+    },
+  },
+  ar: {
+    title: 'ابدأ مع MAGHAREBIT', progress: (d, t) => `${d} من ${t} مكتملة`, hide: 'إخفاء قائمة البدء',
+    done: 'أحسنت، متجرك جاهز!', doneSub: 'اكتملت جميع خطوات الإعداد. حظاً موفقاً في مبيعاتك!',
+    tip: 'فعّل واتساب لتصلك كل مساء تقارير المبيعات وتنبيهات المخزون.', tipCta: 'إعداد الآن',
+    steps: {
+      settings: { label: 'أكمل بيانات متجرك', desc: 'اسم متجرك وقطاعه' },
+      product: { label: 'أضف أول منتج', desc: 'أنشئ كتالوج منتجاتك' },
+      employee: { label: 'أضف موظفاً', desc: 'سجّل فريق العمل' },
+      whatsapp: { label: 'فعّل إشعارات واتساب', desc: 'الرقم وتقرير المساء' },
+      sale: { label: 'أتمم أول عملية بيع', desc: 'من تطبيق الصندوق' },
+    },
+  },
+  en: {
+    title: 'Get started with MAGHAREBIT', progress: (d, t) => `${d} of ${t} done`, hide: 'Hide the getting-started list',
+    done: 'Well done, your shop is ready!', doneSub: 'Every setup step is complete. Happy selling!',
+    tip: 'Turn on WhatsApp to get the sales report and stock alerts every evening.', tipCta: 'Set up',
+    steps: {
+      settings: { label: 'Complete your shop details', desc: 'Your shop’s name and sector' },
+      product: { label: 'Add a first product', desc: 'Build your catalogue' },
+      employee: { label: 'Add a staff member', desc: 'Register your team' },
+      whatsapp: { label: 'Turn on WhatsApp notifications', desc: 'Number and evening report' },
+      sale: { label: 'Make a first sale', desc: 'From the till app' },
+    },
+  },
+};
+
+const ICON: Record<StepId, string> = {
+  settings: 'M3 9l1-5h16l1 5M4 9v11h16V9M3 9h18M9 20v-6h6v6',
+  product: 'M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8',
+  employee: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 19v-1a5 5 0 0 1 10 0v1M16 11l2 2 4-4',
+  whatsapp: 'M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20.5l1.6-5A8.5 8.5 0 1 1 21 11.5Z',
+  sale: 'M3 6h18v12H3zM3 10h18M7 15h4',
+};
 
 const SESSION_KEY = 'magharebit_onboarding_dismissed';
 
-// Step icons (ordered, matches API step ids in order)
-const STEP_ICONS: Record<string, string> = {
-  settings:  '🏪',
-  product:   '📦',
-  employee:  '👥',
-  whatsapp:  '💬',
-  sale:      '🪙',
-};
-
-// ── Component ──────────────────────────────────────────────────────────────────
-
-export default function OnboardingChecklist() {
-  const params = useParams();
-  const locale = (params?.locale as string) ?? 'ar';
-
-  const [status,    setStatus]    = useState<OnboardingStatus | null>(null);
+export default function OnboardingChecklist({ lang, locale }: { lang: Lang; locale: string }) {
+  const c = COPY[lang];
+  const [status, setStatus] = useState<Status | null>(null);
   const [dismissed, setDismissed] = useState(false);
-  const [hydrated,  setHydrated]  = useState(false);
-  // Celebration state: shown briefly when all steps flip to done
-  const [celebrating, setCelebrating] = useState(false);
 
-  // ── Fetch onboarding status ──────────────────────────────────────────────────
-  const fetchStatus = useCallback(() => {
-    fetch('/api/portal/onboarding', { credentials: 'include' })
-      .then(async (res) => {
-        if (!res.ok) return;
-        const data = await res.json() as OnboardingStatus;
-        setStatus(prev => {
-          // Trigger celebration if we just flipped to allDone
-          if (data.allDone && prev != null && !prev.allDone) {
-            setCelebrating(true);
-            setTimeout(() => setCelebrating(false), 4000);
-          }
-          return data;
-        });
-      })
-      .catch(() => { /* silently degrade — checklist is non-critical */ });
+  const load = useCallback(() => {
+    void portalJson<Status>('/api/portal/onboarding').then((r) => { if (r.ok) setStatus(r.data); });
   }, []);
 
-  // ── Hydrate dismissal from sessionStorage ─────────────────────────────────
   useEffect(() => {
-    try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDismissed(sessionStorage.getItem(SESSION_KEY) === '1');
-    } catch { /* private browsing */ }
-    setHydrated(true);
-  }, []);
-
-  // ── Initial fetch ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!hydrated) return;
-    void (async () => { fetchStatus(); })();
-  }, [hydrated, fetchStatus]);
-
-  // ── Re-fetch when tab regains focus (user came back from another page) ───────
-  useEffect(() => {
-    function onVisible() {
-      if (document.visibilityState === 'visible') fetchStatus();
-    }
+    const t = setTimeout(() => {
+      try { setDismissed(sessionStorage.getItem(SESSION_KEY) === '1'); } catch { /* private mode */ }
+      load();
+    }, 0);
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [fetchStatus]);
+    return () => { clearTimeout(t); document.removeEventListener('visibilitychange', onVisible); };
+  }, [load]);
 
-  // ── Dismiss handler ───────────────────────────────────────────────────────────
-  function handleDismiss() {
-    setDismissed(true);
-    try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ }
-  }
+  if (!status || dismissed || status.allDone) return null;
 
-  // ── Guard: don't render until hydrated ───────────────────────────────────────
-  if (!hydrated || status === null) return null;
-  // Once truly all done and not in celebration mode, hide permanently
-  if (dismissed && !celebrating) return null;
-  if (status.allDone && !celebrating) return null;
-
-  const progress = Math.round((status.completedCount / status.totalCount) * 100);
-
-  // ── Celebration banner ────────────────────────────────────────────────────────
-  if (celebrating || status.allDone) {
-    return (
-      <div style={{
-        background: 'linear-gradient(135deg, #0F3D2A, #1a5c3a)',
-        borderRadius: '12px', padding: '20px 24px', marginBottom: '24px',
-        display: 'flex', alignItems: 'center', gap: '16px', direction: 'rtl',
-        boxShadow: '0 4px 16px rgba(15,61,42,0.25)',
-      }}>
-        <span style={{ fontSize: '36px', lineHeight: 1 }}>🎉</span>
-        <div>
-          <p style={{ fontSize: '16px', fontWeight: 700, color: '#FFFFFF', margin: '0 0 4px' }}>
-            أحسنت! أكملت جميع خطوات الإعداد
-          </p>
-          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', margin: 0 }}>
-            متجرك جاهز بالكامل — حظاً موفقاً في مبيعاتك 🚀
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const pct = Math.round((status.completedCount / Math.max(1, status.totalCount)) * 100);
+  const whatsappPending = status.steps.some((s) => s.id === 'whatsapp' && !s.done);
 
   return (
-    <div style={{
-      background: '#FFFFFF',
-      border: '1px solid #E5E7EB',
-      borderRadius: '12px',
-      padding: '20px 24px',
-      marginBottom: '24px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-      direction: 'rtl',
-    }}>
-
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-        <div>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#111827', margin: '0 0 4px', fontFamily: 'Inter, "Noto Naskh Arabic", sans-serif' }}>
-            ابدأ مع MAGHAREBIT
-          </h3>
-          <p style={{ fontSize: '13px', color: '#6B7280', margin: 0, fontFamily: 'Inter, "Noto Naskh Arabic", sans-serif' }}>
-            {status.completedCount} / {status.totalCount} مكتملة
-          </p>
+    <section aria-label={c.title} className={`${CARD} p-5 sm:p-6`} data-testid="onboarding">
+      <div className="mb-4 flex items-start gap-4">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-bold text-[#111827]">{c.title}</h2>
+          <p className="mt-0.5 text-sm text-[#6B7280]">{c.progress(status.completedCount, status.totalCount)}</p>
         </div>
         <button
-          onClick={handleDismiss}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: '16px', lineHeight: 1, padding: '2px', display: 'flex', alignItems: 'center' }}
-          aria-label="إخفاء قائمة البدء"
+          type="button"
+          onClick={() => { setDismissed(true); try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ } }}
+          aria-label={c.hide}
+          className="-me-2 -mt-1 grid h-9 w-9 place-items-center rounded-lg text-[#9CA3AF] transition-colors hover:bg-[#F3F4F6] hover:text-[#374151] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B8860B]"
         >
-          ✕
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
       </div>
 
-      {/* ── Progress bar ────────────────────────────────────────────────────── */}
-      <div style={{ height: '6px', background: '#F3F4F6', borderRadius: '999px', marginBottom: '18px', overflow: 'hidden' }}>
-        <div style={{
-          width: `${progress}%`,
-          height: '100%',
-          background: progress === 100
-            ? '#22C55E'
-            : 'linear-gradient(to left, #F0B429, #0F3D2A)',
-          borderRadius: '999px',
-          transition: 'width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        }} />
+      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-[#F1F2F4]" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={c.progress(status.completedCount, status.totalCount)}>
+        {/* data-driven width: the only inline style here */}
+        <div data-dynamic className="h-full rounded-full bg-gradient-to-r from-[#0F3D2A] to-[#F0B429] transition-[width] duration-500 ease-out rtl:bg-gradient-to-l" style={{ width: `${pct}%` }} />
       </div>
 
-      {/* ── Steps ───────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {status.steps.map((step) => {
-          const icon = STEP_ICONS[step.id] ?? '✦';
-          const content = (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-              {/* Status indicator */}
-              <div style={{
-                width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
-                background: step.done ? '#0F3D2A' : '#F9FAFB',
-                border: step.done ? 'none' : '1.5px solid #E5E7EB',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: step.done ? '13px' : '15px',
-                color: step.done ? '#FFFFFF' : '#9CA3AF',
-                transition: 'background 0.2s ease',
-              }}>
-                {step.done ? '✓' : icon}
-              </div>
-
-              {/* Text */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{
-                  fontSize: '14px', fontWeight: step.done ? 500 : 600,
-                  color: step.done ? '#9CA3AF' : '#111827',
-                  textDecoration: step.done ? 'line-through' : 'none',
-                  margin: '0 0 1px',
-                  fontFamily: 'Inter, "Noto Naskh Arabic", sans-serif',
-                }}>
-                  {step.label}
-                </p>
-                {!step.done && (
-                  <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0, fontFamily: 'Inter, "Noto Naskh Arabic", sans-serif' }}>
-                    {step.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Arrow for incomplete steps with a page */}
-              {!step.done && step.href && (
-                <span style={{ color: '#D1D5DB', fontSize: '14px', flexShrink: 0 }}>←</span>
-              )}
-            </div>
+      <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+        {status.steps.map((s) => {
+          const id = s.id as StepId;
+          const label = c.steps[id] ?? { label: s.id, desc: '' };
+          const inner = (
+            <>
+              <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${s.done ? 'bg-[#0F3D2A] text-white' : 'border border-[#E5E7EB] bg-[#F9FAFB] text-[#6B7280]'}`}>
+                {s.done
+                  ? <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5 10 17.5 19 7.5" /></svg>
+                  : <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={ICON[id] ?? ICON.settings} /></svg>}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className={`block truncate text-sm ${s.done ? 'text-[#9CA3AF] line-through' : 'font-semibold text-[#111827]'}`}>{label.label}</span>
+                {!s.done && <span className="block truncate text-xs text-[#6B7280]">{label.desc}</span>}
+              </span>
+            </>
           );
-
           return (
-            <div key={step.id}>
-              {!step.done && step.href ? (
-                <a
-                  href={`/${locale}/portal/${step.href}`}
-                  style={{
-                    display: 'flex', alignItems: 'center', borderRadius: '8px',
-                    padding: '6px 8px', margin: '-6px -8px',
-                    textDecoration: 'none', color: 'inherit',
-                    transition: 'background 0.15s ease',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  {content}
+            <li key={s.id}>
+              {!s.done && s.href ? (
+                <a href={`/${locale}/portal/${s.href}`} className="flex min-h-[52px] items-center gap-3 rounded-lg p-2 transition-colors hover:bg-[#F9FAFB] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#B8860B]">
+                  {inner}
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-[#D1D5DB] rtl:-scale-x-100" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 6l6 6-6 6" /></svg>
                 </a>
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', padding: '6px 8px', margin: '-6px -8px' }}>
-                  {content}
-                </div>
+                <div className="flex min-h-[52px] items-center gap-3 p-2">{inner}</div>
               )}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      {/* ── WhatsApp highlight if not yet done ────────────────────────────── */}
-      {status.steps.find(s => s.id === 'whatsapp' && !s.done) && (
-        <div style={{
-          marginTop: '14px', background: '#F0F9F4', border: '1px solid #D1FAE5',
-          borderRadius: '8px', padding: '10px 14px',
-          display: 'flex', alignItems: 'center', gap: '10px',
-        }}>
-          <span style={{ fontSize: '18px', flexShrink: 0 }}>💡</span>
-          <p style={{ fontSize: '12px', color: '#065F46', margin: 0, fontFamily: 'Inter, "Noto Naskh Arabic", sans-serif' }}>
-            فعّل واتساب لتلقي تقرير مبيعاتك اليومي وتنبيهات نقص المخزون تلقائياً.{' '}
-            <a href={`/${locale}/portal/settings`} style={{ color: '#0F3D2A', fontWeight: 700, textDecoration: 'underline' }}>
-              إعداد الآن ←
-            </a>
-          </p>
-        </div>
+      {whatsappPending && (
+        <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-[#D1FAE5] bg-[#F0FDF6] px-4 py-2.5 text-[13px] text-[#065F46]">
+          <span>{c.tip}</span>
+          <a href={`/${locale}/portal/settings`} className="font-bold text-[#0F3D2A] underline underline-offset-2">{c.tipCta}</a>
+        </p>
       )}
-    </div>
+    </section>
   );
 }

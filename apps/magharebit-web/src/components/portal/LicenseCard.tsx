@@ -1,252 +1,126 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
+import type { Lang } from '@/components/landing/useLang';
+import { BRAND } from '@/lib/brand';
+import { BTN, CARD } from '@/components/portal/PortalDialog';
+import { longDate } from '@/components/portal/format';
 
 export interface LicenseCardProps {
-  licenseKey:    string | null;
-  plan:          string | null;
-  isTrial:       boolean;
+  lang: Lang;
+  licenseKey: string | null;
+  plan: string | null;
+  isTrial: boolean;
   daysRemaining: number | null;
-  expiresAt:     string | null;
+  expiresAt: string | null;
 }
 
-type CopyState = 'idle' | 'copied' | 'error';
+const COPY: Record<Lang, {
+  title: string; key: string; noKey: string; copy: string; copied: string; copyFail: string; days: string; expires: string;
+  status: { active: string; trial: string; expired: string };
+  trialNote: (n: number) => string; soonNote: string; renew: string; upgrade: string; support: string;
+  waRenew: string; waSupport: string;
+}> = {
+  fr: {
+    title: 'Abonnement et licence', key: 'Clé de licence', noKey: 'Aucune clé émise pour le moment',
+    copy: 'Copier', copied: 'Copiée', copyFail: 'Échec de la copie', days: 'Jours restants', expires: 'Expire le',
+    status: { active: 'Actif', trial: 'Essai', expired: 'Expiré' },
+    trialNote: (n) => `Vous êtes en période d’essai gratuite. Pour continuer après ${n} jour${n > 1 ? 's' : ''}, choisissez une formule.`,
+    soonNote: 'Votre abonnement expire bientôt. Renouvelez-le pour éviter toute interruption.',
+    renew: 'Renouveler', upgrade: 'Changer de formule', support: 'Support',
+    waRenew: 'Bonjour, je souhaite renouveler mon abonnement MAGHAREBIT.', waSupport: 'Bonjour, j’ai besoin d’aide avec ma licence MAGHAREBIT.',
+  },
+  ar: {
+    title: 'الاشتراك والترخيص', key: 'مفتاح الترخيص', noKey: 'لم يُصدر مفتاح بعد',
+    copy: 'نسخ', copied: 'تم النسخ', copyFail: 'تعذّر النسخ', days: 'الأيام المتبقية', expires: 'ينتهي في',
+    status: { active: 'نشط', trial: 'تجريبي', expired: 'منتهي' },
+    trialNote: (n) => `أنت في الفترة التجريبية المجانية. للاستمرار بعد ${n} ${n > 10 ? 'يوماً' : n > 2 ? 'أيام' : n === 2 ? 'يومين' : 'يوم'}، اختر خطة.`,
+    soonNote: 'اشتراكك ينتهي قريباً. جدّده لتجنب انقطاع الخدمة.',
+    renew: 'تجديد الاشتراك', upgrade: 'تغيير الخطة', support: 'الدعم',
+    waRenew: 'مرحباً، أريد تجديد اشتراك MAGHAREBIT.', waSupport: 'مرحباً، أحتاج مساعدة في ترخيص MAGHAREBIT.',
+  },
+  en: {
+    title: 'Subscription and license', key: 'License key', noKey: 'No key issued yet',
+    copy: 'Copy', copied: 'Copied', copyFail: 'Copy failed', days: 'Days left', expires: 'Expires on',
+    status: { active: 'Active', trial: 'Trial', expired: 'Expired' },
+    trialNote: (n) => `You are on the free trial. To keep going after ${n} day${n > 1 ? 's' : ''}, choose a plan.`,
+    soonNote: 'Your subscription ends soon. Renew it to avoid any interruption.',
+    renew: 'Renew', upgrade: 'Change plan', support: 'Support',
+    waRenew: 'Hello, I would like to renew my MAGHAREBIT subscription.', waSupport: 'Hello, I need help with my MAGHAREBIT license.',
+  },
+};
 
-// ── Status badge ──────────────────────────────────────────────────────────────
+export default function LicenseCard({ lang, licenseKey, plan, isTrial, daysRemaining, expiresAt }: LicenseCardProps) {
+  const c = COPY[lang];
+  const [copy, setCopy] = useState<'idle' | 'copied' | 'error'>('idle');
+  const expired = daysRemaining !== null && daysRemaining <= 0;
+  const soon = daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 7;
+  const status = expired ? 'expired' : isTrial ? 'trial' : 'active';
+  const badge = { active: 'bg-[#ECFDF3] text-[#166534] ring-[#BBF7D0]', trial: 'bg-[#FFF8E1] text-[#7A5600] ring-[#F0B429]/40', expired: 'bg-[#FEF2F2] text-[#B91C1C] ring-[#FECACA]' }[status];
+  const dot = { active: 'bg-[#22C55E]', trial: 'bg-[#F0B429]', expired: 'bg-[#DC2626]' }[status];
+  const wa = (text: string) => `${BRAND.contact.waLink}?text=${encodeURIComponent(text)}`;
 
-function StatusBadge({ isTrial, daysRemaining }: { isTrial: boolean; daysRemaining: number | null }) {
-  if (daysRemaining === 0 || daysRemaining !== null && daysRemaining < 0) {
-    return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: '5px',
-        background: '#FEE2E2', color: '#B91C1C',
-        borderRadius: '999px', padding: '3px 10px', fontSize: '12px', fontWeight: 600,
-      }}>
-        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#DC2626', display: 'inline-block' }} />
-        منتهي الصلاحية
-      </span>
-    );
-  }
-  if (isTrial) {
-    return (
-      <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: '5px',
-        background: '#FEF3C7', color: '#92400E',
-        borderRadius: '999px', padding: '3px 10px', fontSize: '12px', fontWeight: 600,
-      }}>
-        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#F59E0B', display: 'inline-block' }} />
-        تجريبي
-      </span>
-    );
-  }
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: '5px',
-      background: '#DCFCE7', color: '#166534',
-      borderRadius: '999px', padding: '3px 10px', fontSize: '12px', fontWeight: 600,
-    }}>
-      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22C55E', display: 'inline-block' }} />
-      نشط
-    </span>
-  );
-}
-
-// ── Plan icon ─────────────────────────────────────────────────────────────────
-
-function planIcon(plan: string | null): string {
-  switch (plan) {
-    case 'Business':    return '🚀';
-    case 'Enterprise':  return '🏢';
-    default:            return '⚡';
-  }
-}
-
-// ── Main component ────────────────────────────────────────────────────────────
-
-export default function LicenseCard({
-  licenseKey,
-  plan,
-  isTrial,
-  daysRemaining,
-  expiresAt,
-}: LicenseCardProps) {
-  const [copyState, setCopyState] = useState<CopyState>('idle');
-
-  const handleCopy = useCallback(() => {
+  const doCopy = () => {
     if (!licenseKey) return;
     navigator.clipboard.writeText(licenseKey)
-      .then(() => {
-        setCopyState('copied');
-        setTimeout(() => setCopyState('idle'), 2000);
-      })
-      .catch(() => {
-        setCopyState('error');
-        setTimeout(() => setCopyState('idle'), 2000);
-      });
-  }, [licenseKey]);
-
-  const isExpiringSoon = daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0;
-  const urgentColor    = isExpiringSoon ? '#DC2626' : isTrial ? '#D97706' : '#2E8B57';
+      .then(() => setCopy('copied'), () => setCopy('error'))
+      .finally(() => setTimeout(() => setCopy('idle'), 2000));
+  };
 
   return (
-    <div style={{
-      background: '#FFFFFF',
-      border: `1px solid ${isExpiringSoon ? '#FECACA' : '#E5E7EB'}`,
-      borderRadius: '12px',
-      padding: '24px',
-      boxShadow: isExpiringSoon
-        ? '0 0 0 3px rgba(220,38,38,0.06), 0 1px 3px rgba(0,0,0,0.08)'
-        : '0 1px 3px rgba(0,0,0,0.08)',
-      marginBottom: '20px',
-    }}>
-
-      {/* Header row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '44px', height: '44px', borderRadius: '10px',
-            background: 'linear-gradient(135deg, #0F3D2A, #1a5c3a)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '22px', flexShrink: 0,
-          }}>
-            {planIcon(plan)}
-          </div>
-          <div>
-            <p style={{ margin: 0, fontSize: '11px', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              معلومات الترخيص
-            </p>
-            <p style={{ margin: '2px 0 0', fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
-              {plan ?? 'Starter'}
-            </p>
-          </div>
+    <section aria-label={c.title} className={`${CARD} overflow-hidden ${soon || expired ? 'ring-2 ring-[#FECACA]' : ''}`} data-testid="license-card">
+      <div className="flex items-center gap-3 bg-gradient-to-br from-[#0F3D2A] to-[#1A5C3A] px-5 py-4 text-white">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white/10 ring-1 ring-white/15">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 text-[#F0B429]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 7a4 4 0 1 1-4 4 4 4 0 0 1 4-4zM11 11 3 19v2h3l1-1v-2h2v-2h2" /></svg>
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-white/60">{c.title}</p>
+          <p className="truncate text-lg font-bold">{plan ?? 'Starter'}</p>
         </div>
-        <StatusBadge isTrial={isTrial} daysRemaining={daysRemaining} />
+        <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${badge}`}>
+          <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+          {c.status[status]}
+        </span>
       </div>
 
-      {/* Key display */}
-      <div style={{
-        background: '#F8FAFC',
-        border: '1px solid #E2E8F0',
-        borderRadius: '8px',
-        padding: '14px 16px',
-        marginBottom: '16px',
-      }}>
-        <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          مفتاح الترخيص
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          {licenseKey ? (
-            <code style={{
-              fontFamily: '"Courier New", monospace',
-              fontSize: '15px', fontWeight: 700, color: '#0F172A',
-              letterSpacing: '0.08em', wordBreak: 'break-all',
-            }}>
-              {licenseKey}
-            </code>
-          ) : (
-            <span style={{ color: '#94A3B8', fontSize: '14px' }}>لم يتم إصدار مفتاح بعد</span>
-          )}
-
-          {licenseKey && (
-            <button
-              onClick={handleCopy}
-              disabled={copyState !== 'idle'}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '6px',
-                background: copyState === 'copied' ? '#DCFCE7' : copyState === 'error' ? '#FEE2E2' : '#0F3D2A',
-                color: copyState === 'copied' ? '#166534' : copyState === 'error' ? '#B91C1C' : '#FFFFFF',
-                border: 'none', borderRadius: '6px',
-                padding: '7px 14px', fontSize: '13px', fontWeight: 600,
-                cursor: copyState !== 'idle' ? 'default' : 'pointer',
-                transition: 'all 0.15s ease', whiteSpace: 'nowrap', flexShrink: 0,
-                fontFamily: 'inherit',
-              }}
-            >
-              {copyState === 'copied' ? '✓ تم النسخ' : copyState === 'error' ? '✗ خطأ' : '📋 نسخ'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-        <div style={{ background: '#F8FAFC', borderRadius: '8px', padding: '12px 14px' }}>
-          <p style={{ margin: '0 0 2px', fontSize: '11px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            الأيام المتبقية
-          </p>
-          <p style={{ margin: 0, fontSize: '22px', fontWeight: 700, color: urgentColor }}>
-            {daysRemaining !== null ? daysRemaining : '—'}
-            {daysRemaining !== null && (
-              <span style={{ fontSize: '13px', fontWeight: 500, color: '#64748B', marginRight: '4px' }}> يوم</span>
+      <div className="space-y-4 p-5">
+        <div className="rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] p-3.5">
+          <p className="mb-1.5 text-xs font-semibold text-[#64748B]">{c.key}</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {licenseKey
+              ? <code dir="ltr" className="break-all font-mono text-[15px] font-bold tracking-wider text-[#0F172A]" data-testid="license-key">{licenseKey}</code>
+              : <span className="text-sm text-[#94A3B8]">{c.noKey}</span>}
+            {licenseKey && (
+              <button type="button" onClick={doCopy} disabled={copy !== 'idle'} aria-live="polite" className={copy === 'idle' ? BTN.primary : `inline-flex min-h-[40px] items-center rounded-lg px-4 text-sm font-semibold ${copy === 'copied' ? 'bg-[#ECFDF3] text-[#166534]' : 'bg-[#FEF2F2] text-[#B91C1C]'}`}>
+                {copy === 'copied' ? c.copied : copy === 'error' ? c.copyFail : c.copy}
+              </button>
             )}
-          </p>
+          </div>
         </div>
-        <div style={{ background: '#F8FAFC', borderRadius: '8px', padding: '12px 14px' }}>
-          <p style={{ margin: '0 0 2px', fontSize: '11px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            تاريخ الانتهاء
-          </p>
-          <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>
-            {expiresAt
-              ? new Date(expiresAt).toLocaleDateString('ar-MA', { year: 'numeric', month: 'short', day: 'numeric' })
-              : '—'}
-          </p>
+
+        <dl className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg bg-[#F8FAFC] p-3.5">
+            <dt className="text-xs font-semibold text-[#64748B]">{c.days}</dt>
+            <dd className={`mt-0.5 text-2xl font-bold tabular-nums ${expired || soon ? 'text-[#DC2626]' : isTrial ? 'text-[#B8860B]' : 'text-[#166534]'}`}>{daysRemaining ?? '—'}</dd>
+          </div>
+          <div className="rounded-lg bg-[#F8FAFC] p-3.5">
+            <dt className="text-xs font-semibold text-[#64748B]">{c.expires}</dt>
+            <dd className="mt-1 text-sm font-semibold text-[#0F172A]">{expiresAt ? longDate(expiresAt, lang) : '—'}</dd>
+          </div>
+        </dl>
+
+        {isTrial && daysRemaining !== null && daysRemaining > 0 && (
+          <p className="rounded-lg border border-[#F0B429]/40 bg-[#FFF8E1] px-3.5 py-2.5 text-[13px] text-[#7A5600]">{c.trialNote(daysRemaining)}</p>
+        )}
+        {!isTrial && soon && (
+          <p className="rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3.5 py-2.5 text-[13px] text-[#B91C1C]">{c.soonNote}</p>
+        )}
+
+        <div className="flex flex-wrap gap-2">
+          <a href={wa(c.waRenew)} target="_blank" rel="noopener noreferrer" className={BTN.gold}>{isTrial ? c.upgrade : c.renew}</a>
+          <a href={wa(c.waSupport)} target="_blank" rel="noopener noreferrer" className={BTN.secondary}>{c.support}</a>
         </div>
       </div>
-
-      {/* Trial note */}
-      {isTrial && daysRemaining !== null && daysRemaining > 0 && (
-        <div style={{
-          background: '#FFFBEB', border: '1px solid #FDE68A',
-          borderRadius: '8px', padding: '10px 14px',
-          fontSize: '13px', color: '#92400E', marginBottom: '16px',
-        }}>
-          🕐 أنت في الفترة التجريبية المجانية. للاستمرار بعد {daysRemaining} يوم، يرجى ترقية خطتك.
-        </div>
-      )}
-
-      {/* Expiry warning */}
-      {!isTrial && isExpiringSoon && (
-        <div style={{
-          background: '#FEF2F2', border: '1px solid #FECACA',
-          borderRadius: '8px', padding: '10px 14px',
-          fontSize: '13px', color: '#B91C1C', marginBottom: '16px',
-        }}>
-          ⚠️ اشتراكك ينتهي قريباً. جدد الاشتراك الآن لتجنب انقطاع الخدمة.
-        </div>
-      )}
-
-      {/* Upgrade CTA */}
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <a
-          href={`https://wa.me/212619522487?text=مرحباً، أريد ترقية خطة MAGHAREBIT`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            background: '#F0B429', color: '#0A2318',
-            borderRadius: '8px', padding: '9px 18px',
-            fontSize: '13px', fontWeight: 700,
-            textDecoration: 'none', whiteSpace: 'nowrap',
-          }}
-        >
-          ⬆️ ترقية الخطة
-        </a>
-        <a
-          href={`https://wa.me/212619522487?text=مرحباً، أحتاج مساعدة في تفعيل ترخيص MAGHAREBIT`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            background: '#F8FAFC', color: '#374151',
-            border: '1px solid #E5E7EB',
-            borderRadius: '8px', padding: '9px 18px',
-            fontSize: '13px', fontWeight: 600,
-            textDecoration: 'none', whiteSpace: 'nowrap',
-          }}
-        >
-          💬 الدعم الفني
-        </a>
-      </div>
-    </div>
+    </section>
   );
 }

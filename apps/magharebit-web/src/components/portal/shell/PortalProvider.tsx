@@ -27,6 +27,9 @@ export interface PortalMe {
   daysRemaining: number | null;
   isTrial: boolean;
   lowStockCount: number;
+  expiresAt: string | null;
+  licenseKey: string | null;
+  today: { totalRevenue: number; totalTransactions: number; avgBasket: number };
 }
 
 export interface Toast { id: number; kind: 'warning' | 'error' | 'success'; text: string }
@@ -97,6 +100,9 @@ export default function PortalProvider({
           daysRemaining: d.daysRemaining ?? null,
           isTrial: d.isTrial ?? false,
           lowStockCount: d.lowStockCount ?? 0,
+          expiresAt: d.expiresAt ?? null,
+          licenseKey: d.licenseKey ?? null,
+          today: d.today ?? { totalRevenue: 0, totalTransactions: 0, avgBasket: 0 },
         });
       })
       .catch(() => { /* network state is tracked by the heartbeat */ });

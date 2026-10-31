@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import NotificationsDrawer from '@/components/portal/NotificationsDrawer';
 import PortalProvider, { usePortal, type NetState } from './PortalProvider';
 import PortalSidebar from './PortalSidebar';
-import { NAV, SHELL_COPY } from './nav';
+import { NAV, SHELL_COPY, TRANSLATED } from './nav';
 import type { Lang } from '@/components/landing/useLang';
 
 /**
@@ -166,9 +166,11 @@ function ShellFrame({ locale, lang, children }: { locale: string; lang: Lang; ch
             </div>
           )}
 
-          {/* Page bodies are Arabic-only until their own phase: they keep RTL regardless of the shell language */}
+          {/* Translated pages follow the URL language; the rest are Arabic-only until their batch and stay RTL */}
           <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8">
-            <div dir="rtl" lang="ar" className="font-arabic">{children}</div>
+            {current && TRANSLATED.includes(current.slug)
+              ? <div data-page-lang={lang}>{children}</div>
+              : <div dir="rtl" lang="ar" className="font-arabic">{children}</div>}
           </main>
         </div>
       </div>
