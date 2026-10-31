@@ -24,7 +24,7 @@ export const GROUP_ORDER: NavGroup[] = ['sell', 'manage', 'grow', 'system'];
  * Pages whose content is translated (ar/fr/en) and follows the URL direction. The others are still Arabic-only and
  * stay RTL inside the shell until their batch (Phase 3).
  */
-export const TRANSLATED: NavSlug[] = ['dashboard', 'products'];
+export const TRANSLATED: NavSlug[] = ['dashboard', 'products', 'customers'];
 
 export const SHELL_COPY: Record<Lang, {
   nav: Record<NavSlug, string>;

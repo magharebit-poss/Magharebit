@@ -40,3 +40,5 @@ All except the unit check need a dev server on its own cache folder (`NEXT_DIST_
 **Run E2E against a production build, not `next dev`:** `NEXT_DIST_DIR=.next-test npx next build` (nothing else may touch that folder while it builds), then `npx next start -p 3021` with the same env. Rate limits are stored in MongoDB (`rate_limits`), so they survive a server restart: the scripts drop their database at start, which also clears them.
 
 Warm the pages first (first compile can take minutes on a slow machine), start a **fresh** database per run.
+
+| `portal-customers-e2e.mjs` | Phase 3.2, customers (fr/ar/en) on real data (customers + a sale attached to one, totals updated server-side): count, phone formatting, tier badge, totals = API, search by name/phone/no match, add dialog (validation, duplicate phone and invalid email translated from the API), detail dialog (stats, loyalty progress, notes persisted, purchase history, Escape), 375 px cards, no presentational inline styles, no console errors. Drops its database and rebuilds the unique phone index. | 33 passed |

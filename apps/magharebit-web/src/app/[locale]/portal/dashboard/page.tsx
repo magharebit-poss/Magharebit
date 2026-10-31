@@ -198,7 +198,7 @@ export default function DashboardPage() {
                 <tbody className="divide-y divide-[#F3F4F6]">
                   {tx.map((t) => (
                     <tr key={t.id} className="transition-colors hover:bg-[#FAFAFB]">
-                      <td className="whitespace-nowrap px-5 py-3.5 font-mono text-[13px] text-[#6B7280]" dir="ltr">#{t.receiptNo}</td>
+                      <td className="whitespace-nowrap px-5 py-3.5 font-mono text-[13px] text-[#6B7280]" dir="ltr">{t.receiptNo}</td>
                       <td className="max-w-[280px] truncate px-5 py-3.5 text-[#111827]">{t.items.map((it) => (it.qty > 1 ? `${it.name} ×${it.qty}` : it.name)).join(', ') || '—'}</td>
                       <td className="whitespace-nowrap px-5 py-3.5 font-semibold tabular-nums text-[#111827]">{money(t.total, lang)}</td>
                       <td className="whitespace-nowrap px-5 py-3.5"><span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${METHOD_TONE[t.paymentMethod] ?? 'bg-[#F3F4F6] text-[#374151] ring-[#E5E7EB]'}`}>{c.methods[t.paymentMethod] ?? t.paymentMethod}</span></td>
@@ -215,7 +215,7 @@ export default function DashboardPage() {
                 <li key={t.id} className="flex items-center gap-3 px-5 py-3.5">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-[#111827]">{t.items.map((it) => it.name).join(', ') || '—'}</p>
-                    <p className="text-xs text-[#6B7280]"><span dir="ltr">#{t.receiptNo}</span> · {ago(t.createdAt, lang)}</p>
+                    <p className="text-xs text-[#6B7280]"><span dir="ltr">{t.receiptNo}</span> · {ago(t.createdAt, lang)}</p>
                   </div>
                   <div className="text-end">
                     <p className="text-sm font-semibold tabular-nums">{money(t.total, lang)}</p>
