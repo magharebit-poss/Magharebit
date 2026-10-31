@@ -145,6 +145,18 @@ export const customersRepo = {
     return doc ? toDoc(doc as Record<string, unknown>) : null
   },
 
+  /** id → name for the merchant's own customers (one query; unknown or foreign ids are left out). */
+  async namesByIds(merchantId: string, ids: string[]): Promise<Record<string, string>> {
+    const valid = [...new Set(ids)].filter(isValidObjectId)
+    if (valid.length === 0) return {}
+    const db = await getDb()
+    if (!db) return {}
+    const docs = await db.collection('customers')
+      .find({ _id: { $in: valid.map(id => new ObjectId(id)) }, merchantId }, { projection: { name: 1 } })
+      .toArray()
+    return Object.fromEntries(docs.map(d => [d._id.toString(), String(d.name ?? '')]))
+  },
+
   async create(opts: {
     merchantId: string
     name:       string

@@ -18,6 +18,15 @@ export function longDate(iso: string | Date, lang: Lang): string {
   return new Date(iso).toLocaleDateString(DATE_LOCALE[lang], { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+/** "31 oct. 2026, 14:05" — 24 h clock in every language */
+export function dateTime(iso: string | Date, lang: Lang): string {
+  return new Date(iso).toLocaleString(DATE_LOCALE[lang], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+}
+
+export function time(iso: string | Date, lang: Lang): string {
+  return new Date(iso).toLocaleTimeString(DATE_LOCALE[lang], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+}
+
 export function weekday(iso: string | Date, lang: Lang, style: 'short' | 'long' = 'short'): string {
   return new Date(iso).toLocaleDateString(DATE_LOCALE[lang], { weekday: style, timeZone: 'UTC' });
 }

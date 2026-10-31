@@ -139,14 +139,15 @@ export const transactionsRepo = {
     from?:        Date
     to?:          Date
     employeeId?:  string
+    paymentMethod?: PaymentMethod
     page?:        number
     limit?:       number
-  }): Promise<{ transactions: TransactionDoc[]; total: number }> {
+  }): Promise<{ transactions: TransactionDoc[]; total: number; sum: number }> {
     const db = await getDb()
-    if (!db) return { transactions: [], total: 0 }
+    if (!db) return { transactions: [], total: 0, sum: 0 }
     await ensureIndexes(db)
 
-    const { merchantId, from, to, employeeId, page = 1, limit = 50 } = opts
+    const { merchantId, from, to, employeeId, paymentMethod, page = 1, limit = 50 } = opts
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: Record<string, any> = { merchantId }
     if (from || to) {
@@ -155,14 +156,21 @@ export const transactionsRepo = {
       if (to)   filter.createdAt.$lte = to
     }
     if (employeeId) filter.employeeId = employeeId
+    if (paymentMethod) filter.paymentMethod = paymentMethod
 
     const skip = (page - 1) * limit
     const col  = db.collection('transactions')
-    const [docs, total] = await Promise.all([
+    const [docs, total, sums] = await Promise.all([
       col.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
       col.countDocuments(filter),
+      // Grand total of every matching sale (not just this page)
+      col.aggregate<{ sum: number }>([{ $match: filter }, { $group: { _id: null, sum: { $sum: '$total' } } }]).toArray(),
     ])
-    return { transactions: docs.map(d => toDoc(d as Record<string, unknown>)), total }
+    return {
+      transactions: docs.map(d => toDoc(d as Record<string, unknown>)),
+      total,
+      sum: Math.round((sums[0]?.sum ?? 0) * 100) / 100,
+    }
   },
 
   /**

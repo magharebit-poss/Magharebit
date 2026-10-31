@@ -1,4 +1,4 @@
-// Merchant portal app shell in headless Chrome (fr + ar): real login (phone + license key), all 8 nav links,
+// Merchant portal app shell in headless Chrome (fr + ar): real login (phone + license key), all 9 nav links,
 // direction and sidebar edge per language, icon rail at 1100 px (toggle remembered across reloads), mobile drawer
 // at 375 px (inline-start edge, focus inside, Escape, focus returns), offline (persistent banner, write blocked with an
 // auto-dismissing toast, recovery), server down (health 503 -> degraded banner), session expiry (401 -> toast ->
@@ -79,8 +79,8 @@ check('fr: store card shows the signed-up name, status online', L.store === 'Ép
 check('translated page (dashboard) follows the shell language (Phase 3.1)', L.bodyDir === 'page:fr', L.bodyDir)
 await shot('fr-1440-dashboard')
 
-const slugs = ['products', 'customers', 'purchases', 'employees', 'marketing', 'reports', 'settings', 'dashboard']
-const titles = { products: 'Produits', customers: 'Clients', purchases: 'Achats', employees: 'Employés', marketing: 'Marketing', reports: 'Rapports', settings: 'Paramètres', dashboard: 'Tableau de bord' }
+const slugs = ['products', 'customers', 'sales', 'purchases', 'employees', 'marketing', 'reports', 'settings', 'dashboard']
+const titles = { products: 'Produits', customers: 'Clients', sales: 'Ventes', purchases: 'Achats', employees: 'Employés', marketing: 'Marketing', reports: 'Rapports', settings: 'Paramètres', dashboard: 'Tableau de bord' }
 for (const s of slugs) {
   await js(`document.querySelector('[data-testid=shell-sidebar] a[href="/fr/portal/${s}"]').click()`)
   const ok = await waitFor(`location.pathname === '/fr/portal/${s}' && document.querySelector('[data-testid=shell-title]').textContent === ${JSON.stringify(titles[s])} && document.querySelector('[data-testid=shell-sidebar] [aria-current=page]')?.getAttribute('href') === '/fr/portal/${s}'`, 120000)

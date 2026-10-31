@@ -47,23 +47,39 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!session) return unauthorizedResponse()
 
   const { searchParams } = req.nextUrl
-  const page  = Math.max(1,   Number(searchParams.get('page')  ?? 1))
-  const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') ?? 20)))
+  const page  = Math.max(1,   Math.floor(Number(searchParams.get('page')  ?? 1))  || 1)
+  const limit = Math.min(100, Math.max(1, Math.floor(Number(searchParams.get('limit') ?? 20)) || 20))
 
-  const dateFrom = searchParams.get('dateFrom') ?? undefined
-  const dateTo   = searchParams.get('dateTo')   ?? undefined
-  const _method  = searchParams.get('method')   ?? undefined
-  void _method
+  const dateFrom = searchParams.get('dateFrom') ? new Date(searchParams.get('dateFrom')!) : undefined
+  const dateTo   = searchParams.get('dateTo')   ? new Date(searchParams.get('dateTo')!)   : undefined
+  if ((dateFrom && isNaN(dateFrom.getTime())) || (dateTo && isNaN(dateTo.getTime()))) {
+    return NextResponse.json({ error: 'invalid_date' }, { status: 422 })
+  }
+
+  const method = searchParams.get('method') || undefined
+  if (method && !VALID_PAYMENT_METHODS.includes(method as PaymentMethod)) {
+    return NextResponse.json({ error: 'invalid_payment_method', valid: VALID_PAYMENT_METHODS }, { status: 422 })
+  }
 
   const result = await transactionsRepo.findAll({
     merchantId: session.merchantId,
     page,
     limit,
-    from: dateFrom ? new Date(dateFrom) : undefined,
-    to:   dateTo   ? new Date(dateTo)   : undefined,
+    from: dateFrom,
+    to:   dateTo,
+    paymentMethod: method as PaymentMethod | undefined,
   })
 
-  return NextResponse.json(result)
+  // Customer names for display (only this merchant's customers)
+  const names = await customersRepo.namesByIds(
+    session.merchantId,
+    result.transactions.map(t => t.customerId).filter((id): id is string => !!id),
+  )
+  const transactions = result.transactions.map(t => (
+    t.customerId && names[t.customerId] ? { ...t, customerName: names[t.customerId] } : t
+  ))
+
+  return NextResponse.json({ ...result, transactions })
 }
 
 // ── POST ──────────────────────────────────────────────────────────────────────
