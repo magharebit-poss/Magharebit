@@ -9,7 +9,9 @@ are **hidden** until real pages exist (the coordinator's "hide temporarily" opti
   Slots: `pos-sale` (desktop till, 1600×1000), `tablet-order` (1600×1200), `phone-pos` (780×1688),
   `portal-dashboard` (laptop, 1600×1000).
 - **Video:** set `NEXT_PUBLIC_DEMO_VIDEO_URL` (Vercel env + local `.env.local`) to a YouTube or Vimeo link, or a
-  same-origin `/media/….mp4`. Rebuild. Optional cover: `DEMO_VIDEO.poster` in the same file.
+  same-origin `/media/….mp4`/`.webm`, or a Cloudinary video delivery URL. **Empty = "coming soon", nothing plays.**
+  The value is inlined at build time: redeploy after changing it. A file that fails to load shows a readable error
+  with a direct link. Optional cover: `DEMO_VIDEO.poster` in the same file.
 
 ## What was built
 | Piece | File | Where |

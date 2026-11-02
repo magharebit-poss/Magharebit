@@ -95,7 +95,13 @@ export const DEMO_VIDEO = {
 export type ParsedVideo =
   | { kind: 'youtube'; id: string; embed: string }
   | { kind: 'vimeo'; id: string; embed: string }
-  | { kind: 'file'; src: string }
+  | { kind: 'file'; src: string; /** known from the extension; undefined lets the browser sniff it */ mime?: string }
+
+/** 'video/mp4' | 'video/webm' from a path's extension, undefined when there is none (e.g. a CDN delivery URL). */
+function mimeOf(path: string): string | undefined {
+  const ext = /\.(mp4|webm)$/i.exec(path.split('?')[0])?.[1]?.toLowerCase()
+  return ext ? `video/${ext}` : undefined
+}
 
 /**
  * Turns whatever link marketing pastes into something we can play. YouTube goes through youtube-nocookie.com
@@ -104,7 +110,7 @@ export type ParsedVideo =
 export function parseVideoUrl(raw: string): ParsedVideo | null {
   const url = raw.trim()
   if (!url) return null
-  if (/^\/[^/].*\.(mp4|webm)(\?.*)?$/i.test(url)) return { kind: 'file', src: url }
+  if (/^\/[^/].*\.(mp4|webm)(\?.*)?$/i.test(url)) return { kind: 'file', src: url, mime: mimeOf(url) }
   let u: URL
   try { u = new URL(url) } catch { return null }
   const host = u.hostname.replace(/^www\.|^m\./, '')
@@ -120,6 +126,8 @@ export function parseVideoUrl(raw: string): ParsedVideo | null {
     const id = u.pathname.match(/(?:^|\/)(\d{6,12})(?:\/|$)/)?.[1]
     if (id) return { kind: 'vimeo', id, embed: `https://player.vimeo.com/video/${id}?autoplay=1&dnt=1` }
   }
-  if (u.protocol === 'https:' && /\.(mp4|webm)$/i.test(u.pathname)) return { kind: 'file', src: url }
+  if (u.protocol === 'https:' && /\.(mp4|webm)$/i.test(u.pathname)) return { kind: 'file', src: url, mime: mimeOf(u.pathname) }
+  // Cloudinary delivery URLs ("…/video/upload/f_auto,q_auto/v123/demo") are playable without a file extension
+  if (u.protocol === 'https:' && host === 'res.cloudinary.com' && /\/video\/upload\//.test(u.pathname)) return { kind: 'file', src: url, mime: mimeOf(u.pathname) }
   return null
 }

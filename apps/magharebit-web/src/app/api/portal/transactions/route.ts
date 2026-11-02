@@ -23,7 +23,7 @@
  *   - if discountEnabled=false in settings, discountValue must be 0
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { transactionsRepo } from '@/lib/repositories/transactions'
 import type { PaymentMethod } from '@/lib/repositories/transactions'
@@ -205,9 +205,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       note,
     })
 
-    // ── Fire-and-forget: loyalty update ────────────────────────────────────────
+    // Post-sale work runs in after(): the 201 goes out first, and the platform keeps the invocation alive until the
+    // work is done. A bare `void (async () => …)()` is not awaited by anyone, so on a serverless host the function can
+    // be frozen as soon as the response is sent and the loyalty update / WhatsApp messages are delayed or lost.
+
+    // ── After the response: loyalty update ─────────────────────────────────────
     if (customerId) {
-      void (async () => {
+      after(async () => {
         try {
           await customersRepo.recordVisit(
             session.merchantId,
@@ -215,12 +219,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             result.transaction.total
           )
         } catch { /* CRM failure must never block the sale */ }
-      })()
+      })
     }
 
-    // ── Fire-and-forget: low-stock WhatsApp alert ───────────────────────────────
+    // ── After the response: low-stock WhatsApp alert ────────────────────────────
     if (result.lowStockItems.length > 0) {
-      void (async () => {
+      after(async () => {
         try {
           if (settings.whatsappEnabled && settings.lowStockAlert && settings.storePhone) {
             await sendLowStockAlert({
@@ -234,10 +238,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             })
           }
         } catch { /* alert failure must never block the sale */ }
-      })()
+      })
     }
 
-    // ── Fire-and-forget: customer WhatsApp receipt (W4) ───────────────────────
+    // ── After the response: customer WhatsApp receipt (W4) ────────────────────
     // Three gates (all must be true):
     //   1. customer is linked to this transaction
     //   2. merchant has WhatsApp enabled AND customerWhatsappReceiptEnabled
@@ -247,7 +251,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       settings.whatsappEnabled &&
       settings.customerWhatsappReceiptEnabled
     ) {
-      void (async () => {
+      after(async () => {
         try {
           const customer = await customersRepo.findById(
             session.merchantId,
@@ -277,7 +281,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             loyaltyPoints:  customer.loyaltyPoints,
           })
         } catch { /* never block the 201 response */ }
-      })()
+      })
     }
 
     return NextResponse.json(result, { status: 201 })

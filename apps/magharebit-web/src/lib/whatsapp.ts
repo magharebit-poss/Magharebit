@@ -2,6 +2,11 @@ const GREEN_API_BASE = process.env.GREEN_API_BASE_URL ?? 'https://api.green-api.
 const INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID
 const API_TOKEN = process.env.GREEN_API_API_TOKEN
 const BUSINESS_NUMBER = process.env.WHATSAPP_BUSINESS_NUMBER ?? '212619522487'
+/**
+ * Upper bound for one Green API call. Without it a stalled request holds the caller for as long as the platform
+ * allows: the daily-report loop sends merchants one after another, so a single hang delayed every message behind it.
+ */
+const SEND_TIMEOUT_MS = Math.max(500, Number(process.env.GREEN_API_TIMEOUT_MS) || 8000)
 
 interface SendMessageParams {
   to: string      // Moroccan phone number in any common format
@@ -28,6 +33,7 @@ export async function sendWhatsAppMessage({ to, message }: SendMessageParams): P
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chatId, message }),
+      signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
     })
 
     if (!res.ok) {
@@ -38,6 +44,9 @@ export async function sendWhatsAppMessage({ to, message }: SendMessageParams): P
     const data = await res.json() as { idMessage?: string }
     return { success: true, messageId: data.idMessage }
   } catch (err) {
+    if (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError')) {
+      return { success: false, error: `timeout after ${SEND_TIMEOUT_MS} ms` }
+    }
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }

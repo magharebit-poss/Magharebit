@@ -18,6 +18,15 @@ import { transactionsRepo } from '@/lib/repositories/transactions'
 import { productsRepo } from '@/lib/repositories/products'
 import { sendDailyReport } from '@/lib/whatsapp'
 
+/**
+ * The fan-out below is sequential on purpose (Green API rate limits), so the run takes roughly
+ * merchants × (queries + send + 300 ms). Without a declared limit the platform default (as low as 10 s) can kill the
+ * function after a handful of merchants and nobody is told. Declare the limit, and stop cleanly before it:
+ * whatever was not reached is reported as `remaining` instead of vanishing.
+ */
+export const maxDuration = 60
+const TIME_BUDGET_MS = Number(process.env.DAILY_REPORT_TIME_BUDGET_MS) || 50_000 // env override: tests only
+
 // ── Auth helper ───────────────────────────────────────────────────────────────
 
 function isAuthorized(req: NextRequest): boolean {
@@ -59,7 +68,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   let failed = 0
   let skipped = 0
 
-  for (const settings of subscribers) {
+  const startedAt = Date.now()
+  let remaining = 0
+
+  for (const [index, settings] of subscribers.entries()) {
+    if (Date.now() - startedAt > TIME_BUDGET_MS) {
+      remaining = subscribers.length - index
+      console.error(`[cron/daily-report] time budget reached: ${remaining} of ${subscribers.length} merchants not processed`)
+      break
+    }
     try {
       // Fetch yesterday's summary for this merchant
       const [summary, lowStockCount] = await Promise.all([
@@ -121,6 +138,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     sent,
     failed,
     skipped,
+    remaining,
+    incomplete: remaining > 0,
   })
 }
 

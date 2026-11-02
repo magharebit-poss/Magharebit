@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useLang, type Lang } from '@/components/landing/useLang';
 import { DEMO_VIDEO, parseVideoUrl } from '@/content/media';
@@ -10,11 +10,45 @@ interface Props {
   onClose: () => void;
 }
 
-const COPY: Record<Lang, { title: string; close: string }> = {
-  ar: { title: 'فيديو تعريفي بـ MAGHAREBIT POS', close: 'إغلاق الفيديو' },
-  fr: { title: 'Vidéo de démonstration MAGHAREBIT POS', close: 'Fermer la vidéo' },
-  en: { title: 'MAGHAREBIT POS demo video', close: 'Close the video' },
+const COPY: Record<Lang, { title: string; close: string; failed: string; openDirect: string }> = {
+  ar: { title: 'فيديو تعريفي بـ MAGHAREBIT POS', close: 'إغلاق الفيديو', failed: 'تعذّر تشغيل الفيديو على هذا الجهاز.', openDirect: 'فتح الفيديو في نافذة جديدة' },
+  fr: { title: 'Vidéo de démonstration MAGHAREBIT POS', close: 'Fermer la vidéo', failed: 'La vidéo ne peut pas être lue sur cet appareil.', openDirect: 'Ouvrir la vidéo dans un nouvel onglet' },
+  en: { title: 'MAGHAREBIT POS demo video', close: 'Close the video', failed: 'The video cannot be played on this device.', openDirect: 'Open the video in a new tab' },
 };
+
+/**
+ * Self-hosted / CDN file. Mounted only while the dialog is open (so its error state resets on every open).
+ * A file that 404s, is blocked, or is in a codec the browser cannot decode fires `error` on the video or its
+ * <source>; without this the visitor just sees a black box that never plays.
+ */
+function FilePlayer({ src, mime, poster, lang, isRTL }: { src: string; mime?: string; poster?: string; lang: Lang; isRTL: boolean }) {
+  const c = COPY[lang];
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div role="alert" data-testid="video-error" className={`flex aspect-video w-full flex-col items-center justify-center gap-4 bg-black px-8 text-center text-white ${isRTL ? 'font-arabic' : 'font-sans'}`}>
+        <p className="text-base font-semibold">{c.failed}</p>
+        <a href={src} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-gold-400/60 px-4 py-2 text-sm font-semibold text-gold-400 transition-colors hover:bg-gold-400/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-400">{c.openDirect}</a>
+      </div>
+    );
+  }
+  return (
+    // Captions (<track> per language) come with the final self-hosted file.
+    <video
+      poster={poster}
+      controls
+      autoPlay
+      playsInline
+      preload="metadata"
+      onError={() => setFailed(true)}
+      className="block aspect-video w-full bg-black"
+      data-testid="video-player"
+    >
+      {/* the error of a failing <source> does not bubble to the <video>, so it is handled here */}
+      <source src={src} type={mime} onError={() => setFailed(true)} />
+    </video>
+  );
+}
 
 /**
  * The demo video in a native <dialog>: focus stays inside, Esc and the backdrop close it, and focus returns to the
@@ -69,16 +103,7 @@ export default function VideoModal({ isOpen, onClose }: Props) {
         )}
 
         {isOpen && video?.kind === 'file' && (
-          // Captions (<track> per language) come with the final self-hosted file.
-          <video
-            src={video.src}
-            poster={DEMO_VIDEO.poster ?? undefined}
-            controls
-            autoPlay
-            playsInline
-            preload="metadata"
-            className="block aspect-video w-full bg-black"
-          />
+          <FilePlayer src={video.src} mime={video.mime} poster={DEMO_VIDEO.poster ?? undefined} lang={lang} isRTL={isRTL} />
         )}
 
         {!video && (
