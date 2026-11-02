@@ -27,8 +27,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }
 
-  const identifier  = (body.identifier  ?? '').trim().toLowerCase()
-  const rawKey      = (body.licenseKey  ?? '').trim().toUpperCase().replace(/\s/g, '')
+  // Strings only: an object here ({"$ne": null}) used to throw on .trim() and answer 500
+  if (!body || typeof body !== 'object') return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
+  const identifier  = typeof body.identifier === 'string' ? body.identifier.trim().toLowerCase().slice(0, 254) : ''
+  const rawKey      = typeof body.licenseKey === 'string' ? body.licenseKey.trim().toUpperCase().replace(/\s/g, '').slice(0, 64) : ''
 
   if (!identifier) {
     return NextResponse.json({ error: 'identifier_required' }, { status: 400 })

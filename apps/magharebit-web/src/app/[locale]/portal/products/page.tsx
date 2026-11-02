@@ -49,7 +49,7 @@ const COPY: Record<Lang, {
     delDlg: { title: 'Supprimer ce produit ?', body: (n) => `« ${n} » sera retiré du catalogue.`, confirm: 'Supprimer' },
     units: { 'pièce': 'pièce', kg: 'kg', g: 'g', L: 'L', litre: 'litre', mL: 'mL', 'boîte': 'boîte', pack: 'pack', lot: 'lot', service: 'service' },
     toast: { created: 'Produit ajouté', updated: 'Produit mis à jour', deleted: 'Produit supprimé', adjusted: 'Stock ajusté', lowAfter: (n) => `Stock bas : ${n}`, seeded: (n) => `${n} produits créés` },
-    err: { name_required: 'Le nom est obligatoire.', category_required: 'La catégorie est obligatoire.', price_invalid: 'Le prix doit être un nombre positif.', plu_already_exists: 'Ce PLU existe déjà.', delta_must_be_nonzero: 'Saisissez une quantité différente de zéro.', invalid_sector: 'Secteur inconnu.', products_already_exist: 'Vous avez déjà des produits : cochez « Remplacer » pour continuer.', template_empty: 'Ce catalogue type est vide.', not_found: 'Produit introuvable.', offline: 'Vous êtes hors ligne.' },
+    err: { stock_would_be_negative: 'Le stock ne peut pas devenir négatif : retirez au plus la quantité disponible.', name_required: 'Le nom est obligatoire.', category_required: 'La catégorie est obligatoire.', price_invalid: 'Le prix doit être un nombre positif.', plu_already_exists: 'Ce PLU existe déjà.', delta_must_be_nonzero: 'Saisissez une quantité différente de zéro.', invalid_sector: 'Secteur inconnu.', products_already_exist: 'Vous avez déjà des produits : cochez « Remplacer » pour continuer.', template_empty: 'Ce catalogue type est vide.', not_found: 'Produit introuvable.', offline: 'Vous êtes hors ligne.' },
     errGeneric: 'L’opération a échoué. Réessayez.', csv: ['PLU', 'Nom', 'Catégorie', 'Prix', 'Coût', 'Stock', 'Seuil'],
   },
   ar: {
@@ -66,7 +66,7 @@ const COPY: Record<Lang, {
     delDlg: { title: 'حذف هذا المنتج؟', body: (n) => `سيُحذف «${n}» من الكتالوج.`, confirm: 'حذف' },
     units: { 'pièce': 'قطعة', kg: 'كغ', g: 'غ', L: 'ل', litre: 'لتر', mL: 'مل', 'boîte': 'علبة', pack: 'رزمة', lot: 'مجموعة', service: 'خدمة' },
     toast: { created: 'تمت إضافة المنتج', updated: 'تم تحديث المنتج', deleted: 'تم حذف المنتج', adjusted: 'تم تعديل المخزون', lowAfter: (n) => `مخزون منخفض: ${n}`, seeded: (n) => `تم إنشاء ${n} منتجاً` },
-    err: { name_required: 'الاسم مطلوب.', category_required: 'الفئة مطلوبة.', price_invalid: 'يجب أن يكون السعر رقماً موجباً.', plu_already_exists: 'رمز PLU هذا موجود.', delta_must_be_nonzero: 'أدخل كمية غير الصفر.', invalid_sector: 'قطاع غير معروف.', products_already_exist: 'لديك منتجات بالفعل: فعّل «استبدال» للمتابعة.', template_empty: 'هذا الكتالوج فارغ.', not_found: 'المنتج غير موجود.', offline: 'أنت غير متصل.' },
+    err: { stock_would_be_negative: 'لا يمكن أن يصبح المخزون سالباً: اسحب الكمية المتوفرة كحد أقصى.', name_required: 'الاسم مطلوب.', category_required: 'الفئة مطلوبة.', price_invalid: 'يجب أن يكون السعر رقماً موجباً.', plu_already_exists: 'رمز PLU هذا موجود.', delta_must_be_nonzero: 'أدخل كمية غير الصفر.', invalid_sector: 'قطاع غير معروف.', products_already_exist: 'لديك منتجات بالفعل: فعّل «استبدال» للمتابعة.', template_empty: 'هذا الكتالوج فارغ.', not_found: 'المنتج غير موجود.', offline: 'أنت غير متصل.' },
     errGeneric: 'فشلت العملية. أعد المحاولة.', csv: ['PLU', 'الاسم', 'الفئة', 'السعر', 'التكلفة', 'المخزون', 'الحد الأدنى'],
   },
   en: {
@@ -83,7 +83,7 @@ const COPY: Record<Lang, {
     delDlg: { title: 'Delete this product?', body: (n) => `“${n}” will be removed from the catalogue.`, confirm: 'Delete' },
     units: { 'pièce': 'piece', kg: 'kg', g: 'g', L: 'L', litre: 'litre', mL: 'mL', 'boîte': 'box', pack: 'pack', lot: 'lot', service: 'service' },
     toast: { created: 'Product added', updated: 'Product updated', deleted: 'Product deleted', adjusted: 'Stock adjusted', lowAfter: (n) => `Low stock: ${n}`, seeded: (n) => `${n} products created` },
-    err: { name_required: 'The name is required.', category_required: 'The category is required.', price_invalid: 'The price must be a positive number.', plu_already_exists: 'This PLU already exists.', delta_must_be_nonzero: 'Enter a quantity other than zero.', invalid_sector: 'Unknown sector.', products_already_exist: 'You already have products: tick “Replace” to continue.', template_empty: 'This starter catalogue is empty.', not_found: 'Product not found.', offline: 'You are offline.' },
+    err: { stock_would_be_negative: 'Stock cannot go negative: remove at most the quantity available.', name_required: 'The name is required.', category_required: 'The category is required.', price_invalid: 'The price must be a positive number.', plu_already_exists: 'This PLU already exists.', delta_must_be_nonzero: 'Enter a quantity other than zero.', invalid_sector: 'Unknown sector.', products_already_exist: 'You already have products: tick “Replace” to continue.', template_empty: 'This starter catalogue is empty.', not_found: 'Product not found.', offline: 'You are offline.' },
     errGeneric: 'That did not work. Try again.', csv: ['PLU', 'Name', 'Category', 'Price', 'Cost', 'Stock', 'Alert level'],
   },
 };

@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { productsRepo } from '@/lib/repositories/products'
 import type { ProductUnit } from '@/lib/repositories/products'
+import { PRODUCT_LIMITS, validateProductInput } from '@/lib/product-input'
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
@@ -45,26 +46,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try { body = await req.json() }
   catch { return NextResponse.json({ error: 'invalid_json' }, { status: 400 }) }
 
-  const name     = String(body.name     ?? '').trim()
-  const category = String(body.category ?? '').trim()
-  const price    = Number(body.price    ?? 0)
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
 
-  if (!name)     return NextResponse.json({ error: 'name_required'     }, { status: 422 })
-  if (!category) return NextResponse.json({ error: 'category_required' }, { status: 422 })
-  if (price < 0) return NextResponse.json({ error: 'price_invalid'     }, { status: 422 })
+  // The UI's existing error codes first (it translates these three)
+  if (typeof body.name !== 'string' || !body.name.trim())         return NextResponse.json({ error: 'name_required'     }, { status: 422 })
+  if (typeof body.category !== 'string' || !body.category.trim()) return NextResponse.json({ error: 'category_required' }, { status: 422 })
+  if (typeof body.price !== 'number' || !Number.isFinite(body.price) || body.price < 0) return NextResponse.json({ error: 'price_invalid' }, { status: 422 })
+
+  // Every field typed and bounded (lib/product-input.ts). An empty optional field arrives as null: use its default.
+  const input = Object.fromEntries(Object.entries(body).filter(([, v]) => v !== null))
+  const checked = validateProductInput(input)
+  if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 422 })
+  const d = checked.data
+  if (body.plu !== undefined && body.plu !== null && (typeof body.plu !== 'string' || body.plu.trim().length > PRODUCT_LIMITS.plu)) {
+    return NextResponse.json({ error: 'plu_invalid' }, { status: 422 })
+  }
 
   try {
     const product = await productsRepo.create(session.merchantId, {
-      name,
-      category,
-      price,
-      costPrice:  Number(body.costPrice ?? 0),
-      stock:      Number(body.stock     ?? 0),
-      minStock:   Number(body.minStock  ?? 5),
-      unit:       (body.unit as ProductUnit) ?? 'pièce',
-      emoji:      String(body.emoji     ?? '📦').trim(),
-      plu:        String(body.plu       ?? '').trim() || undefined,
-      barcode:    String(body.barcode   ?? '').trim() || undefined,
+      name:       d.name!,
+      category:   d.category!,
+      price:      d.price!,
+      costPrice:  d.costPrice ?? 0,
+      stock:      d.stock     ?? 0,
+      minStock:   d.minStock  ?? 5,
+      unit:       (d.unit ?? 'pièce') as ProductUnit,
+      emoji:      d.emoji || '📦',
+      plu:        typeof body.plu === 'string' ? body.plu.trim() || undefined : undefined,
+      barcode:    d.barcode || undefined,
       isActive:   true,
     })
     return NextResponse.json({ product }, { status: 201 })

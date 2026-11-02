@@ -9,7 +9,7 @@
  * loginId is unique within a merchant's scope.
  */
 
-import { createHash } from 'crypto'
+import { createHash, timingSafeEqual } from 'crypto'
 import { requireAuthSecret } from '../secret'
 import { Db, ObjectId } from 'mongodb'
 import { getDb } from '../mongodb'
@@ -173,7 +173,10 @@ export const employeesRepo = {
       isActive: true,
     })
     if (!doc) return null
-    if (doc.pinHash !== hashPin(pin)) return null
+    // Constant-time: `!==` stops at the first differing character and leaks how much of the hash matched
+    const stored = Buffer.from(String(doc.pinHash ?? ''), 'hex')
+    const given  = Buffer.from(hashPin(pin), 'hex')
+    if (stored.length !== given.length || !timingSafeEqual(stored, given)) return null
 
     // Update lastLoginAt
     await db.collection<EmployeeStoredDoc>('employees').updateOne(

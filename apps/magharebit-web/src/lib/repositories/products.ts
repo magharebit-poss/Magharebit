@@ -229,19 +229,26 @@ export const productsRepo = {
     productId: string,
     delta: number,
     reason: StockAdjustReason,
-    opts?: { note?: string; employeeId?: string }
-  ): Promise<{ product: ProductDoc | null; isLowStock: boolean }> {
+    opts?: { note?: string; employeeId?: string; /** refuse a decrease that would take stock below 0 (manual adjustments) */ floorAtZero?: boolean }
+  ): Promise<{ product: ProductDoc | null; isLowStock: boolean; wouldGoNegative?: boolean }> {
     const db = await getDb()
     if (!db) return { product: null, isLowStock: false }
     await ensureIndexes(db)
 
-    // Atomic increment
+    // Atomic increment. With floorAtZero the floor is part of the same filter, so two concurrent decreases cannot
+    // both pass a separate read-then-write check. Default behaviour (sales, receipts) is unchanged.
+    const guard = opts?.floorAtZero && delta < 0 ? { stock: { $gte: -delta } } : {}
     const result = await db.collection('products').findOneAndUpdate(
-      { _id: new ObjectId(productId), merchantId },
+      { _id: new ObjectId(productId), merchantId, ...guard },
       { $inc: { stock: delta }, $set: { updatedAt: new Date() } },
       { returnDocument: 'after' }
     )
-    if (!result) return { product: null, isLowStock: false }
+    if (!result) {
+      if (Object.keys(guard).length && await db.collection('products').countDocuments({ _id: new ObjectId(productId), merchantId }, { limit: 1 })) {
+        return { product: null, isLowStock: false, wouldGoNegative: true }
+      }
+      return { product: null, isLowStock: false }
+    }
     const product = toDoc(result as Record<string, unknown>)
 
     // Record adjustment log

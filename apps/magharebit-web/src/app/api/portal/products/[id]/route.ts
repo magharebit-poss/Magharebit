@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { productsRepo } from '@/lib/repositories/products'
+import { isObjectId, validateProductInput } from '@/lib/product-input'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -29,12 +30,14 @@ export async function PATCH(req: NextRequest, { params }: Ctx): Promise<NextResp
   try { body = await req.json() }
   catch { return NextResponse.json({ error: 'invalid_json' }, { status: 400 }) }
 
-  // Whitelist updatable fields
-  const allowed = ['name', 'category', 'price', 'costPrice', 'stock', 'minStock', 'unit', 'emoji', 'barcode', 'isActive']
-  const update: Record<string, unknown> = {}
-  for (const k of allowed) {
-    if (k in body) update[k] = body[k]
-  }
+  if (!isObjectId(id)) return NextResponse.json({ error: 'not_found' }, { status: 404 })
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
+
+  // Allow-listed AND typed: see lib/product-input.ts
+  const checked = validateProductInput(body)
+  if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 422 })
+  // unit is a bounded free string here: the UI offers more units than the ProductUnit type lists
+  const update = checked.data as Parameters<typeof productsRepo.update>[2]
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'no_fields_to_update' }, { status: 422 })
   }

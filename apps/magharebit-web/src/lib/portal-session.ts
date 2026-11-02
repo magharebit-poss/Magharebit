@@ -6,48 +6,15 @@
  * Payload: { merchantId: string, exp: number }
  *
  * merchantId = MongoDB _id.toString() of the merchant document.
- * The payload is signed with NEXTAUTH_SECRET using the same HMAC
- * scheme used by `mgh_session` (see otp.ts).
+ * Signed with NEXTAUTH_SECRET by the one token implementation shared with `mgh_session` (otp.ts):
+ * HMAC-SHA256, `exp` mandatory and checked on every request.
  */
 
-import { createHash, timingSafeEqual } from 'crypto'
-import { getAuthSecret, requireAuthSecret } from './secret'
+import { createSessionToken as sign, verifySessionToken as verify } from './otp'
 import { NextRequest, NextResponse } from 'next/server'
 
 const COOKIE_NAME = 'portal_session'
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
-
-// ── Token signing (same algorithm as otp.ts mgh_session) ─────────────────────
-
-function sign(payload: Record<string, unknown>): string {
-  const secret = requireAuthSecret()
-  const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url')
-  const sig = createHash('sha256').update(`${encoded}:${secret}`).digest('hex')
-  return `${encoded}.${sig}`
-}
-
-function verify(token: string): Record<string, unknown> | null {
-  try {
-    const [encoded, sig] = token.split('.')
-    if (!encoded || !sig) return null
-    const secret = getAuthSecret()
-    if (!secret) return null
-    const expected = createHash('sha256')
-      .update(`${encoded}:${secret}`)
-      .digest('hex')
-    const bs = Buffer.from(sig)
-    const be = Buffer.from(expected)
-    if (bs.length !== be.length || !timingSafeEqual(bs, be)) return null
-    const payload = JSON.parse(
-      Buffer.from(encoded, 'base64url').toString()
-    ) as Record<string, unknown>
-    const exp = payload.exp as number | undefined
-    if (exp && exp < Date.now()) return null
-    return payload
-  } catch {
-    return null
-  }
-}
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
