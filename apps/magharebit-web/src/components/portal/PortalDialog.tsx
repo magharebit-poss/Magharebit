@@ -22,7 +22,7 @@ export default function PortalDialog({
   title: string;
   description?: ReactNode;
   closeLabel: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   children?: ReactNode;
   footer?: ReactNode;
   testId?: string;
@@ -35,7 +35,7 @@ export default function PortalDialog({
     if (!open && d.open) d.close();
   }, [open]);
 
-  const width = size === 'sm' ? 'max-w-[420px]' : size === 'lg' ? 'max-w-[640px]' : 'max-w-[520px]';
+  const width = size === 'sm' ? 'max-w-[420px]' : size === 'lg' ? 'max-w-[640px]' : size === 'xl' ? 'max-w-[760px]' : 'max-w-[520px]';
   return (
     <dialog
       ref={ref}

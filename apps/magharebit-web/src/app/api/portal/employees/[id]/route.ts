@@ -45,6 +45,21 @@ export async function PATCH(req: NextRequest, { params }: Ctx): Promise<NextResp
     return NextResponse.json({ error: 'invalid_role', valid: VALID_ROLES }, { status: 422 })
   }
 
+  // Types and required values for the other editable fields
+  if (body.name !== undefined) {
+    if (typeof body.name !== 'string' || !body.name.trim()) {
+      return NextResponse.json({ error: 'name_required' }, { status: 422 })
+    }
+    body.name = body.name.trim()
+  }
+  if (body.phone !== undefined) {
+    if (typeof body.phone !== 'string') return NextResponse.json({ error: 'phone_invalid' }, { status: 422 })
+    body.phone = body.phone.trim()
+  }
+  if (body.isActive !== undefined && typeof body.isActive !== 'boolean') {
+    return NextResponse.json({ error: 'isActive_must_be_boolean' }, { status: 422 })
+  }
+
   const allowed = ['name', 'phone', 'role', 'pin', 'isActive']
   const update: Record<string, unknown> = {}
   for (const k of allowed) {

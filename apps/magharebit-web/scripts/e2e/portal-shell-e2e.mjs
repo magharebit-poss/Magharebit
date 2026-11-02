@@ -87,9 +87,9 @@ for (const s of slugs) {
   check(`nav → ${s}: page, title and active item follow`, ok)
 }
 
-await js(`document.querySelector('[data-testid=shell-sidebar] a[href="/fr/portal/purchases"]').click()`)
-await waitFor(`location.pathname === '/fr/portal/purchases'`)
-check('untranslated page (purchases) still renders Arabic RTL inside the French shell', await waitFor(`document.querySelector('#main-content > div')?.getAttribute('dir') === 'rtl'`, 30000))
+await js(`document.querySelector('[data-testid=shell-sidebar] a[href="/fr/portal/marketing"]').click()`)
+await waitFor(`location.pathname === '/fr/portal/marketing'`)
+check('untranslated page (marketing) still renders Arabic RTL inside the French shell', await waitFor(`document.querySelector('#main-content > div')?.getAttribute('dir') === 'rtl'`, 30000))
 // back to the dashboard: the next step switches language and expects to stay on it
 await js(`document.querySelector('[data-testid=shell-sidebar] a[href="/fr/portal/dashboard"]').click()`)
 await waitFor(`location.pathname === '/fr/portal/dashboard'`)
