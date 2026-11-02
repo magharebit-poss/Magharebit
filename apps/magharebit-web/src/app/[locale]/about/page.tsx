@@ -1,530 +1,310 @@
 import type { Metadata } from 'next';
-import { setRequestLocale, getTranslations, getLocale } from 'next-intl/server';
-import AOSInit from '@/components/AOSInit';
+import Image from 'next/image';
+import Link from 'next/link';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
-import NewsletterSignup from '@/components/NewsletterSignup';
-import Link from 'next/link';
-import { pageAlternates, ogBase } from '@/lib/seo';
+import VideoSection from '@/components/landing/VideoSection';
+import { breadcrumbSchema } from '@/lib/schemas';
+import { HREFLANG, SITE_URL, ogBase, pageAlternates, type SiteLocale } from '@/lib/seo';
+
+const PATH = '/about';
+const asLocale = (l: string): SiteLocale => (l === 'ar' || l === 'fr' || l === 'en' ? l : 'ar');
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  setRequestLocale((await params).locale);
+  const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations('about');
-  const locale = await getLocale();
+  const title = t('meta_title');
+  const description = t('meta_desc');
+  // Share card rendered by src/app/[locale]/opengraph-image.tsx. Declared explicitly: a page that defines its own
+  // openGraph/twitter blocks does not reliably get the file-based image merged in.
+  const image = { url: `/${asLocale(locale)}/opengraph-image`, width: 1200, height: 630, alt: t('og_alt'), type: 'image/png' };
   return {
-    title: t('meta_title'),
-    description: t('meta_desc'),
-    alternates: pageAlternates(locale, `/about`),
-    openGraph: { ...ogBase(locale), title: t('meta_title'), description: t('meta_desc') },
+    // absolute: the brand is already in the title, no template suffix
+    title: { absolute: title },
+    description,
+    alternates: pageAlternates(locale, PATH),
+    openGraph: { ...ogBase(locale), url: `/${asLocale(locale)}${PATH}`, title, description, images: [image] },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
   };
 }
 
+/** Breadcrumb + an AboutPage node that points at the Organization and SoftwareApplication of the site-wide graph
+ *  (src/lib/schemas.ts siteGraph, emitted by the layout on every page) instead of declaring them a second time. */
+function aboutJsonLd(locale: SiteLocale, title: string, description: string, home: string) {
+  const url = `${SITE_URL}/${locale}${PATH}`;
+  return [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'AboutPage',
+      '@id': `${url}#webpage`,
+      url,
+      name: title,
+      description,
+      inLanguage: HREFLANG[locale],
+      isPartOf: { '@id': `${SITE_URL}/#website` },
+      about: { '@id': `${SITE_URL}/#organization` },
+      mainEntity: { '@id': `${SITE_URL}/#organization` },
+      mentions: { '@id': `${SITE_URL}/#software` },
+      primaryImageOfPage: { '@type': 'ImageObject', url: `${SITE_URL}/media/a1-hero.webp` },
+    },
+    breadcrumbSchema(locale, [[home, ''], [title.split('|')[0].trim(), PATH]]),
+  ];
+}
+
+// ── Decorative pieces (aria-hidden) ──────────────────────────────────────────
+
+/** Eight-point star (khatam), the motif behind the zellige pattern. */
+function Khatam({ className = '' }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={className} fill="currentColor">
+      <path d="M12 1.5l2.6 4.2 4.8-1.1-1.1 4.8 4.2 2.6-4.2 2.6 1.1 4.8-4.8-1.1L12 22.5l-2.6-4.2-4.8 1.1 1.1-4.8L1.5 12l4.2-2.6-1.1-4.8 4.8 1.1z" />
+    </svg>
+  );
+}
+
+/** A thin band of the brand zellige pattern, used as a section border. */
+function ZelligeBand({ className = '' }: { className?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`h-3 w-full bg-[#F0B429] opacity-25 [-webkit-mask-image:url('/brand/zellige-pattern.svg')] [-webkit-mask-size:92px_126.7px] [mask-image:url('/brand/zellige-pattern.svg')] [mask-size:92px_126.7px] ${className}`}
+    />
+  );
+}
+
+function Kicker({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) {
+  return (
+    <p className={`mb-4 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] ${dark ? 'text-[#F0B429]' : 'text-[#B8860B]'}`}>
+      <Khatam className="h-3.5 w-3.5" />
+      {children}
+    </p>
+  );
+}
+
+const FACT_ICONS = [
+  'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+  'M2 2l20 20M8.5 16.5a5 5 0 0 1 7 0M2 8.8a15 15 0 0 1 4.2-2.6M10.7 5.1A15 15 0 0 1 22 8.8M5 12.9a10 10 0 0 1 5.2-2.8M12 20h.01',
+  'M3 5h12M9 3v2c0 4.4-2.7 8.2-6 10M5 9c1.6 2.3 4.2 4.2 7 5M12 21l5-11 5 11M13.5 18h7',
+  'M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z',
+];
+const TRUST_ICONS = [
+  'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
+  'M2 7h20v12H2zM2 11h20M6 15h4',
+  'M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M9 14h6M9 17h3',
+];
+
+function Icon({ d, className = 'h-6 w-6' }: { d: string; className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+
 export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {
-  setRequestLocale((await params).locale);
+  const { locale: raw } = await params;
+  setRequestLocale(raw);
+  const locale = asLocale(raw);
   const t = await getTranslations('about');
-  const locale = await getLocale();
   const isRTL = locale === 'ar';
-  const fontBody = isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif';
+  const body = isRTL ? 'font-arabic' : 'font-sans';
+  const display = isRTL ? 'font-arabic' : 'font-display';
 
-  const stats = [
-    { value: t('stat1_value'), label: t('stat1_label') },
-    { value: t('stat2_value'), label: t('stat2_label') },
-    { value: t('stat3_value'), label: t('stat3_label') },
-    { value: t('stat4_value'), label: t('stat4_label') },
-  ];
+  const facts = [1, 2, 3, 4].map((i) => ({ value: t(`fact${i}_value`), label: t(`fact${i}_label`), desc: t(`fact${i}_desc`), icon: FACT_ICONS[i - 1] }));
+  const trust = [1, 2, 3].map((i) => ({ title: t(`trust${i}_title`), desc: t(`trust${i}_desc`), icon: TRUST_ICONS[i - 1] }));
+  const timeline = [1, 2, 3].map((i) => ({ year: t(`yr${i}`), title: t(`story${i}_title`), text: t(`story${i}_text`) }));
+  const values = [1, 2, 3].map((i) => ({ title: t(`val${i}_title`), desc: t(`val${i}_desc`) }));
+  const team = [1, 2, 3].map((i) => ({ initials: t(`member${i}_initials`), name: t(`member${i}_name`), role: t(`member${i}_role`), note: t(`member${i}_note`) }));
+  const jsonLd = aboutJsonLd(locale, t('meta_title'), t('meta_desc'), t('breadcrumb_home'));
 
-  const values = [
-    { emoji: t('val1_emoji'), title: t('val1_title'), desc: t('val1_desc') },
-    { emoji: t('val2_emoji'), title: t('val2_title'), desc: t('val2_desc') },
-    { emoji: t('val3_emoji'), title: t('val3_title'), desc: t('val3_desc') },
-  ];
+  const ctas = (
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <Link
+        href={`/${locale}/auth/signup`}
+        className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-[#F0B429] px-7 text-base font-bold text-[#0A2318] shadow-[0_10px_30px_rgba(240,180,41,0.25)] transition-colors hover:bg-[#F5C451] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F0B429]"
+        data-testid="about-cta-trial"
+      >
+        {t('cta_trial')}
+        <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 rtl:-scale-x-100" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </Link>
+      <Link
+        href={`/${locale}/demo`}
+        className="inline-flex min-h-[52px] items-center justify-center rounded-xl border border-white/25 px-7 text-base font-semibold text-white transition-colors hover:border-[#F0B429] hover:text-[#F0B429] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F0B429]"
+        data-testid="about-cta-demo"
+      >
+        {t('cta_demo')}
+      </Link>
+    </div>
+  );
 
   return (
     <>
-      <AOSInit />
+      {jsonLd.map((node, i) => (
+        // JSON-LD from our own static copy; "<" is escaped so no string can ever close the script element
+        <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(node).replace(/</g, '\\u003c') }} />
+      ))}
       <Navbar />
-      <main style={{ background: '#0A2318', minHeight: '100vh' }}>
+      <main dir={isRTL ? 'rtl' : 'ltr'} lang={locale} className={`${body} bg-[#0A2318]`} data-testid="about-page">
 
-        {/* ── Hero ── */}
-        <section
-          style={{
-            paddingTop: '120px',
-            paddingBottom: '80px',
-            paddingLeft: '24px',
-            paddingRight: '24px',
-            textAlign: 'center',
-          }}
-        >
-          <div style={{ maxWidth: '680px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
-            <span
-              className="badge-pill font-display"
-              data-aos="fade-down"
-            >
-              {t('badge')}
-            </span>
-            <h1
-              data-aos="fade-up"
-              className="font-arabic font-extrabold text-white"
-              style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', lineHeight: 1.15, marginBottom: '20px' }}
-            >
+        {/* ── Hero: dark shell, zellige behind the content only ── */}
+        <section className="relative overflow-hidden px-6 pb-20 pt-32 sm:pb-24 sm:pt-40" aria-labelledby="about-title">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#F0B429] opacity-[0.05] [-webkit-mask-image:url('/brand/zellige-pattern.svg')] [-webkit-mask-size:368px_506.7px] [mask-image:url('/brand/zellige-pattern.svg')] [mask-size:368px_506.7px]" />
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[60%] bg-[radial-gradient(ellipse_60%_60%_at_50%_0%,rgba(240,180,41,0.12),transparent_70%)]" />
+          <div className="relative mx-auto max-w-[860px] text-center">
+            <Kicker dark>{t('hero_kicker')}</Kicker>
+            <h1 id="about-title" className={`${display} text-balance text-[clamp(2rem,5.2vw,3.5rem)] font-extrabold leading-[1.12] text-white`}>
               {t('hero_title')}
             </h1>
-            <p
-              data-aos="fade-up"
-              data-aos-delay="100"
-              style={{ fontFamily: fontBody, fontSize: '18px', color: 'rgba(255,255,255,0.60)', lineHeight: 1.75 }}
-            >
-              {t('hero_sub')}
-            </p>
+            <p className="mx-auto mt-6 max-w-[680px] text-lg leading-[1.8] text-white/70">{t('hero_sub')}</p>
+            <div className="mt-10 flex justify-center">{ctas}</div>
+          </div>
+        </section>
+        <ZelligeBand />
+
+        {/* ── Story + photo ── */}
+        <section className="bg-[#F8F9FA] px-6 py-20 sm:py-28" aria-labelledby="about-story">
+          <div className="mx-auto grid max-w-[1100px] items-center gap-12 lg:grid-cols-2 lg:gap-16">
+            <div>
+              <Kicker>{t('story_kicker')}</Kicker>
+              <h2 id="about-story" className={`${display} text-[clamp(1.6rem,3.4vw,2.4rem)] font-bold leading-tight text-[#111827]`}>{t('story_heading')}</h2>
+              <div className="mt-6 space-y-5 text-[17px] leading-[1.85] text-[#374151]">
+                <p>{t('story_p1')}</p>
+                <p>{t('story_p2')}</p>
+                <p className="font-medium text-[#111827]">{t('story_p3')}</p>
+              </div>
+              <p className="mt-8 border-s-4 border-[#B8860B] ps-4 text-sm font-semibold text-[#6B7280]">{t('story_signature')}</p>
+            </div>
+            <figure className="relative">
+              <div aria-hidden="true" className="absolute -inset-3 rounded-[28px] border border-[#B8860B]/30" />
+              <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-[#0F3D2A] shadow-[0_30px_70px_rgba(10,35,24,0.25)]">
+                <Image
+                  src="/media/a1-hero.webp"
+                  alt={t('story_img_alt')}
+                  fill
+                  sizes="(min-width: 1100px) 520px, (min-width: 1024px) 45vw, 100vw"
+                  className="object-cover object-center"
+                />
+              </div>
+              <Khatam className="absolute -bottom-5 end-8 h-10 w-10 text-[#B8860B]" />
+            </figure>
           </div>
         </section>
 
-        {/* ── Mission + Stats (2-col) ── */}
-        <section style={{ padding: '0 24px 80px' }}>
-          <div
-            className="grid grid-cols-1 lg:grid-cols-2"
-            style={{ maxWidth: '1100px', margin: '0 auto', gap: '64px', alignItems: 'start', direction: isRTL ? 'rtl' : 'ltr' }}
-          >
-
-            {/* Left — Mission text */}
-            <div data-aos="fade-up">
-              <h2
-                className="font-arabic font-bold text-white"
-                style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', marginBottom: '24px' }}
-              >
-                {t('mission_title')}
-              </h2>
-              <p
-                style={{ fontFamily: fontBody, fontSize: '16px', color: 'rgba(255,255,255,0.70)', lineHeight: 1.8, marginBottom: '20px' }}
-              >
-                {t('mission_p1')}
-              </p>
-              <p
-                style={{ fontFamily: fontBody, fontSize: '16px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.8 }}
-              >
-                {t('mission_p2')}
-              </p>
+        {/* ── Facts (verifiable product facts, not invented counters) ── */}
+        <section className="bg-white px-6 py-20 sm:py-24" aria-labelledby="about-facts">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="mx-auto max-w-[640px] text-center">
+              <Kicker>{t('facts_kicker')}</Kicker>
+              <h2 id="about-facts" className={`${display} text-[clamp(1.5rem,3vw,2.1rem)] font-bold text-[#111827]`}>{t('facts_heading')}</h2>
             </div>
+            <ul className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {facts.map((f) => (
+                <li key={f.label} className="group rounded-2xl border border-[#E5E7EB] bg-[#F8F9FA] p-6 transition-colors hover:border-[#B8860B]/50" data-testid="about-fact">
+                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#0F3D2A] text-[#F0B429]"><Icon d={f.icon} /></span>
+                  <p className="mt-5 font-display text-2xl font-extrabold text-[#0F3D2A]" dir={/^[A-Z ·]+$/.test(f.value) ? 'ltr' : undefined}>{f.value}</p>
+                  <p className="mt-1 font-semibold text-[#111827]">{f.label}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">{f.desc}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
 
-            {/* Right — 2×2 stat grid */}
-            <div
-              data-aos="fade-up"
-              data-aos-delay="120"
-              className="grid grid-cols-2"
-              style={{ gap: '16px' }}
-            >
-              {stats.map((stat, i) => (
-                <div
-                  key={i}
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '16px',
-                    padding: '24px 20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: isRTL ? 'flex-end' : 'flex-start',
-                    direction: isRTL ? 'rtl' : 'ltr',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: 'Plus Jakarta Sans, sans-serif',
-                      fontWeight: 800,
-                      fontSize: '2rem',
-                      color: '#F0B429',
-                      lineHeight: 1,
-                      marginBottom: '8px',
-                      letterSpacing: '-0.02em',
-                    }}
-                  >
-                    {stat.value}
+        {/* ── Trust / Law 09-08 ── */}
+        <section className="relative overflow-hidden bg-[#0F3D2A] px-6 py-20 sm:py-24" aria-labelledby="about-trust">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#F0B429] opacity-[0.04] [-webkit-mask-image:url('/brand/zellige-pattern.svg')] [-webkit-mask-size:368px_506.7px] [mask-image:url('/brand/zellige-pattern.svg')] [mask-size:368px_506.7px]" />
+          <div className="relative mx-auto grid max-w-[1100px] gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center">
+            <div>
+              <Kicker dark>{t('trust_kicker')}</Kicker>
+              <h2 id="about-trust" className={`${display} text-[clamp(1.5rem,3vw,2.2rem)] font-bold text-white`}>{t('trust_heading')}</h2>
+              <p className="mt-5 text-base leading-[1.8] text-white/70">{t('trust_sub')}</p>
+            </div>
+            <ul className="grid gap-4">
+              {trust.map((x) => (
+                <li key={x.title} className="flex gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#F0B429]/15 text-[#F0B429]"><Icon d={x.icon} className="h-5 w-5" /></span>
+                  <span>
+                    <span className="block font-semibold text-white">{x.title}</span>
+                    <span className="mt-1 block text-sm leading-relaxed text-white/65">{x.desc}</span>
                   </span>
-                  <span
-                    style={{ fontFamily: fontBody, fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}
-                  >
-                    {stat.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        {/* ── Milestones + values ── */}
+        <section className="bg-[#F8F9FA] px-6 py-20 sm:py-24" aria-labelledby="about-timeline">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="text-center">
+              <Kicker>{t('story_kicker')}</Kicker>
+              <h2 id="about-timeline" className={`${display} text-[clamp(1.5rem,3vw,2.1rem)] font-bold text-[#111827]`}>{t('timeline_heading')}</h2>
+            </div>
+            <ol className="relative mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
+              <span aria-hidden="true" className="absolute inset-x-[16%] top-[13px] hidden border-t-2 border-dashed border-[#B8860B]/40 md:block" />
+              {timeline.map((e) => (
+                <li key={e.year} className="relative flex gap-5 md:flex-col md:items-center md:text-center">
+                  <span className="relative z-10 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#F0B429] text-[#0A2318] shadow-[0_0_0_6px_#F8F9FA]"><Khatam className="h-3.5 w-3.5" /></span>
+                  <span>
+                    <span className="block font-display text-2xl font-extrabold text-[#B8860B]">{e.year}</span>
+                    <span className="mt-1 block font-semibold text-[#111827]">{e.title}</span>
+                    <span className="mt-2 block max-w-[300px] text-sm leading-relaxed text-[#6B7280]">{e.text}</span>
                   </span>
-                </div>
+                </li>
               ))}
-            </div>
+            </ol>
 
-          </div>
-        </section>
-
-        {/* ── Divider ── */}
-        <div style={{ maxWidth: '1100px', margin: '0 auto 80px', padding: '0 24px' }}>
-          <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
-        </div>
-
-        {/* ── Our Story Timeline ── */}
-        <section style={{ padding: '0 24px 80px' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
-            <h2
-              data-aos="fade-up"
-              className="font-arabic font-bold text-white text-center"
-              style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', marginBottom: '48px' }}
-            >
-              {t('story_title')}
-            </h2>
-
-            {/* Desktop: 3-column horizontal timeline */}
-            <div
-              className="hidden md:grid md:grid-cols-3"
-              style={{ position: 'relative' }}
-            >
-              {/* Horizontal dashed gold connector */}
-              <div style={{
-                position: 'absolute',
-                top: '13px',
-                left: 'calc(100% / 6)',
-                right: 'calc(100% / 6)',
-                borderTop: '2px dashed rgba(240,180,41,0.35)',
-                pointerEvents: 'none',
-                zIndex: 0,
-              }} />
-
-              {[
-                { year: t('yr1'), title: t('story1_title'), text: t('story1_text') },
-                { year: t('yr2'), title: t('story2_title'), text: t('story2_text') },
-                { year: t('yr3'), title: t('story3_title'), text: t('story3_text') },
-              ].map((entry, i) => (
-                <div
-                  key={i}
-                  data-aos="fade-up"
-                  data-aos-delay={String(i * 120)}
-                  style={{
-                    position: 'relative',
-                    zIndex: 1,
-                    padding: '0 24px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: '50%',
-                    background: '#F0B429',
-                    marginBottom: '14px',
-                    flexShrink: 0,
-                    boxShadow: '0 0 16px rgba(240,180,41,0.4)',
-                  }} />
-                  <span style={{
-                    fontFamily: 'Plus Jakarta Sans, sans-serif',
-                    fontWeight: 800,
-                    fontSize: '24px',
-                    color: '#F0B429',
-                    lineHeight: 1,
-                  }}>
-                    {entry.year}
-                  </span>
-                  <div style={{ fontFamily: fontBody, fontWeight: 700, fontSize: '16px', color: '#fff', margin: '8px 0 6px' }}>
-                    {entry.title}
-                  </div>
-                  <p style={{ fontFamily: fontBody, fontSize: '14px', color: 'rgba(255,255,255,0.60)', lineHeight: 1.6, maxWidth: '260px' }}>
-                    {entry.text}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Mobile: vertical timeline */}
-            <div className="flex md:hidden flex-col" style={{ gap: '32px' }}>
-              {[
-                { year: t('yr1'), title: t('story1_title'), text: t('story1_text') },
-                { year: t('yr2'), title: t('story2_title'), text: t('story2_text') },
-                { year: t('yr3'), title: t('story3_title'), text: t('story3_text') },
-              ].map((entry, i) => (
-                <div
-                  key={i}
-                  style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexDirection: isRTL ? 'row-reverse' : 'row' }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#F0B429', flexShrink: 0, boxShadow: '0 0 12px rgba(240,180,41,0.4)' }} />
-                    {i < 2 && (
-                      <div style={{ width: '2px', minHeight: '48px', flex: 1, background: 'linear-gradient(to bottom, rgba(240,180,41,0.35), transparent)', marginTop: '4px' }} />
-                    )}
-                  </div>
-                  <div style={{ textAlign: isRTL ? 'right' : 'left', paddingBottom: '8px' }}>
-                    <span style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 800, fontSize: '22px', color: '#F0B429', lineHeight: 1, display: 'block' }}>
-                      {entry.year}
-                    </span>
-                    <div style={{ fontFamily: fontBody, fontWeight: 700, fontSize: '16px', color: '#fff', margin: '6px 0 4px' }}>
-                      {entry.title}
-                    </div>
-                    <p style={{ fontFamily: fontBody, fontSize: '14px', color: 'rgba(255,255,255,0.60)', lineHeight: 1.6 }}>
-                      {entry.text}
-                    </p>
-                  </div>
+            <div className="mt-20 grid gap-5 md:grid-cols-3">
+              <h3 className={`${display} md:col-span-3 text-xl font-bold text-[#111827]`}>{t('values_title')}</h3>
+              {values.map((v) => (
+                <div key={v.title} className="rounded-2xl border-s-4 border-[#0F3D2A] bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+                  <p className="font-semibold text-[#111827]">{v.title}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-[#6B7280]">{v.desc}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── Team section ── */}
-        <section style={{ padding: '0 24px 80px' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
-            <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-              <h2
-                data-aos="fade-up"
-                className="font-arabic font-bold text-white"
-                style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', marginBottom: '8px' }}
-              >
-                {t('team_title')}
-              </h2>
-              <p style={{ fontFamily: fontBody, fontSize: '15px', color: 'rgba(255,255,255,0.55)' }}>
-                {t('team_sub')}
-              </p>
-            </div>
+        {/* ── Video showcase (NEXT_PUBLIC_DEMO_VIDEO_URL, poster + click-to-play modal) ── */}
+        <VideoSection />
 
-            <div
-              className="grid grid-cols-1 md:grid-cols-3"
-              style={{ gap: '24px' }}
-            >
-              {[
-                {
-                  initials: t('member1_initials'),
-                  name: t('member1_name'),
-                  role: t('member1_role'),
-                  note: t('member1_note'),
-                },
-                {
-                  initials: t('member2_initials'),
-                  name: t('member2_name'),
-                  role: t('member2_role'),
-                  note: t('member2_note'),
-                },
-                {
-                  initials: t('member3_initials'),
-                  name: t('member3_name'),
-                  role: t('member3_role'),
-                  note: t('member3_note'),
-                },
-              ].map((member, i) => (
-                <div
-                  key={i}
-                  data-aos="fade-up"
-                  data-aos-delay={String(i * 100)}
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    textAlign: 'center',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '64px',
-                      height: '64px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #0F3D2A, #1a5c3a)',
-                      border: '2px solid rgba(240,180,41,0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      margin: '0 auto 16px',
-                      fontFamily: 'Plus Jakarta Sans, sans-serif',
-                      fontWeight: 700,
-                      fontSize: '16px',
-                      color: '#F0B429',
-                    }}
-                  >
-                    {member.initials}
-                  </div>
-                  <div style={{ fontFamily: fontBody, fontWeight: 700, fontSize: '16px', color: '#FFFFFF', marginBottom: '4px' }}>
-                    {member.name}
-                  </div>
-                  <div style={{ fontFamily: fontBody, fontSize: '13px', color: '#F0B429', fontWeight: 600, marginBottom: '8px' }}>
-                    {member.role}
-                  </div>
-                  <div style={{ fontFamily: fontBody, fontSize: '13px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>
-                    {member.note}
-                  </div>
-                </div>
+        {/* ── Team ── */}
+        <section className="bg-white px-6 py-20 sm:py-24" aria-labelledby="about-team">
+          <div className="mx-auto max-w-[1100px]">
+            <div className="text-center">
+              <h2 id="about-team" className={`${display} text-[clamp(1.5rem,3vw,2.1rem)] font-bold text-[#111827]`}>{t('team_title')}</h2>
+              <p className="mt-3 text-[#6B7280]">{t('team_sub')}</p>
+            </div>
+            <ul className="mt-12 grid gap-5 sm:grid-cols-3">
+              {team.map((m) => (
+                <li key={m.name} className="rounded-2xl border border-[#E5E7EB] p-6 text-center">
+                  <span aria-hidden="true" className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-[#0F3D2A] font-display text-lg font-bold text-[#F0B429]" dir="ltr">{m.initials}</span>
+                  <p className="mt-4 font-semibold text-[#111827]">{m.name}</p>
+                  <p className="text-sm font-medium text-[#B8860B]">{m.role}</p>
+                  <p className="mt-2 text-sm text-[#6B7280]">{m.note}</p>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </section>
 
-        {/* ── Follow the team (social) ── */}
-        <section style={{ padding: '0 24px 80px' }}>
-          <div style={{ maxWidth: '880px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr', textAlign: 'center' }}>
-            <h2
-              data-aos="fade-up"
-              className="font-arabic font-bold text-white"
-              style={{ fontSize: 'clamp(1.4rem, 3vw, 1.85rem)', marginBottom: '24px' }}
-            >
-              {locale === 'ar' ? 'تابع فريق MAGHAREBIT' : locale === 'en' ? 'Follow the MAGHAREBIT team' : "Suivez l'équipe MAGHAREBIT"}
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: '16px' }}>
-              {([
-                {
-                  bg: '#0A66C2',
-                  emoji: 'in',
-                  href: 'https://www.linkedin.com/in/magharebit-team-15a025414/',
-                  name: 'LinkedIn',
-                  tagline: { ar: 'أخبار المنتج والفريق', fr: 'Actualités produit et équipe', en: 'Product and team updates' },
-                },
-                {
-                  bg: '#FF0000',
-                  emoji: '▶',
-                  href: 'https://www.youtube.com/channel/UCsFWs7PYax6j70XYrJYKjUg',
-                  name: 'YouTube',
-                  tagline: { ar: 'دروس وعروض وشهادات', fr: 'Tutoriels, démos, témoignages', en: 'Tutorials, demos, testimonials' },
-                },
-                {
-                  bg: '#1877F2',
-                  emoji: 'f',
-                  href: 'https://www.facebook.com/profile.php?id=61590535894132',
-                  name: 'Facebook',
-                  tagline: { ar: 'مجتمع التجار', fr: 'Communauté des marchands', en: 'Merchant community' },
-                },
-              ] as const).map((card, i) => (
-                <a
-                  key={card.name}
-                  href={card.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-aos="fade-up"
-                  data-aos-delay={String(i * 80)}
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '12px',
-                    padding: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    textDecoration: 'none',
-                    direction: isRTL ? 'rtl' : 'ltr',
-                    textAlign: isRTL ? 'right' : 'left',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      background: card.bg,
-                      borderRadius: '12px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#fff',
-                      fontWeight: 800,
-                      fontSize: '20px',
-                      fontFamily: 'Plus Jakarta Sans, sans-serif',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {card.emoji}
-                  </div>
-                  <div>
-                    <div style={{ fontFamily: fontBody, fontWeight: 600, color: '#fff', fontSize: '14px' }}>{card.name}</div>
-                    <div style={{ fontFamily: fontBody, fontSize: '12px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
-                      {card.tagline[locale as 'ar' | 'fr' | 'en']}
-                    </div>
-                    <div style={{ fontFamily: fontBody, fontSize: '12px', color: '#F0B429', marginTop: '6px', fontWeight: 600 }}>
-                      {locale === 'ar' ? 'متابعة ←' : locale === 'en' ? 'Follow →' : 'Suivre →'}
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
+        {/* ── Conversion block ── */}
+        <section className="relative overflow-hidden px-6 py-20 sm:py-28" aria-labelledby="about-cta">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_70%_at_50%_100%,rgba(240,180,41,0.16),transparent_70%)]" />
+          <div className="relative mx-auto max-w-[760px] rounded-[28px] border border-[#F0B429]/30 bg-[#0F3D2A] px-6 py-14 text-center shadow-[0_30px_80px_rgba(0,0,0,0.35)] sm:px-12">
+            <Khatam className="mx-auto mb-5 h-8 w-8 text-[#F0B429]" />
+            <h2 id="about-cta" className={`${display} text-[clamp(1.6rem,3.6vw,2.4rem)] font-bold text-white`}>{t('cta_heading')}</h2>
+            <p className="mx-auto mt-4 max-w-[520px] text-white/70">{t('cta_sub')}</p>
+            <div className="mt-8 flex justify-center">{ctas}</div>
+            <p className="mt-6 text-sm text-white/50">{t('cta_note')}</p>
           </div>
         </section>
-
-        {/* ── Newsletter ── */}
-        <section style={{ padding: '0 24px 80px' }}>
-          <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-            <NewsletterSignup />
-          </div>
-        </section>
-
-        {/* ── Values (3 cards) ── */}
-        <section style={{ padding: '0 24px 80px' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-            <h2
-              data-aos="fade-up"
-              className="font-arabic font-bold text-white text-center"
-              style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', marginBottom: '48px', direction: isRTL ? 'rtl' : 'ltr' }}
-            >
-              {t('values_title')}
-            </h2>
-
-            <div
-              className="grid grid-cols-1 md:grid-cols-3"
-              style={{ gap: '24px' }}
-            >
-              {values.map((val, i) => (
-                <div
-                  key={i}
-                  data-aos="fade-up"
-                  data-aos-delay={String(i * 100)}
-                  className="card-feature-hover"
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '16px',
-                    padding: '32px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '14px',
-                    direction: isRTL ? 'rtl' : 'ltr',
-                    textAlign: isRTL ? 'right' : 'left',
-                  }}
-                >
-                  <div style={{ fontSize: '40px', lineHeight: 1 }}>{val.emoji}</div>
-                  <div
-                    style={{ fontFamily: fontBody, fontSize: '18px', fontWeight: 700, color: '#FFFFFF' }}
-                  >
-                    {val.title}
-                  </div>
-                  <div
-                    style={{ fontFamily: fontBody, fontSize: '14px', color: 'rgba(255,255,255,0.60)', lineHeight: 1.65 }}
-                  >
-                    {val.desc}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ── Bottom CTA ── */}
-        <section
-          style={{
-            padding: '60px 24px 100px',
-            textAlign: 'center',
-            background: 'rgba(255,255,255,0.02)',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
-          }}
-        >
-          <div data-aos="fade-up" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-            <Link
-              href={`/${locale}/demo`}
-              style={{
-                display: 'inline-flex',
-                fontFamily: fontBody,
-                fontWeight: 700,
-                fontSize: '16px',
-                color: '#0A2318',
-                background: '#F0B429',
-                borderRadius: '999px',
-                padding: '14px 40px',
-                textDecoration: 'none',
-                boxShadow: '0 6px 24px rgba(240,180,41,0.4)',
-              }}
-            >
-              {t('cta')}
-            </Link>
-          </div>
-        </section>
-
+        <ZelligeBand />
       </main>
       <Footer />
     </>

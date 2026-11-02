@@ -1,11 +1,25 @@
 import { ImageResponse } from 'next/og';
 
+/**
+ * Share card (og:image / twitter:image) for every locale page; it lives in the [locale] segment so all of them inherit
+ * it (at the app root it only covered "/", which redirects, so no page had an image).
+ * Latin script only: the renderer's built-in font cannot shape Arabic ("lookupType 5 substFormat 3 is not yet
+ * supported") and the self-hosted fonts are woff2, which it cannot load. Arabic pages use the French line, as on
+ * Moroccan storefronts; the alt text and the page's own og:title/description stay in the page language.
+ */
 export const runtime = 'edge';
-export const alt = 'MAGHAREBIT POS — نظام نقطة البيع للتجار المغاربة';
+export const alt = 'MAGHAREBIT POS: caisse et gestion commerciale au Maroc / POS & retail management in Morocco';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-export default function Image() {
+const CARD = {
+  fr: { tagline: 'Caisse & gestion commerciale au Maroc', stats: [['14 jours', 'Essai gratuit'], ['Hors ligne', 'La vente continue'], ['AR · FR · EN', 'Trois langues']] },
+  en: { tagline: 'POS & retail management in Morocco', stats: [['14 days', 'Free trial'], ['Offline', 'Keeps selling'], ['AR · FR · EN', 'Three languages']] },
+} as const;
+
+export default async function Image({ params }: { params: Promise<{ locale: string }> | { locale: string } }) {
+  const { locale } = await params;
+  const c = locale === 'en' ? CARD.en : CARD.fr;
   return new ImageResponse(
     (
       <div
@@ -68,7 +82,7 @@ export default function Image() {
             marginBottom: '32px',
           }}
         >
-          POS — نظام إدارة المتاجر المغربي
+          {c.tagline}
         </div>
 
         {/* Stats row */}
@@ -82,11 +96,7 @@ export default function Image() {
             padding: '20px 40px',
           }}
         >
-          {[
-            { value: '14 days', label: 'Free trial' },
-            { value: 'Offline', label: 'Keeps selling' },
-            { value: 'AR · FR', label: 'Bilingual' },
-          ].map((stat) => (
+          {c.stats.map(([value, label]) => ({ value, label })).map((stat) => (
             <div
               key={stat.label}
               style={{
