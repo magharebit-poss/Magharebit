@@ -28,9 +28,10 @@ import { getPlanLimits } from '@/lib/plans'
 import { buildClaims, loadSigningKey, signLicenseToken } from '@/lib/license-token'
 import { MACHINE_ID_RE, hasTerminal, resolveLicense } from '@/lib/license-service'
 import { licensesRepo } from '@/lib/repositories/licenses'
+import { clientIp } from '@/lib/client-ip'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const ip = clientIp(req)
   if (!(await checkRateLimit(`license-validate:${ip}`, 120, 60 * 1000))) {
     return NextResponse.json({ valid: false, reason: 'rate_limited' }, { status: 429 })
   }

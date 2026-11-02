@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { campaignsRepo, type CampaignAudience } from '@/lib/repositories/whatsapp-campaigns'
+import { internalError } from '@/lib/server-error'
 
 const VALID_AUDIENCES: CampaignAudience[] = ['all', 'bronze', 'silver', 'gold']
 
@@ -62,7 +63,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     return NextResponse.json({ campaign }, { status: 201 })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'unknown'
-    return NextResponse.json({ error: 'create_failed', detail: msg }, { status: 500 })
+    return internalError('portal/whatsapp/campaigns', err, 'create_failed')
   }
 }

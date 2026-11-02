@@ -4,7 +4,9 @@ import { getDb, getLastConnectionError } from '@/lib/mongodb'
 import { deliverOtp, toOtpLocale } from '@/lib/otp-delivery'
 import { normalisePhone, hashOTP } from '@/lib/otp'
 import { checkRateLimit } from '@/lib/rateLimit'
-import { clientIp } from '@/lib/repositories/audit-logs'
+import { clientIp } from '@/lib/client-ip'
+import { outboundBudget } from '@/lib/public-guard'
+import { maskPii } from '@/lib/server-error'
 
 function generateOTP(): string {
   return String(randomInt(100000, 999999))
@@ -15,15 +17,21 @@ export async function POST(req: NextRequest) {
   if (!(await checkRateLimit(`otp-send:${clientIp(req)}`, 12, 10 * 60 * 1000))) {
     return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
   }
-  let body: { phone?: string; locale?: string }
+  // Global ceiling on what anonymous visitors can make us send: an IP limit alone can be rotated
+  if (!(await outboundBudget('otp-public'))) {
+    return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
+  }
+  let body: { phone?: unknown; locale?: unknown }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }
+  if (!body || typeof body !== 'object') return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
 
-  const rawPhone = (body.phone ?? '').trim()
-  const locale = (body.locale ?? 'fr').slice(0, 5)
+  // Strings only: an object here threw on .trim() and answered 500
+  const rawPhone = (typeof body.phone === 'string' ? body.phone : '').trim().slice(0, 32)
+  const locale = (typeof body.locale === 'string' ? body.locale : 'fr').slice(0, 5)
 
   if (!rawPhone) {
     return NextResponse.json({ error: 'phone_required' }, { status: 400 })
@@ -85,7 +93,7 @@ export async function POST(req: NextRequest) {
   const waResult = await deliverOtp({ channel: 'whatsapp', phone, code: otp, locale: toOtpLocale(locale) })
 
   if (!waResult.success) {
-    console.warn(`[send-otp] ${waResult.provider} send failed:`, waResult.error)
+    console.warn(`[send-otp] ${waResult.provider} send failed:`, maskPii(String(waResult.error)))
     return NextResponse.json({
       success: true,
       method: 'whatsapp',

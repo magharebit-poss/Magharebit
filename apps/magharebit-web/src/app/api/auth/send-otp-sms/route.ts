@@ -4,7 +4,9 @@ import { getDb } from '@/lib/mongodb'
 import { normalisePhone, hashOTP } from '@/lib/otp'
 import { deliverOtp, providerFor, toOtpLocale } from '@/lib/otp-delivery'
 import { checkRateLimit } from '@/lib/rateLimit'
-import { clientIp } from '@/lib/repositories/audit-logs'
+import { clientIp } from '@/lib/client-ip'
+import { outboundBudget } from '@/lib/public-guard'
+import { maskPii } from '@/lib/server-error'
 
 function generateOTP(): string {
   return String(randomInt(100000, 999999))
@@ -14,15 +16,21 @@ export async function POST(req: NextRequest) {
   if (!(await checkRateLimit(`otp-send:${clientIp(req)}`, 12, 10 * 60 * 1000))) {
     return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
   }
-  let body: { phone?: string; locale?: string }
+  // Global ceiling on what anonymous visitors can make us send (SMS cost): an IP limit alone can be rotated
+  if (!(await outboundBudget('otp-public'))) {
+    return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
+  }
+  let body: { phone?: unknown; locale?: unknown }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }
+  if (!body || typeof body !== 'object') return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
 
-  const rawPhone = (body.phone ?? '').trim()
-  const locale = (body.locale ?? 'fr').slice(0, 5)
+  // Strings only: an object here threw on .trim() and answered 500
+  const rawPhone = (typeof body.phone === 'string' ? body.phone : '').trim().slice(0, 32)
+  const locale = (typeof body.locale === 'string' ? body.locale : 'fr').slice(0, 5)
 
   if (!rawPhone) {
     return NextResponse.json({ error: 'phone_required' }, { status: 400 })
@@ -74,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   const result = await deliverOtp({ channel: 'sms', phone, code: otp, locale: toOtpLocale(locale) })
   if (!result.success) {
-    console.error(`[send-otp-sms] ${result.provider} error:`, result.error)
+    console.error(`[send-otp-sms] ${result.provider} error:`, maskPii(String(result.error)))
     return NextResponse.json({ error: 'sms_send_failed' }, { status: 502 })
   }
   return NextResponse.json({ success: true, method: 'sms', expiresIn: 300 })

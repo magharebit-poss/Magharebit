@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { customersRepo } from '@/lib/repositories/customers'
+import { internalError } from '@/lib/server-error'
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
@@ -79,6 +80,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (msg === 'phone_already_exists') {
       return NextResponse.json({ error: 'phone_already_exists' }, { status: 409 })
     }
-    return NextResponse.json({ error: 'create_failed', detail: msg }, { status: 500 })
+    return internalError('portal/customers', err, 'create_failed')
   }
 }

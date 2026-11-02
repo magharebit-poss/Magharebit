@@ -3,51 +3,17 @@ import { leadsRepo, Lead } from '@/lib/repositories/leads';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp';
 import { checkRateLimit } from '@/lib/rateLimit';
 import { authenticateAdmin } from '@/lib/admin-auth';
+import { clientIp } from '@/lib/client-ip';
+import { outboundBudget } from '@/lib/public-guard';
+import { validateLeadInput } from '@/lib/lead-input';
 
 type LeadStatus = Lead['status'];
-
-// ── Validation ───────────────────────────────────────────────────────────────
-
-const ALLOWED_BUSINESS_TYPES = [
-  'bakery', 'cafe', 'restaurant', 'grocery', 'beauty', 'fashion',
-  'pharmacy', 'vegetables', 'general', 'multi', 'other',
-];
-
-function validateLeadInput(body: unknown): { valid: true; data: { storeName: string; phone: string; businessType: string; city: string; locale: string } } | { valid: false; error: string } {
-  if (!body || typeof body !== 'object') return { valid: false, error: 'Invalid payload' };
-
-  const b = body as Record<string, unknown>;
-
-  const storeName = String(b.storeName ?? '').trim();
-  if (storeName.length < 2 || storeName.length > 100) {
-    return { valid: false, error: 'storeName must be 2-100 characters' };
-  }
-
-  const phone = String(b.phone ?? '').replace(/\s/g, '');
-  if (!/^0[5-7]\d{8}$/.test(phone)) {
-    return { valid: false, error: 'phone must be a valid Moroccan mobile number (06/07XXXXXXXX)' };
-  }
-
-  const businessType = String(b.businessType ?? '').trim();
-  if (businessType && !ALLOWED_BUSINESS_TYPES.includes(businessType)) {
-    return { valid: false, error: 'businessType must be one of: ' + ALLOWED_BUSINESS_TYPES.join(', ') };
-  }
-
-  const city = String(b.city ?? '').trim();
-  if (city && (city.length < 2 || city.length > 100)) {
-    return { valid: false, error: 'city must be 2-100 characters' };
-  }
-
-  const locale = ['ar', 'fr', 'en'].includes(String(b.locale)) ? String(b.locale) : 'fr';
-
-  return { valid: true, data: { storeName, phone, businessType, city, locale } };
-}
 
 // ── POST /api/leads — create a new lead ───────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting: 5 requests per hour per IP
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const ip = clientIp(request);
     if (!(await checkRateLimit(`leads:${ip}`, 5, 60 * 60 * 1000))) {
       return NextResponse.json(
         { error: 'Too many requests. Try again in an hour.' },
@@ -63,21 +29,29 @@ export async function POST(request: NextRequest) {
 
     const lead = await leadsRepo.create(result.data);
 
-    // WhatsApp notifications (non-blocking, fire-and-forget)
-    sendWhatsAppMessage({
-      to: lead.phone,
-      message: whatsappTemplates.leadConfirmation(lead.storeName, lead.locale ?? 'fr'),
-    }).catch(err => console.error('[whatsapp] merchant confirmation failed:', err));
+    // WhatsApp notifications (non-blocking, fire-and-forget). The confirmation goes to the number the visitor typed, so:
+    //  - at most ONE per phone number per 24 h (an attacker cannot make us message a victim repeatedly, from any IP),
+    //  - and a global hourly budget for everything anonymous visitors can trigger (credit + sender reputation).
+    // The lead itself is always saved; only the messages are skipped.
+    const mayConfirm = await checkRateLimit(`lead-confirm:${lead.phone}`, 1, 24 * 60 * 60 * 1000);
+    if (mayConfirm && (await outboundBudget('whatsapp-public'))) {
+      sendWhatsAppMessage({
+        to: lead.phone,
+        message: whatsappTemplates.leadConfirmation(lead.storeName, lead.locale ?? 'fr'),
+      }).catch(err => console.error('[whatsapp] merchant confirmation failed:', err));
+    }
 
-    sendWhatsAppMessage({
-      to: process.env.WHATSAPP_BUSINESS_NUMBER ?? '212619522487',
-      message: whatsappTemplates.newLead(
-        lead.storeName,
-        lead.phone,
-        lead.city,
-        process.env.NEXT_PUBLIC_APP_URL ?? 'https://magharebit.com'
-      ),
-    }).catch(err => console.error('[whatsapp] admin notification failed:', err));
+    if (await outboundBudget('whatsapp-public')) {
+      sendWhatsAppMessage({
+        to: process.env.WHATSAPP_BUSINESS_NUMBER ?? '212619522487',
+        message: whatsappTemplates.newLead(
+          lead.storeName,
+          lead.phone,
+          lead.city,
+          process.env.NEXT_PUBLIC_APP_URL ?? 'https://magharebit.com'
+        ),
+      }).catch(err => console.error('[whatsapp] admin notification failed:', err));
+    }
 
     return NextResponse.json({ success: true, id: lead.id }, { status: 201 });
   } catch (err) {

@@ -16,6 +16,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomInt } from 'crypto'
 import { getDb } from '@/lib/mongodb'
 import { hashOTP } from '@/lib/otp'
+import { checkRateLimit } from '@/lib/rateLimit'
+import { clientIp } from '@/lib/client-ip'
+import { outboundBudget } from '@/lib/public-guard'
+import { maskPii } from '@/lib/server-error'
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -89,15 +93,25 @@ async function sendViaResend(
 }
 
 export async function POST(req: NextRequest) {
-  let body: { email?: string; locale?: string }
+  // Same per-IP cap as the WhatsApp/SMS senders (this route had only the per-address cap below, so one client could
+  // mail any number of different addresses and burn the Resend quota), plus the global ceiling.
+  if (!(await checkRateLimit(`otp-send:${clientIp(req)}`, 12, 10 * 60 * 1000))) {
+    return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
+  }
+  if (!(await outboundBudget('otp-public'))) {
+    return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
+  }
+
+  let body: { email?: unknown; locale?: unknown }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
   }
+  if (!body || typeof body !== 'object') return NextResponse.json({ error: 'invalid_json' }, { status: 400 })
 
-  const email  = (body.email  ?? '').trim().toLowerCase()
-  const locale = (body.locale ?? 'fr').slice(0, 5)
+  const email  = (typeof body.email === 'string' ? body.email : '').trim().toLowerCase().slice(0, 254)
+  const locale = (typeof body.locale === 'string' ? body.locale : 'fr').slice(0, 5)
 
   if (!email) {
     return NextResponse.json({ error: 'email_required' }, { status: 400 })
@@ -152,7 +166,7 @@ export async function POST(req: NextRequest) {
   if (process.env.RESEND_API_KEY) {
     const result = await sendViaResend(email, subject, html, text)
     if (!result.success) {
-      console.warn('[send-otp-email] Resend failed:', result.error)
+      console.warn('[send-otp-email] Resend failed:', maskPii(String(result.error)))
       // Still return success — OTP is in DB; admin can see it in logs if needed
     }
   } else {

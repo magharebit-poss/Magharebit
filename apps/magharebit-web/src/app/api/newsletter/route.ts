@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { subscribersRepo } from '@/lib/repositories/subscribers';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { clientIp } from '@/lib/client-ip';
+import { outboundBudget } from '@/lib/public-guard';
 
 export async function POST(req: NextRequest) {
   try {
     // Rate limiting: 3 requests per hour per IP
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+    const ip = clientIp(req);
     if (!(await checkRateLimit(`newsletter:${ip}`, 3, 60 * 60 * 1000))) {
       return NextResponse.json(
         { error: 'Too many requests. Try again in an hour.' },
@@ -15,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const phoneRaw = String(body?.phone ?? '').replace(/\s/g, '');
+    const phoneRaw = typeof body?.phone === 'string' ? body.phone.replace(/\s/g, '') : '';
 
     // Validate Moroccan mobile phone
     if (!/^0[5-7]\d{8}$/.test(phoneRaw)) {
@@ -32,11 +34,14 @@ export async function POST(req: NextRequest) {
 
     await subscribersRepo.create({ phone: phoneRaw, locale });
 
-    // Send WhatsApp welcome message (non-blocking)
-    sendWhatsAppMessage({
-      to: phoneRaw,
-      message: whatsappTemplates.newsletterWelcome(locale),
-    }).catch(err => console.error('[whatsapp] newsletter welcome failed:', err));
+    // Welcome message to a number the visitor typed (no proof of ownership): each phone is subscribed once (above),
+    // and the global hourly budget caps what anonymous traffic can make us send. The subscription is kept either way.
+    if (await outboundBudget('whatsapp-public')) {
+      sendWhatsAppMessage({
+        to: phoneRaw,
+        message: whatsappTemplates.newsletterWelcome(locale),
+      }).catch(err => console.error('[whatsapp] newsletter welcome failed:', err));
+    }
 
     return NextResponse.json({ ok: true });
   } catch {

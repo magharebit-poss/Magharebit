@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { employeesRepo } from '@/lib/repositories/employees'
 import type { EmployeeRole } from '@/lib/repositories/employees'
+import { internalError } from '@/lib/server-error'
 
 const VALID_ROLES: EmployeeRole[] = ['cashier', 'manager', 'owner']
 
@@ -64,6 +65,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (msg.includes('duplicate') || msg.includes('unique')) {
       return NextResponse.json({ error: 'loginId_already_exists' }, { status: 409 })
     }
-    return NextResponse.json({ error: 'create_failed', detail: msg }, { status: 500 })
+    return internalError('portal/employees', err, 'create_failed')
   }
 }

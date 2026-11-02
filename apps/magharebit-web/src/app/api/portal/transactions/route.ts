@@ -36,6 +36,7 @@ import {
   type TaxRate,
   type DiscountType,
 } from '@/lib/transaction-totals'
+import { internalError } from '@/lib/server-error'
 
 const VALID_PAYMENT_METHODS: PaymentMethod[] = ['cash', 'card', 'mobile_money', 'mixed']
 const VALID_DISCOUNT_TYPES:  DiscountType[]  = ['amount', 'percent']
@@ -293,6 +294,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (msg.startsWith('product_not_found:')) {
       return NextResponse.json({ error: msg }, { status: 404 })
     }
-    return NextResponse.json({ error: 'create_failed', detail: msg }, { status: 500 })
+    return internalError('portal/transactions', err, 'create_failed')
   }
 }

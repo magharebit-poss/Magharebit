@@ -16,6 +16,7 @@ import { authenticateAdmin, canWrite } from '@/lib/admin-auth'
 import { clientIp, recordAudit } from '@/lib/repositories/audit-logs'
 import { merchantsRepo } from '@/lib/repositories/merchants'
 import { getPlanLimits } from '@/lib/plans'
+import { maskPii } from '@/lib/server-error'
 
 const VALID_PLANS: LicensePlan[] = ['Starter', 'Business', 'Enterprise']
 
@@ -108,7 +109,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     return NextResponse.json({ license, auditRecorded }, { status: 201 })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'internal_error'
-    return NextResponse.json({ error: msg }, { status: 503 })
+    // Raw driver text stays in the (masked) server log, never in the response
+    console.error('[licenses] create_failed:', maskPii(err instanceof Error ? err.message : String(err)))
+    return NextResponse.json({ error: 'license_create_failed' }, { status: 503 })
   }
 }

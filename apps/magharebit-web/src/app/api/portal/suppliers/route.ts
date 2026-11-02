@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { suppliersRepo } from '@/lib/repositories/suppliers'
+import { internalError } from '@/lib/server-error'
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (msg === 'name_already_exists') {
       return NextResponse.json({ error: 'name_already_exists' }, { status: 409 })
     }
-    return NextResponse.json({ error: 'create_failed', detail: msg }, { status: 500 })
+    return internalError('portal/suppliers', err, 'create_failed')
   }
 }

@@ -3,11 +3,44 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
+// ── Content-Security-Policy ──────────────────────────────────────────────────
+// Built from what the site really loads: its own scripts/styles/fonts/images (fonts are self-hosted, no Google
+// Fonts), YouTube-nocookie / Vimeo iframes for the demo video modal (loaded only after a click), and a Cloudinary
+// video/poster if marketing uses one. Everything else is refused: no other script origin, no plugins, no <base>
+// hijack, forms only to ourselves, no framing by anyone (frame-ancestors, the modern X-Frame-Options).
+//
+// 'unsafe-inline' stays on script-src because Next.js streams its hydration data in inline <script> tags and the
+// pages are statically rendered, so a per-request nonce is not available. That keeps the policy from stopping an
+// injected inline script; it still blocks remote script loading, data exfiltration to other origins (connect-src),
+// form hijacking, <object>/<base> abuse and clickjacking. A nonce-based policy is the follow-up (SEC-11 in
+// docs/security-audit-web-phase2.md). 'unsafe-eval' is development only (React/HMR need it there).
+const isProd = process.env.NODE_ENV === 'production';
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isProd ? '' : " 'unsafe-eval'"}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://res.cloudinary.com",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "media-src 'self' blob: https://res.cloudinary.com",
+  'frame-src https://www.youtube-nocookie.com https://player.vimeo.com',
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  ...(isProd ? ['upgrade-insecure-requests'] : []),
+].join('; ');
+
 const securityHeaders = [
+  { key: 'Content-Security-Policy',  value: contentSecurityPolicy },
   { key: 'X-DNS-Prefetch-Control',   value: 'on' },
   { key: 'X-Frame-Options',          value: 'DENY' },
   { key: 'X-Content-Type-Options',   value: 'nosniff' },
-  { key: 'X-XSS-Protection',         value: '1; mode=block' },
+  // 0 = off: the legacy browser XSS filter is removed from every modern browser and was itself exploitable
+  { key: 'X-XSS-Protection',         value: '0' },
+  { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   { key: 'Referrer-Policy',          value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',

@@ -17,6 +17,7 @@ import { settingsRepo } from '@/lib/repositories/settings'
 import { transactionsRepo } from '@/lib/repositories/transactions'
 import { productsRepo } from '@/lib/repositories/products'
 import { sendDailyReport } from '@/lib/whatsapp'
+import { maskPii } from '@/lib/server-error'
 
 /**
  * The fan-out below is sequential on purpose (Green API rate limits), so the run takes roughly
@@ -119,7 +120,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         sent++
       } else {
         failed++
-        console.error('[cron/daily-report] WhatsApp send failed for', settings.merchantId, result.error)
+        console.error('[cron/daily-report] WhatsApp send failed for', settings.merchantId, maskPii(String(result.error)))
       }
 
       // 300ms between messages to respect Green API rate limits

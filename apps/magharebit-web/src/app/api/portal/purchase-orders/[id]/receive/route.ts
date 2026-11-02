@@ -22,6 +22,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { purchaseOrdersRepo } from '@/lib/repositories/purchase-orders'
+import { internalError } from '@/lib/server-error'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -68,6 +69,6 @@ export async function POST(req: NextRequest, { params }: Ctx): Promise<NextRespo
     if (msg.startsWith('invalid_qty:')) {
       return NextResponse.json({ error: msg }, { status: 422 })
     }
-    return NextResponse.json({ error: 'receive_failed', detail: msg }, { status: 500 })
+    return internalError('portal/purchase-orders/[id]/receive', err, 'receive_failed')
   }
 }

@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { campaignsRepo, type CampaignAudience } from '@/lib/repositories/whatsapp-campaigns'
+import { internalError } from '@/lib/server-error'
 
 const VALID_AUDIENCES: CampaignAudience[] = ['all', 'bronze', 'silver', 'gold']
 
@@ -85,7 +86,6 @@ export async function PATCH(
     }
     return NextResponse.json({ campaign: updated })
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'unknown'
-    return NextResponse.json({ error: 'update_failed', detail: msg }, { status: 500 })
+    return internalError('portal/whatsapp/campaigns/[id]', err, 'update_failed')
   }
 }

@@ -8,6 +8,7 @@ import { getPortalSession, unauthorizedResponse } from '@/lib/portal-session'
 import { productsRepo } from '@/lib/repositories/products'
 import type { ProductUnit } from '@/lib/repositories/products'
 import { PRODUCT_LIMITS, validateProductInput } from '@/lib/product-input'
+import { internalError } from '@/lib/server-error'
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
@@ -82,6 +83,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (msg.includes('duplicate') || msg.includes('unique')) {
       return NextResponse.json({ error: 'plu_already_exists' }, { status: 409 })
     }
-    return NextResponse.json({ error: 'create_failed', detail: msg }, { status: 500 })
+    return internalError('portal/products', err, 'create_failed')
   }
 }

@@ -76,10 +76,8 @@ function newId(): string {
   return `aud_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
 }
 
-/** First client IP from the proxy header, trimmed and capped. */
-export function clientIp(req: Request): string {
-  return (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown').slice(0, 64)
-}
+/** Client IP (platform-set header first, see lib/client-ip.ts). Kept here so existing imports keep working. */
+export { clientIp } from '../client-ip'
 
 /**
  * Append an audit entry. Never throws: a failure is logged loudly and reported
