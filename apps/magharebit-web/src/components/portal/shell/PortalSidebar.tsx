@@ -63,7 +63,7 @@ export default function PortalSidebar({
           <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-white text-base font-bold text-brand-950 ring-1 ring-gold-400/40">
             {me?.logoUrl
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={me.logoUrl} alt="" className="h-full w-full object-contain" />
+              ? <img src={me.logoUrl} alt="" className="h-full w-full object-contain" data-testid="sidebar-store-logo" />
               : <span className={isRTL ? 'font-arabic' : ''}>{initial}</span>}
           </span>
           {!rail && (
