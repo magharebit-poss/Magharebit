@@ -2,6 +2,14 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { createHash, randomUUID } from 'crypto';
 import { verifyPin } from '../../services/pin-hash.js';
 import { normalizeLineItem } from '../../services/sales/line-items.js';
+import {
+  parseSaleIdentity,
+  raiseVarianceAlerts,
+  recordSale,
+  type ApiDiscount,
+  type Tender,
+  type TransactionLine,
+} from '../../services/sales/record-sale.js';
 import { staffManageRoutes } from '../staff/staff-manage-routes.js';
 import {
   checkDiscount,
@@ -14,30 +22,13 @@ interface OpenShiftBody {
   openingFloat?: number;
 }
 
-interface ApiDiscount {
-  type: 'percentage' | 'fixed';
-  value: number; // pct (0-100) or piastres
-  managerApprovedBy?: string | null;
-}
-
-interface TransactionLine {
-  productId: string;
-  quantity: number;
-  unitPricePiastres: number;
-  lineTotalPiastres: number;
-  taxRate?: number;
-  taxAmountPiastres: number;
-  discount?: ApiDiscount | null;
-}
-
-interface Tender {
-  method: string;
-  amountPiastres: number;
-  reference?: string | null;
-}
-
 interface TransactionBody {
   shiftId: string;
+  // Replay safety (optional, backward compatible): the same clientTxId never creates a second sale.
+  clientTxId?: string | null;
+  deviceId?: string | null;
+  // Provisional LOCAL-xxxxxxxx number printed while the sale was made offline.
+  localReceiptRef?: string | null;
   lines: TransactionLine[];
   cartDiscount?: ApiDiscount | null;
   // Required for single-tender (backward compat). Omit when tenders is provided.
@@ -543,204 +534,99 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
           ?.managerApprovedBy ||
         null;
 
-      try {
-        // ── Verify shift exists and is open (separate 404/400) ───────────
-        const { rows: shiftRows } = await fastify.pg.query<{
-          tenant_id: string;
-          register_id: string;
-          cashier_id: string;
-          status: string;
-        }>(
-          `SELECT tenant_id, register_id, cashier_id, status
-           FROM shifts WHERE shift_id = $1`,
-          [shiftId],
-        );
+      // Optional replay-safety fields. Absent = the old behaviour (every POST is a new sale).
+      const identity = parseSaleIdentity(request.body ?? {});
+      if (!identity.ok) {
+        return reply.status(400).send({ error: identity.error });
+      }
 
-        const shiftRow = shiftRows[0];
-        if (!shiftRow) {
+      try {
+        // One database transaction: shift lock, sale, totals, payment rows, stock, receipt number.
+        // A completed sale is never rejected for lack of stock; a shortfall becomes a stock_variances row.
+        const result = await recordSale(fastify.pg, {
+          ...identity.value,
+          shiftId,
+          lines,
+          canonicalLines: lines.map(normalizeLineItem),
+          cartDiscount: cartDiscount ?? null,
+          paymentMethod,
+          tenders: resolvedTenders,
+          grandTotalPiastres,
+          cartDiscountAmountPiastres: recomputed.cartDiscountAmountPiastres,
+          totalDiscountPiastres: recomputed.totalDiscountPiastres,
+          discountApprovedBy,
+          soldAt: soldAtValue,
+          approvalCode: approvalCode ?? null,
+          maskedPan: maskedPan ?? null,
+        });
+
+        if (result.kind === 'shift_not_found') {
           return reply.status(404).send({ error: `Shift ${shiftId} not found` });
         }
-        if (shiftRow.status !== 'open') {
-          return reply.status(400).send({
-            error: `Shift ${shiftId} is not open (status: ${shiftRow.status})`,
-          });
+        if (result.kind === 'shift_not_open') {
+          return reply.status(400).send({ error: `Shift ${shiftId} is not open (status: ${result.status})` });
+        }
+        if (result.kind === 'conflict') {
+          // Same clientTxId, different sale: a client bug or a collision. Never overwrite, never duplicate.
+          return reply.status(409).send({ error: 'client_tx_id_conflict' });
         }
 
-        const transactionId = randomUUID();
+        const sale = result.sale;
+        // The authoritative data the customer receipt renders from
+        // (server-issued receipt number + timestamp, not client-guessed).
+        const response = {
+          ok: true,
+          success: true,
+          transactionId: sale.transactionId,
+          receiptNumber: sale.receiptNumber,
+          serverTimestamp: sale.createdAt,
+          // The stored sold_at (ISO). It is the client's soldAt when that passed the window checks
+          // above, otherwise the server's NOW(); the printed receipt shows this value.
+          soldAt: sale.soldAt,
+          totalPiastres: grandTotalPiastres,
+          paymentMethod,
+          items: lines,
+        };
 
-        // Allocate a per-tenant sequential receipt number. Single atomic
-        // statement (row-locked on conflict) → race-safe across concurrent sales.
-        const { rows: seqRows } = await fastify.pg.query<{ last_seq: string }>(
-          `INSERT INTO tenant_receipt_counters (tenant_id, last_seq, updated_at)
-           VALUES ($1, 1, NOW())
-           ON CONFLICT (tenant_id) DO UPDATE
-             SET last_seq = tenant_receipt_counters.last_seq + 1, updated_at = NOW()
-           RETURNING last_seq`,
-          [shiftRow.tenant_id],
-        );
-        const receiptSeq = parseInt(seqRows[0]?.last_seq ?? '0', 10);
-        const receiptNumber = `R-${String(receiptSeq).padStart(6, '0')}`;
-
-        // Normalise line items to the canonical shape before storing.
-        const canonicalLines = lines.map(normalizeLineItem);
-
-        const insertResult = await fastify.pg.query<{
-          transaction_id: string;
-          created_at: string;
-          sold_at: Date | string;
-        }>(
-          `INSERT INTO transactions
-             (transaction_id, tenant_id, register_id, shift_id, cashier_id,
-              items, total_amount_cents, payment_method, receipt_number, client_timestamp,
-              sold_at,
-              cart_discount_type, cart_discount_value, cart_discount_amount_cents,
-              total_discount_cents, discount_approved_by,
-              card_approval_code, card_masked_pan)
-           VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, NOW(),
-                   COALESCE($17, NOW()),
-                   $10, $11, $12, $13, $14,
-                   $15, $16)
-           RETURNING transaction_id, created_at::text AS created_at, sold_at`,
-          [
-            transactionId,
-            shiftRow.tenant_id,
-            shiftRow.register_id,
-            shiftId,
-            shiftRow.cashier_id,
-            JSON.stringify(canonicalLines),
-            grandTotalPiastres,
-            paymentMethod,
-            receiptNumber,
-            cartDiscount?.type ?? null,
-            cartDiscount ? Math.round(cartDiscount.value) : null,
-            recomputed.cartDiscountAmountPiastres,
-            recomputed.totalDiscountPiastres,
-            discountApprovedBy,
-            approvalCode ?? null,
-            maskedPan ?? null,
-            soldAtValue,
-          ],
-        );
-
-        if (insertResult.rowCount === 0 || !insertResult.rows[0]) {
-          return reply.status(500).send({ error: 'Transaction insert returned no rows' });
+        if (result.kind === 'replayed') {
+          // The same sale arrived again (a retry): answer with the original, change nothing.
+          request.log.info({ transactionId: sale.transactionId }, 'transactions: replay answered from stored sale');
+          return reply.status(200).send({ ...response, replayed: true });
         }
 
-        // Update shift running total
-        await fastify.pg.query(
-          `UPDATE shifts
-             SET total_sales_piastres = total_sales_piastres + $1
-           WHERE shift_id = $2`,
-          [grandTotalPiastres, shiftId],
-        );
-
-        // ── payment_transactions row (best-effort, logged on failure) ─────
-        // Handler does not use a DB transaction, so this insert is fire-and-
-        // forget. A failure here never fails the sale.
-        try {
-          const paymentStatus =
-            paymentMethod === 'card'
-              ? (approvalCode ? 'approved' : 'offline_auth')
-              : 'approved';
-          await fastify.pg.query(
-            `INSERT INTO payment_transactions
-               (payment_tx_id, sale_transaction_id, shift_id, register_id,
-                amount, payment_method, status,
-                cmi_token_ref, terminal_response)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [
-              randomUUID(),
-              transactionId,
-              shiftId,
-              shiftRow.register_id,
-              grandTotalPiastres,
-              paymentMethod,
-              paymentStatus,
-              approvalCode ?? null,
-              maskedPan ?? null,
-            ],
-          );
-        } catch (payErr: unknown) {
+        // ── After COMMIT: nothing below can fail or undo the sale ─────────────
+        if (result.variances.length > 0) {
           request.log.warn(
-            { transactionId, err: payErr },
-            'transactions: payment_transactions insert failed — sale committed',
+            { transactionId: sale.transactionId, variances: result.variances.length },
+            'transactions: stock shortfall recorded in stock_variances',
           );
-        }
-
-        // ── sale_tenders rows (best-effort) ───────────────────────────────
-        try {
-          for (const tender of resolvedTenders) {
-            await fastify.pg.query(
-              `INSERT INTO sale_tenders
-                 (transaction_id, shift_id, method, amount_piastres, reference)
-               VALUES ($1, $2, $3, $4, $5)`,
-              [transactionId, shiftId, tender.method, tender.amountPiastres, tender.reference ?? null],
-            );
-          }
-        } catch (tenderErr: unknown) {
-          request.log.warn(
-            { transactionId, err: tenderErr },
-            'transactions: sale_tenders insert failed — sale committed',
+          void raiseVarianceAlerts(
+            fastify.pg,
+            { tenantId: sale.tenantId, shiftId, cashierId: sale.cashierId, transactionId: sale.transactionId },
+            result.variances,
           );
-        }
-
-        // ── Stock deduction (best-effort) ─────────────────────────────────
-        // Runs after the sale is committed to the pool. A failure here logs
-        // a warning but does NOT fail the sale — sale accuracy is paramount;
-        // stock accuracy is secondary.  GREATEST ensures we never go negative.
-        for (const line of lines) {
-          try {
-            await fastify.pg.query(
-              `UPDATE products
-               SET stock_quantity = GREATEST(stock_quantity - $1, 0)
-               WHERE product_id = $2
-                 AND tenant_id = $3
-                 AND track_stock = true`,
-              [line.quantity, line.productId, shiftRow.tenant_id],
-            );
-          } catch (stockErr: unknown) {
-            request.log.warn(
-              { productId: line.productId, err: stockErr },
-              'transactions: stock deduction failed — sale committed, stock may be inaccurate',
-            );
-          }
         }
 
         // Margin Guardian — async discount anomaly check, never blocks sale.
         if (cartDiscount && cartDiscount.type === 'percentage' && cartDiscount.value > 0) {
           checkDiscount(
             {
-              tenantId:  shiftRow.tenant_id,
+              tenantId:  sale.tenantId,
               shiftId,
-              cashierId: shiftRow.cashier_id,
+              cashierId: sale.cashierId,
               pool:      fastify.pg,
             },
-            transactionId,
+            sale.transactionId,
             cartDiscount.value,
             recomputed.totalDiscountPiastres,
           ).catch((e: unknown) => console.error('[guardian]', e));
         }
 
-        // Return the authoritative data the customer receipt renders from
-        // (server-issued receipt number + timestamp, not client-guessed).
-        return reply.send({
-          ok: true,
-          success: true,
-          transactionId: insertResult.rows[0].transaction_id,
-          receiptNumber,
-          serverTimestamp: insertResult.rows[0].created_at,
-          // The stored sold_at (ISO). It is the client's soldAt when that passed the window checks
-          // above, otherwise the server's NOW(); the printed receipt shows this value.
-          soldAt: new Date(insertResult.rows[0].sold_at).toISOString(),
-          totalPiastres: grandTotalPiastres,
-          paymentMethod,
-          items: lines,
-        });
+        return reply.send(response);
       } catch (err: unknown) {
-        return reply.status(500).send({
-          error: 'Internal error',
-          detail: err instanceof Error ? err.message : 'unknown',
-        });
+        // Fixed message: never the database's text. Everything was rolled back, so a retry is safe.
+        request.log.error({ errName: err instanceof Error ? err.name : 'unknown' }, 'transactions: sale failed, rolled back');
+        return reply.status(500).send({ error: 'Internal error' });
       }
     },
   );
