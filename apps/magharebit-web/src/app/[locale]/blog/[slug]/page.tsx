@@ -1,3 +1,4 @@
+import { waUrl } from '@/lib/brand';
 import { setRequestLocale, getTranslations } from 'next-intl/server';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -494,7 +495,7 @@ export default async function BlogPostPage({
               {t('cta_btn')}
             </Link>
             <a
-              href="https://wa.me/212619522487"
+              href={waUrl()}
               target="_blank"
               rel="noopener noreferrer"
               style={{

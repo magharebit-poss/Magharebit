@@ -7,66 +7,25 @@ export default function HomeFaqSection() {
   const t = useTranslations('pricing');
   const locale = useLocale();
   const isRTL = locale === 'ar';
-  const fontFamily = isRTL
-    ? 'Noto Naskh Arabic, Cairo, serif'
-    : 'Plus Jakarta Sans, Inter, sans-serif';
 
-  const items = [
-    { q: t('faq_q1'), a: t('faq_a1') },
-    { q: t('faq_q2'), a: t('faq_a2') },
-    { q: t('faq_q3'), a: t('faq_a3') },
-    { q: t('faq_q4'), a: t('faq_a4') },
-    { q: t('faq_q5'), a: t('faq_a5') },
-  ];
+  const items = [1, 2, 3, 4, 5].map((i) => ({ q: t(`faq_q${i}`), a: t(`faq_a${i}`) }));
 
   return (
-    <section
-      style={{
-        padding: '80px 24px',
-        direction: isRTL ? 'rtl' : 'ltr',
-        // Slightly darker panel than the page so the FAQ cards read as a
-        // distinct, contained block instead of floating text.
-        background: '#081C13',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-      }}
-    >
-      <div style={{ maxWidth: '760px', margin: '0 auto' }}>
-        {/* Heading */}
-        <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-          <span
-            style={{
-              display: 'inline-block',
-              background: 'rgba(240,180,41,0.15)',
-              color: '#F0B429',
-              fontWeight: 700,
-              fontSize: '11px',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              borderRadius: '999px',
-              padding: '6px 16px',
-              marginBottom: '16px',
-              fontFamily: 'Inter, sans-serif',
-              border: '1px solid rgba(240,180,41,0.3)',
-            }}
-          >
+    // Light section: white cards on the soft grey page tone, green headings, gold badge (same language as /about)
+    <section dir={isRTL ? 'rtl' : 'ltr'} className="relative overflow-hidden bg-[#F8F9FA] px-6 py-20">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#0F3D2A] opacity-[0.035] [-webkit-mask-image:url('/brand/zellige-pattern.svg')] [-webkit-mask-size:368px_506.7px] [mask-image:url('/brand/zellige-pattern.svg')] [mask-size:368px_506.7px]" />
+      <div className="relative mx-auto max-w-[760px]">
+        <div className="mb-12 text-center">
+          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#B8860B]/40 bg-[#F0B429]/10 px-4 py-1.5 font-sans text-[11px] font-bold uppercase tracking-[0.1em] text-[#8A6508]">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 text-[#B8860B]" fill="currentColor"><path d="M12 1.5l2.6 4.2 4.8-1.1-1.1 4.8 4.2 2.6-4.2 2.6 1.1 4.8-4.8-1.1L12 22.5l-2.6-4.2-4.8 1.1 1.1-4.8L1.5 12l4.2-2.6-1.1-4.8 4.8 1.1z" /></svg>
             {t('faq_label')}
           </span>
-          <h2
-            style={{
-              color: '#FFFFFF',
-              fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-              fontWeight: 800,
-              margin: 0,
-              fontFamily,
-              lineHeight: 1.25,
-            }}
-          >
+          <h2 className={`${isRTL ? 'font-arabic' : 'font-display'} m-0 text-balance text-[clamp(1.5rem,3vw,2rem)] font-extrabold leading-tight text-[#111827]`}>
             {t('faq_title')}
           </h2>
         </div>
 
-        <FaqAccordion items={items} isRTL={isRTL} />
+        <FaqAccordion items={items} isRTL={isRTL} tone="light" />
       </div>
     </section>
   );

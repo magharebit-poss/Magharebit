@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand';
 import { NextResponse } from 'next/server'
 import { sendWhatsAppMessage } from '@/lib/whatsapp'
 
@@ -9,7 +10,7 @@ export async function POST() {
   }
 
   const result = await sendWhatsAppMessage({
-    to: process.env.WHATSAPP_BUSINESS_NUMBER ?? '212619522487',
+    to: process.env.WHATSAPP_BUSINESS_NUMBER ?? BRAND.contact.waNumber,
     message: `✅ Test MAGHAREBIT — Green API fonctionne correctement!\n\n${new Date().toLocaleString('fr-MA')}`,
   })
 

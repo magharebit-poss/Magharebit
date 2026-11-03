@@ -164,17 +164,20 @@ export default function FeatureBento() {
       id="products"
       aria-labelledby="bento-heading"
       dir={isRTL ? 'rtl' : 'ltr'}
-      className={`${isRTL ? 'font-arabic' : 'font-sans'} scroll-mt-20 bg-brand-950 px-4 py-16 sm:px-6 md:py-24`}
+      className={`${isRTL ? 'font-arabic' : 'font-sans'} relative scroll-mt-20 overflow-hidden bg-[#F8F9FA] px-4 py-16 sm:px-6 md:py-24`}
     >
-      <div className="mx-auto max-w-[1100px]">
+      {/* light section of the white / green / gold rhythm (same language as /about): green zellige watermark, gold badge */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[#0F3D2A] opacity-[0.035] [-webkit-mask-image:url('/brand/zellige-pattern.svg')] [-webkit-mask-size:368px_506.7px] [mask-image:url('/brand/zellige-pattern.svg')] [mask-size:368px_506.7px]" />
+      <div className="relative mx-auto max-w-[1100px]">
         <div className="mb-12 text-center">
-          <span className="mb-4 inline-block rounded-full border border-[#F0B429]/50 px-4 py-1.5 text-sm font-semibold text-[#F0B429]">
+          <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#B8860B]/40 bg-[#F0B429]/10 px-4 py-1.5 text-sm font-semibold text-[#8A6508]">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 text-[#B8860B]" fill="currentColor"><path d="M12 1.5l2.6 4.2 4.8-1.1-1.1 4.8 4.2 2.6-4.2 2.6 1.1 4.8-4.8-1.1L12 22.5l-2.6-4.2-4.8 1.1 1.1-4.8L1.5 12l4.2-2.6-1.1-4.8 4.8 1.1z" /></svg>
             {c.badge}
           </span>
-          <h2 id="bento-heading" className="mb-3 font-bold text-white" style={{ fontSize: 'clamp(1.5rem, 4vw, 2.25rem)', lineHeight: 1.25 }}>
+          <h2 id="bento-heading" className={`${isRTL ? 'font-arabic' : 'font-display'} mb-3 text-balance font-bold text-[#111827]`} style={{ fontSize: 'clamp(1.5rem, 4vw, 2.25rem)', lineHeight: 1.25 }}>
             {c.title}
           </h2>
-          <p className="mx-auto max-w-[640px] text-base leading-[1.8] text-white/65">{c.subtitle}</p>
+          <p className="mx-auto max-w-[640px] text-base leading-[1.8] text-[#6B7280]">{c.subtitle}</p>
         </div>
 
         <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
@@ -191,26 +194,26 @@ export default function FeatureBento() {
                     <div className={`relative h-full w-full ${tile.id === 'stock' ? '!absolute inset-3 !h-auto !w-auto overflow-hidden rounded-lg ring-1 ring-white/10' : 'p-3'}`}>{v}</div>
                   </div>
                 )}
-                <span aria-hidden="true" className="mb-3 grid h-10 w-10 place-items-center rounded-xl border border-white/10 bg-brand-900 text-gold-400">
+                <span aria-hidden="true" className="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-[#0F3D2A] text-gold-400 transition-colors group-hover:bg-[#145236]">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{ICON[tile.id]}</svg>
                 </span>
-                <h3 className="mb-1.5 text-lg font-bold text-white">{tile.title}</h3>
-                <p className="flex-1 text-sm leading-[1.7] text-white/65">{tile.body}</p>
+                <h3 className="mb-1.5 text-lg font-bold text-[#111827]">{tile.title}</h3>
+                <p className="flex-1 text-sm leading-[1.7] text-[#6B7280]">{tile.body}</p>
                 {href && (
-                  <span className="mt-4 text-sm font-semibold text-gold-400">
+                  <span className="mt-4 text-sm font-semibold text-[#8A6508] transition-colors group-hover:text-[#0F3D2A]">
                     {c.more}
-                    <span aria-hidden="true" className="ms-1 inline-block rtl:rotate-180">→</span>
+                    <span aria-hidden="true" className="ms-1 inline-block transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5">→</span>
                   </span>
                 )}
               </>
             );
-            const box = 'flex h-full flex-col rounded-2xl border border-white/10 bg-brand-900/50 p-5 sm:p-6';
+            const box = 'group flex h-full flex-col rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-[0_1px_3px_rgba(10,35,24,0.06)] sm:p-6';
             return (
               <li key={tile.id} className={SPAN[tile.id]}>
                 {href ? (
                   <a
                     href={href}
-                    className={`${box} group transition-colors hover:border-gold-400/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-400`}
+                    className={`${box} transition-[border-color,box-shadow] duration-200 hover:border-[#B8860B]/60 hover:shadow-[0_12px_32px_rgba(10,35,24,0.10)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#B8860B]`}
                   >
                     {inner}
                   </a>

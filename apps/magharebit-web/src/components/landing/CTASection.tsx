@@ -1,5 +1,6 @@
 'use client';
 
+import { waUrl } from '@/lib/brand';
 import { useTranslations, useLocale } from 'next-intl';
 import RevealSection from '@/components/RevealSection';
 import AvailabilityIndicator from '@/components/AvailabilityIndicator';
@@ -10,7 +11,7 @@ export default function CTASection() {
   const locale = useLocale();
 
   return (
-    <section id="contact" className="relative py-24 px-6 text-center overflow-hidden" style={{ background: '#0F3D2A' }}>
+    <section id="contact" className={`relative py-24 px-6 text-center overflow-hidden ${locale === 'ar' ? '' : '[&_.font-arabic]:font-sans'}`} style={{ background: '#0F3D2A' }}>
 
       <div className="absolute inset-0" style={{
         background: 'linear-gradient(135deg, #2E8B57 0%, #0A2318 100%)'
@@ -45,7 +46,7 @@ export default function CTASection() {
             {t('primary')}
           </Link>
           <a
-            href="https://wa.me/212619522487"
+            href={waUrl()}
             target="_blank"
             rel="noopener noreferrer"
             className="font-arabic font-medium text-white border border-white/30 cta-wa-btn"

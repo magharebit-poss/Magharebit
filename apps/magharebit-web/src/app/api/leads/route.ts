@@ -1,3 +1,4 @@
+import { BRAND } from '@/lib/brand';
 import { NextRequest, NextResponse } from 'next/server';
 import { leadsRepo, Lead } from '@/lib/repositories/leads';
 import { sendWhatsAppMessage, whatsappTemplates } from '@/lib/whatsapp';
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     if (await outboundBudget('whatsapp-public')) {
       sendWhatsAppMessage({
-        to: process.env.WHATSAPP_BUSINESS_NUMBER ?? '212619522487',
+        to: process.env.WHATSAPP_BUSINESS_NUMBER ?? BRAND.contact.waNumber,
         message: whatsappTemplates.newLead(
           lead.storeName,
           lead.phone,

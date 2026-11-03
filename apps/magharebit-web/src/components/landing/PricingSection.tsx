@@ -1,5 +1,6 @@
 'use client';
 
+import { waUrl } from '@/lib/brand';
 import { useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
@@ -15,7 +16,7 @@ export default function PricingSection() {
   };
 
   return (
-    <section id="pricing" className="bg-brand-950 py-24 px-6">
+    <section id="pricing" className={`bg-brand-950 py-24 px-6 ${locale === 'ar' ? '' : '[&_.font-arabic]:font-sans'}`}>
       <div className="max-w-[1100px] mx-auto" style={{ direction: locale === 'ar' ? 'rtl' : 'ltr' }}>
 
         <div className="text-center mb-12">
@@ -243,7 +244,7 @@ export default function PricingSection() {
               ))}
             </ul>
             <a
-              href="https://wa.me/212619522487"
+              href={waUrl()}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-3 rounded-2xl font-arabic font-bold text-sm border border-white/20 bg-transparent text-white hover:border-gold-400 hover:text-gold-400 transition-all cursor-pointer cta-wa-btn"

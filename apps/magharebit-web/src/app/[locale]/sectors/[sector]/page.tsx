@@ -1,3 +1,4 @@
+import { waUrl } from '@/lib/brand';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -447,7 +448,7 @@ export default async function SectorPage({
                 // into a context-rich conversation instead of a cold opener.
                 const sectorWaMessage =
                   data.whatsappMessage[lang] ?? data.whatsappMessage.fr;
-                const sectorWaLink = `https://wa.me/212619522487?text=${encodeURIComponent(sectorWaMessage)}`;
+                const sectorWaLink = waUrl(sectorWaMessage);
                 const ctaLabel =
                   lang === 'ar'
                     ? `💬 تواصل معنا على واتساب بخصوص ${data.name.ar}`

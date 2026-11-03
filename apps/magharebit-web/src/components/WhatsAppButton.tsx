@@ -1,5 +1,6 @@
 'use client';
 
+import { waUrl } from '@/lib/brand';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import AvailabilityIndicator from '@/components/AvailabilityIndicator';
@@ -10,8 +11,7 @@ export default function WhatsAppButton() {
   const isRTL = locale === 'ar';
   const [hover, setHover] = useState(false);
 
-  const encoded = encodeURIComponent(t('message'));
-  const href = `https://wa.me/212619522487?text=${encoded}`;
+  const href = waUrl(t('message'));
 
   const ariaLabel =
     locale === 'ar'

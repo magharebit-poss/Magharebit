@@ -1,7 +1,9 @@
+import { BRAND } from './brand'
+
 const GREEN_API_BASE = process.env.GREEN_API_BASE_URL ?? 'https://api.green-api.com'
 const INSTANCE_ID = process.env.GREEN_API_INSTANCE_ID
 const API_TOKEN = process.env.GREEN_API_API_TOKEN
-const BUSINESS_NUMBER = process.env.WHATSAPP_BUSINESS_NUMBER ?? '212619522487'
+const BUSINESS_NUMBER = process.env.WHATSAPP_BUSINESS_NUMBER ?? BRAND.contact.waNumber
 /**
  * Upper bound for one Green API call. Without it a stalled request holds the caller for as long as the platform
  * allows: the daily-report loop sends merchants one after another, so a single hang delayed every message behind it.
