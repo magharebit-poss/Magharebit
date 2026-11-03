@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.turbo/
+*.db
+*.sqlite
+.env
+.env.*
+build/
+*.apk
+*.aab
+.gradle/
+local.properties
+# Android signing keys (debug and release). Never commit these.
+*.keystore
+*.jks
