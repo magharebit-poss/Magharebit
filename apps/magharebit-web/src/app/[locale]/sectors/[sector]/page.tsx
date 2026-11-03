@@ -6,6 +6,7 @@ import AOSInit from '@/components/AOSInit';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
 import { SECTORS } from '@/data/sectors';
+import { USE_CASE_LABEL } from '@/data/merchants';
 import { setRequestLocale } from 'next-intl/server';
 import { pageAlternates, ogBase } from '@/lib/seo';
 import { breadcrumbSchema } from '@/lib/schemas';
@@ -332,7 +333,7 @@ export default async function SectorPage({
           </section>
         )}
 
-        {/* ── Testimonial ── */}
+        {/* ── Use case (anonymous, factual: no person, business, rating or figure) ── */}
         <section style={{ padding: '0 24px 80px' }}>
           <div
             data-aos="fade-up"
@@ -347,11 +348,6 @@ export default async function SectorPage({
               textAlign: isRTL ? 'right' : 'left',
             }}
           >
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', justifyContent: isRTL ? 'flex-end' : 'flex-start' }}>
-              {[1,2,3,4,5].map((s) => (
-                <span key={s} style={{ color: '#F0B429', fontSize: '18px' }}>★</span>
-              ))}
-            </div>
             <p
               style={{
                 fontFamily: fontBody,
@@ -359,10 +355,9 @@ export default async function SectorPage({
                 color: 'rgba(255,255,255,0.80)',
                 lineHeight: 1.75,
                 marginBottom: '24px',
-                fontStyle: 'italic',
               }}
             >
-              &ldquo;{data.testimonial.quote[lang]}&rdquo;
+              {data.useCase.statement[lang]}
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
               <div
@@ -382,14 +377,14 @@ export default async function SectorPage({
                   flexShrink: 0,
                 }}
               >
-                {data.testimonial.initials}
+                <span aria-hidden="true" style={{ fontSize: '22px' }}>{data.emoji}</span>
               </div>
               <div>
                 <div style={{ fontFamily: fontBody, fontWeight: 700, fontSize: '15px', color: '#FFFFFF' }}>
-                  {data.testimonial.name}
+                  {USE_CASE_LABEL[lang]}{lang === 'fr' ? ' : ' : ': '}{data.name[lang]}
                 </div>
                 <div style={{ fontFamily: fontBody, fontSize: '13px', color: 'rgba(255,255,255,0.50)' }}>
-                  {data.testimonial.role[lang]}
+                  {lang === 'ar' ? 'سيناريو توضيحي، وليس رأي زبون' : lang === 'en' ? 'Illustrative scenario, not a customer review' : 'Scénario illustratif, pas un avis client'}
                 </div>
               </div>
             </div>

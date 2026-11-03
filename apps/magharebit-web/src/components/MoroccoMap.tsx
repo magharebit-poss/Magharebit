@@ -1,5 +1,5 @@
 /**
- * MoroccoMap — Premium interactive merchant distribution map
+ * MoroccoMap — Interactive map of the cities MAGHAREBIT covers (no per-city figures)
  *
  * Coordinate system (viewBox -8 -8 516 636, padded around 0 0 500 620):
  *   x = (lon + 18) × 29.4    (−18°W → x=0 ; −1°W → x=500)
@@ -22,7 +22,6 @@ interface CityData {
   name:      string
   cx:        number
   cy:        number
-  count:     number
   region:    string
   labelPos:  'right' | 'left' | 'below' | 'none'
   slug?:     string
@@ -30,30 +29,28 @@ interface CityData {
 
 // ── Data ───────────────────────────────────────────────────────────────────────
 
-const MAX_COUNT = 187
 
 const CITIES: CityData[] = [
-  { id: 'casablanca', name: 'Casablanca',  cx: 312, cy: 96,  count: 187, region: 'Casablanca-Settat',            labelPos: 'right', slug: 'casablanca' },
-  { id: 'rabat',      name: 'Rabat',       cx: 329, cy: 80,  count: 92,  region: 'Rabat-Salé-Kénitra',          labelPos: 'right', slug: 'rabat'      },
-  { id: 'marrakech',  name: 'Marrakech',   cx: 294, cy: 175, count: 64,  region: 'Marrakech-Safi',              labelPos: 'right', slug: 'marrakech'  },
-  { id: 'tanger',     name: 'Tanger',      cx: 359, cy: 14,  count: 48,  region: 'Tanger-Tétouan-Al Hoceïma',  labelPos: 'below'                     },
-  { id: 'fes',        name: 'Fès',         cx: 382, cy: 78,  count: 41,  region: 'Fès-Meknès',                 labelPos: 'right'                     },
-  { id: 'agadir',     name: 'Agadir',      cx: 247, cy: 224, count: 35,  region: 'Souss-Massa',                labelPos: 'right'                     },
-  { id: 'oujda',      name: 'Oujda',       cx: 473, cy: 52,  count: 28,  region: 'Oriental',                  labelPos: 'left'                      },
-  { id: 'meknes',     name: 'Meknès',      cx: 366, cy: 86,  count: 24,  region: 'Fès-Meknès',                 labelPos: 'none'                      },
-  { id: 'kenitra',    name: 'Kénitra',     cx: 335, cy: 68,  count: 19,  region: 'Rabat-Salé-Kénitra',         labelPos: 'none'                      },
-  { id: 'tetouan',    name: 'Tétouan',     cx: 370, cy: 20,  count: 17,  region: 'Tanger-Tétouan-Al Hoceïma', labelPos: 'none'                      },
-  { id: 'benimellal', name: 'Béni Mellal', cx: 342, cy: 148, count: 14,  region: 'Béni Mellal-Khénifra',       labelPos: 'none'                      },
-  { id: 'laayoune',   name: 'Laâyoune',   cx: 141, cy: 352, count: 8,   region: 'Laâyoune-Sakia El Hamra',   labelPos: 'right'                     },
+  { id: 'casablanca', name: 'Casablanca',  cx: 312, cy: 96,  region: 'Casablanca-Settat',            labelPos: 'right', slug: 'casablanca' },
+  { id: 'rabat',      name: 'Rabat',       cx: 329, cy: 80,   region: 'Rabat-Salé-Kénitra',          labelPos: 'right', slug: 'rabat'      },
+  { id: 'marrakech',  name: 'Marrakech',   cx: 294, cy: 175,  region: 'Marrakech-Safi',              labelPos: 'right', slug: 'marrakech'  },
+  { id: 'tanger',     name: 'Tanger',      cx: 359, cy: 14,   region: 'Tanger-Tétouan-Al Hoceïma',  labelPos: 'below'                     },
+  { id: 'fes',        name: 'Fès',         cx: 382, cy: 78,   region: 'Fès-Meknès',                 labelPos: 'right'                     },
+  { id: 'agadir',     name: 'Agadir',      cx: 247, cy: 224,  region: 'Souss-Massa',                labelPos: 'right'                     },
+  { id: 'oujda',      name: 'Oujda',       cx: 473, cy: 52,   region: 'Oriental',                  labelPos: 'left'                      },
+  { id: 'meknes',     name: 'Meknès',      cx: 366, cy: 86,   region: 'Fès-Meknès',                 labelPos: 'none'                      },
+  { id: 'kenitra',    name: 'Kénitra',     cx: 335, cy: 68,   region: 'Rabat-Salé-Kénitra',         labelPos: 'none'                      },
+  { id: 'tetouan',    name: 'Tétouan',     cx: 370, cy: 20,   region: 'Tanger-Tétouan-Al Hoceïma', labelPos: 'none'                      },
+  { id: 'benimellal', name: 'Béni Mellal', cx: 342, cy: 148,  region: 'Béni Mellal-Khénifra',       labelPos: 'none'                      },
+  { id: 'laayoune',   name: 'Laâyoune',   cx: 141, cy: 352,   region: 'Laâyoune-Sakia El Hamra',   labelPos: 'right'                     },
 ]
 
-const TOTAL = CITIES.reduce((s, c) => s + c.count, 0)
 
 
 
-// Dot radius proportional to merchant count
-function dotR(count: number): number {
-  return 3.5 + (count / MAX_COUNT) * 7.5
+// Uniform dot radius: no per-city figures are published
+function dotR(): number {
+  return 6
 }
 
 // ── Component ──────────────────────────────────────────────────────────────────
@@ -105,7 +102,7 @@ export default function MoroccoMap() {
             height="auto"
             style={{ display: 'block', maxHeight: '640px', margin: '0 auto' }}
             role="img"
-            aria-label="Map of the Kingdom of Morocco with merchant distribution"
+            aria-label="Map of the Kingdom of Morocco with the cities covered"
           >
             <defs>
               {/* ─ Morocco fill gradient ─ */}
@@ -183,7 +180,7 @@ export default function MoroccoMap() {
 
             {/* ─ City dots ─ */}
             {CITIES.map((city, i) => {
-              const r     = dotR(city.count)
+              const r     = dotR()
               const isAct = active?.id === city.id
               const lp    = city.labelPos
               const show  = LABELED.has(city.id)
@@ -200,7 +197,7 @@ export default function MoroccoMap() {
                   key={city.id}
                   role="button"
                   tabIndex={0}
-                  aria-label={`${city.name}: ${city.count}`}
+                  aria-label={city.name}
                   style={{ cursor: 'pointer' }}
                   onMouseEnter={() => setActive(city)}
                   onMouseLeave={() => setActive(null)}
@@ -259,7 +256,7 @@ export default function MoroccoMap() {
                       x={lx} y={ly}
                       textAnchor={ta}
                       fontSize={isAct ? 11 : 10}
-                      fontWeight={isAct ? 700 : city.count > 60 ? 600 : 500}
+                      fontWeight={isAct ? 700 : 500}
                       fill={isAct ? '#FFD256' : 'rgba(255,255,255,0.90)'}
                       fontFamily="Plus Jakarta Sans, Inter, sans-serif"
                       paintOrder="stroke"
@@ -310,28 +307,6 @@ export default function MoroccoMap() {
             `}</style>
           </svg>
 
-          {/* Total badge — bottom corner */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '28px',
-              insetInlineStart: '28px',
-              background: 'rgba(10,35,24,0.92)',
-              border: '1px solid rgba(240,180,41,0.28)',
-              borderRadius: '12px',
-              padding: '10px 16px',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
-            }}
-          >
-            <div style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 800, fontSize: '22px', color: '#F0B429', lineHeight: 1 }}>
-              {TOTAL}+
-            </div>
-            <div style={{ fontFamily: font, fontSize: '11px', color: 'rgba(255,255,255,0.50)', marginTop: '3px' }}>
-              {t('total_merchants')}
-            </div>
-          </div>
         </div>
 
         {/* ──────────────── Stats panel ──────────────── */}
@@ -351,10 +326,9 @@ export default function MoroccoMap() {
           {/* Ranked city list */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {[...CITIES]
-              .sort((a, b) => b.count - a.count)
-              .map((city, rank) => {
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((city) => {
                 const isAct = active?.id === city.id
-                const barW  = (city.count / MAX_COUNT) * 100
                 return (
                   <div
                     key={city.id}
@@ -369,16 +343,7 @@ export default function MoroccoMap() {
                       transition: 'all 0.15s',
                     }}
                   >
-                    {/* Rank number */}
-                    <span style={{
-                      fontFamily: 'Plus Jakarta Sans, sans-serif',
-                      fontSize: '11px', fontWeight: 700, minWidth: '16px', textAlign: 'center',
-                      color: rank < 3 ? '#F0B429' : 'rgba(255,255,255,0.28)',
-                    }}>
-                      {rank + 1}
-                    </span>
-
-                    {/* City name + bar */}
+                    {/* City name */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                         <span style={{
@@ -389,25 +354,6 @@ export default function MoroccoMap() {
                         }}>
                           {city.name}
                         </span>
-                        <span style={{
-                          fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '11px', fontWeight: 700, flexShrink: 0, marginInlineStart: '6px',
-                          color: isAct ? '#F0B429' : 'rgba(255,255,255,0.38)',
-                          transition: 'color 0.15s',
-                        }}>
-                          {city.count}
-                        </span>
-                      </div>
-                      {/* Bar */}
-                      <div style={{ height: '3px', background: 'rgba(255,255,255,0.07)', borderRadius: '99px', overflow: 'hidden' }}>
-                        <div style={{
-                          height: '100%', width: `${barW}%`, borderRadius: '99px',
-                          background: isAct
-                            ? 'linear-gradient(90deg,#F0B429,#FFD256)'
-                            : rank < 3
-                              ? 'rgba(240,180,41,0.55)'
-                              : 'rgba(255,255,255,0.18)',
-                          transition: 'background 0.15s',
-                        }} />
                       </div>
                     </div>
                   </div>
@@ -428,14 +374,8 @@ export default function MoroccoMap() {
                 <div style={{ fontFamily: font, fontWeight: 700, fontSize: '14px', color: '#FFFFFF', marginBottom: '2px' }}>
                   {active.name}
                 </div>
-                <div style={{ fontFamily: font, fontSize: '11px', color: 'rgba(255,255,255,0.50)', marginBottom: '8px' }}>
+                <div style={{ fontFamily: font, fontSize: '11px', color: 'rgba(255,255,255,0.50)', marginBottom: active.slug ? '10px' : 0 }}>
                   {active.region}
-                </div>
-                <div style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 800, fontSize: '22px', color: '#F0B429', lineHeight: 1 }}>
-                  {active.count}
-                </div>
-                <div style={{ fontFamily: font, fontSize: '11px', color: 'rgba(255,255,255,0.42)', marginTop: '2px', marginBottom: active.slug ? '10px' : 0 }}>
-                  {t('hover_count_suffix')}
                 </div>
                 {active.slug && (
                   <a

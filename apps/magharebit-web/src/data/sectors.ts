@@ -13,11 +13,9 @@ export interface SectorData {
   painPoints: Record<string, string[]>;
   features: Record<string, string[]>;
   comparison: ComparisonRow[];
-  testimonial: {
-    quote: Record<string, string>;
-    name: string;
-    role: Record<string, string>;
-    initials: string;
+  /** Anonymous, factual value statement. No person, business, city, rating or figure. */
+  useCase: {
+    statement: Record<string, string>;
   };
   meta: {
     title: Record<string, string>;
@@ -103,19 +101,12 @@ export const SECTORS: SectorData[] = [
         magharebit: { ar: 'واجهة عربية أصيلة من اليمين لليسار', fr: 'Interface arabe native de droite à gauche', en: 'Native RTL Arabic interface' },
       },
     ],
-    testimonial: {
-      quote: {
-        ar: 'منذ استخدامنا لـ MAGHAREBIT، أصبح تتبع مخزون الطحين والزبدة تلقائياً. لم نعد نفاجأ بنفاد مادة في منتصف الإنتاج.',
-        fr: 'Depuis MAGHAREBIT, le suivi de la farine et du beurre est automatique. On n\'est plus surpris par une rupture en pleine production.',
-        en: 'Since MAGHAREBIT, flour and butter tracking is automatic. We are never caught off guard by a shortage mid-production.',
+    useCase: {
+      statement: {
+        ar: 'مناسب لتتبع مخزون الطحين والزبدة، ووصولات واتساب للزبائن، والاستمرار في البيع عند انقطاع الإنترنت.',
+        fr: 'Idéal pour suivre la farine et le beurre, envoyer les tickets sur WhatsApp et continuer à vendre quand internet coupe.',
+        en: 'Suited to tracking flour and butter, sending receipts on WhatsApp and carrying on selling when the internet drops.',
       },
-      name: 'محمد العمراني',
-      role: {
-        ar: 'صاحب مخبزة الأمراني، الدار البيضاء',
-        fr: 'Propriétaire de la Boulangerie Amrani, Casablanca',
-        en: 'Owner of Amrani Bakery, Casablanca',
-      },
-      initials: 'MA',
     },
     meta: {
       title: {
@@ -211,19 +202,12 @@ export const SECTORS: SectorData[] = [
         magharebit: { ar: 'تحديث جماعي في ثوانٍ بضغطة واحدة', fr: 'Mise à jour en masse en quelques secondes', en: 'Bulk update in seconds with one click' },
       },
     ],
-    testimonial: {
-      quote: {
-        ar: 'كان الجرد يأخذ منا يوماً كاملاً كل أسبوع. الآن مع MAGHAREBIT أعرف المخزون الحقيقي بضغطة زر.',
-        fr: 'L\'inventaire nous prenait une journée entière chaque semaine. Avec MAGHAREBIT, je connais le stock réel en un clic.',
-        en: 'Inventory used to take us a full day every week. With MAGHAREBIT I know the real stock in one tap.',
+    useCase: {
+      statement: {
+        ar: 'مناسب لجرد المخزون بسرعة، ومسح الباركود، والاستمرار في البيع بدون إنترنت.',
+        fr: 'Idéal pour un inventaire plus rapide, la lecture des codes-barres et la vente sans internet.',
+        en: 'Suited to faster stocktaking, barcode scanning and selling without internet.',
       },
-      name: 'فاطمة بنعلي',
-      role: {
-        ar: 'صاحبة سوبرماركت، سلا',
-        fr: 'Propriétaire d\'un supermarché, Salé',
-        en: 'Supermarket owner, Salé',
-      },
-      initials: 'FB',
     },
     meta: {
       title: {
@@ -314,19 +298,12 @@ export const SECTORS: SectorData[] = [
         magharebit: { ar: 'المبيعات تستمر دون أي انقطاع', fr: 'Les ventes continuent sans aucune interruption', en: 'Sales continue with no interruption' },
       },
     ],
-    testimonial: {
-      quote: {
-        ar: 'في أوقات الغداء كنا نخطئ الطلبات بسبب الضغط. MAGHAREBIT جعل الموظفين أسرع وأدق. الزبائن لاحظوا الفرق.',
-        fr: 'À l\'heure du déjeuner on faisait des erreurs de commandes à cause de la pression. MAGHAREBIT a rendu le personnel plus rapide et précis. Les clients ont remarqué la différence.',
-        en: 'At lunchtime we made order mistakes under pressure. MAGHAREBIT made staff faster and more accurate. Customers noticed the difference.',
+    useCase: {
+      statement: {
+        ar: 'مناسب لتسيير الطاولات والطلبات في أوقات الذروة، وإرسال الوصولات على واتساب، والعمل بدون إنترنت.',
+        fr: 'Idéal pour la gestion des tables et des commandes aux heures de pointe, l’envoi des tickets sur WhatsApp et le mode hors ligne.',
+        en: 'Suited to managing tables and orders at peak hours, sending receipts on WhatsApp and working offline.',
       },
-      name: 'يوسف الحسيني',
-      role: {
-        ar: 'صاحب مطعم بالرباط',
-        fr: 'Propriétaire d\'un restaurant à Rabat',
-        en: 'Restaurant owner in Rabat',
-      },
-      initials: 'YH',
     },
     meta: {
       title: {
@@ -422,19 +399,12 @@ export const SECTORS: SectorData[] = [
         magharebit: { ar: 'تقارير يومية بأكثر الخدمات والمنتجات طلباً', fr: 'Rapports quotidiens des services et produits les plus demandés', en: 'Daily reports on top services and products' },
       },
     ],
-    testimonial: {
-      quote: {
-        ar: 'أصبحت أعرف متى أطلب صباغة الشعر قبل نفادها، وعميلاتي الدائمات يشعرن أنني أتذكرهن. MAGHAREBIT فرق حقيقي.',
-        fr: 'Je sais maintenant quand commander la teinture avant qu\'elle manque, et mes clientes régulières sentent que je les reconnais. MAGHAREBIT fait vraiment la différence.',
-        en: 'I now know when to order hair dye before it runs out, and my regular clients feel remembered. MAGHAREBIT makes a real difference.',
+    useCase: {
+      statement: {
+        ar: 'مناسب لتتبع مخزون المنتجات، وتسجيل الخدمات والمبيعات، وإرسال الوصولات على واتساب.',
+        fr: 'Idéal pour suivre le stock de produits, enregistrer prestations et ventes et envoyer les tickets sur WhatsApp.',
+        en: 'Suited to tracking product stock, recording services and sales and sending receipts on WhatsApp.',
       },
-      name: 'سلمى المنصوري',
-      role: {
-        ar: 'صاحبة صالون تجميل، فاس',
-        fr: 'Propriétaire d\'un salon de beauté, Fès',
-        en: 'Beauty salon owner, Fez',
-      },
-      initials: 'SM',
     },
     meta: {
       title: {
@@ -525,19 +495,12 @@ export const SECTORS: SectorData[] = [
         magharebit: { ar: 'آنية تلقائية عبر كل الفروع بنقرة واحدة', fr: 'Synchronisation automatique en temps réel sur toutes les succursales', en: 'Automatic real-time sync across all branches' },
       },
     ],
-    testimonial: {
-      quote: {
-        ar: 'كنت أحتاج ساعتين لمعرفة ما تبقى من كل مقاس. الآن MAGHAREBIT يعطيني الجواب في ثوانٍ، وأنا أخطط للموسم القادم بثقة.',
-        fr: 'Il me fallait deux heures pour savoir ce qu\'il restait dans chaque taille. Maintenant MAGHAREBIT me répond en secondes et je planifie la prochaine saison avec confiance.',
-        en: 'It used to take two hours to know what was left in each size. Now MAGHAREBIT answers in seconds and I plan the next season with confidence.',
+    useCase: {
+      statement: {
+        ar: 'مناسب لتتبع المخزون حسب المقاس واللون، وإدارة المبيعات والمرتجعات، والعمل بدون إنترنت.',
+        fr: 'Idéal pour suivre le stock par taille et par couleur, gérer ventes et retours et travailler hors ligne.',
+        en: 'Suited to tracking stock by size and colour, handling sales and returns and working offline.',
       },
-      name: 'نور الحوات',
-      role: {
-        ar: 'صاحبة بوتيك ملابس، مراكش',
-        fr: 'Propriétaire d\'une boutique de vêtements, Marrakech',
-        en: 'Clothing boutique owner, Marrakech',
-      },
-      initials: 'NH',
     },
     meta: {
       title: {
@@ -628,19 +591,12 @@ export const SECTORS: SectorData[] = [
         magharebit: { ar: 'سجل كامل ودقيق لكل معاملة بيع أو استلام', fr: 'Historique complet et précis de chaque vente ou réception', en: 'Complete accurate record of every sale and delivery' },
       },
     ],
-    testimonial: {
-      quote: {
-        ar: 'لأول مرة أشعر أن مخزون الصيدلية تحت سيطرتي. تنبيهات الصلاحية أنقذتنا من عدة مشاكل قانونية محتملة.',
-        fr: 'Pour la première fois, j\'ai l\'impression de contrôler le stock de la pharmacie. Les alertes de péremption nous ont évité plusieurs problèmes légaux potentiels.',
-        en: 'For the first time I feel in control of the pharmacy stock. The expiry alerts have saved us from several potential legal issues.',
+    useCase: {
+      statement: {
+        ar: 'مناسب لتتبع مخزون المنتجات وتنبيهات النفاد، والاستمرار في البيع عند انقطاع الإنترنت.',
+        fr: 'Idéal pour suivre le stock de produits, être alerté avant la rupture et continuer à vendre hors ligne.',
+        en: 'Suited to tracking product stock, getting low-stock alerts and carrying on selling offline.',
       },
-      name: 'الدكتورة أمينة الإدريسي',
-      role: {
-        ar: 'صيدلانية، طنجة',
-        fr: 'Pharmacienne, Tanger',
-        en: 'Pharmacist, Tangier',
-      },
-      initials: 'AI',
     },
     meta: {
       title: {
@@ -732,19 +688,12 @@ export const SECTORS: SectorData[] = [
         magharebit: { ar: 'سجل رقمي بكل عملية كريدي', fr: 'Historique numérique de chaque crédit', en: 'Digital record of every credit transaction' },
       },
     ],
-    testimonial: {
-      quote: {
-        ar: 'كانت فروقات الصندوق توجعني الراس كل ليلة. مع MAGHAREBIT ولا عندي ولا درهم ضائع.',
-        fr: 'Les écarts de caisse me prenaient la tête chaque soir. Avec MAGHAREBIT je n\'ai plus un dirham de perdu.',
-        en: 'Till discrepancies used to drive me crazy every night. With MAGHAREBIT not a dirham goes missing.',
+    useCase: {
+      statement: {
+        ar: 'مناسب للبيع بالوزن مع الميزان، وتتبع المخزون، وإرسال الوصولات على واتساب.',
+        fr: 'Idéal pour la vente au poids avec balance connectée, le suivi du stock et l’envoi des tickets sur WhatsApp.',
+        en: 'Suited to selling by weight with a connected scale, tracking stock and sending receipts on WhatsApp.',
       },
-      name: 'عبد الرحيم القاسمي',
-      role: {
-        ar: 'صاحب جزارة، الدار البيضاء',
-        fr: 'Boucher, Casablanca',
-        en: 'Butcher, Casablanca',
-      },
-      initials: 'AQ',
     },
     meta: {
       title: {
@@ -840,19 +789,12 @@ export const SECTORS: SectorData[] = [
         magharebit: { ar: 'تقارير ساعة بساعة لاتخاذ قرار التوظيف', fr: 'Rapports heure par heure pour décider du recrutement', en: 'Hour-by-hour reports for hiring decisions' },
       },
     ],
-    testimonial: {
-      quote: {
-        ar: 'في الذروة كنا نخسر زبناء بسبب الانتظار. مع MAGHAREBIT كل طلب نقرتان وخلاص.',
-        fr: 'En plein rush on perdait des clients à cause de l\'attente. Avec MAGHAREBIT chaque commande c\'est deux taps et c\'est fait.',
-        en: 'During rush we lost customers because of the wait. With MAGHAREBIT each order is two taps and done.',
+    useCase: {
+      statement: {
+        ar: 'مناسب لتسجيل الطلبات بسرعة في أوقات الذروة، وإرسال الوصولات على واتساب، والعمل بدون إنترنت.',
+        fr: 'Idéal pour prendre les commandes vite aux heures de pointe, envoyer les tickets sur WhatsApp et travailler hors ligne.',
+        en: 'Suited to taking orders quickly at peak hours, sending receipts on WhatsApp and working offline.',
       },
-      name: 'مهدي البقالي',
-      role: {
-        ar: 'صاحب سناك، الرباط',
-        fr: 'Propriétaire de snack, Rabat',
-        en: 'Snack shop owner, Rabat',
-      },
-      initials: 'MB',
     },
     meta: {
       title: {
@@ -943,19 +885,12 @@ export const SECTORS: SectorData[] = [
         magharebit: { ar: 'سجل واحد لكل عميلة، كل دفعة مرئية', fr: 'Un registre par cliente, chaque paiement visible', en: 'One ledger per client, every payment visible' },
       },
     ],
-    testimonial: {
-      quote: {
-        ar: 'كنت ننسى تسبيقات وأخلط بين الأعراس. مع MAGHAREBIT الكل واضح: من دفع كم ومتى الحدث.',
-        fr: 'J\'oubliais des acomptes et je mélangeais les mariages. Avec MAGHAREBIT tout est clair : qui a payé combien et quand est l\'événement.',
-        en: 'I forgot deposits and mixed up weddings. With MAGHAREBIT everything is clear: who paid how much and when the event is.',
+    useCase: {
+      statement: {
+        ar: 'مناسب لتسيير الطلبات المسبقة والكميات، وتتبع المكونات، وإرسال الوصولات على واتساب.',
+        fr: 'Idéal pour gérer commandes à l’avance et quantités, suivre les ingrédients et envoyer les tickets sur WhatsApp.',
+        en: 'Suited to managing advance orders and quantities, tracking ingredients and sending receipts on WhatsApp.',
       },
-      name: 'لطيفة الفاسي',
-      role: {
-        ar: 'صاحبة طرايتور، فاس',
-        fr: 'Traiteur, Fès',
-        en: 'Caterer, Fez',
-      },
-      initials: 'LF',
     },
     meta: {
       title: {

@@ -4,7 +4,6 @@ export interface City {
   region: string;
   positioning: { ar: string; fr: string; en: string };
   topSectors: string[];
-  merchantCount: number;
 }
 
 export const CITIES: City[] = [
@@ -18,7 +17,6 @@ export const CITIES: City[] = [
       en: 'Built for the fast pace of Casablanca commerce, multi-branch support for local chains',
     },
     topSectors: ['boulangerie', 'cafe-restaurant', 'boutique-vetements'],
-    merchantCount: 187,
   },
   {
     slug: 'rabat',
@@ -30,7 +28,6 @@ export const CITIES: City[] = [
       en: 'Stability and reliability for downtown and Salé merchants, simplified administrative management',
     },
     topSectors: ['pharmacie', 'epicerie', 'salon-beaute'],
-    merchantCount: 92,
   },
   {
     slug: 'marrakech',
@@ -42,6 +39,5 @@ export const CITIES: City[] = [
       en: 'Multi-language (French, Arabic, English) for tourist commerce in the medina',
     },
     topSectors: ['cafe-restaurant', 'boutique-vetements', 'boulangerie'],
-    merchantCount: 64,
   },
 ];

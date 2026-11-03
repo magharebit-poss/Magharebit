@@ -5,7 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
 import { CITIES } from '@/data/cities';
 import { SECTORS } from '@/data/sectors';
-import { MERCHANTS } from '@/data/merchants';
+import { USE_CASES, USE_CASE_LABEL } from '@/data/merchants';
 import { pageAlternates, ogBase, SITE_URL, HREFLANG } from '@/lib/seo';
 import { breadcrumbSchema } from '@/lib/schemas';
 
@@ -27,7 +27,7 @@ export default async function CityPageContent({ locale, citySlug }: Props) {
   const t = await getTranslations('city');
 
   const topSectors = SECTORS.filter((s) => data.topSectors.includes(s.slug));
-  const localMerchants = MERCHANTS.filter((m) => m.city === data.name).slice(0, 3);
+  const useCases = USE_CASES.filter((u) => data.topSectors.includes(u.slug)).slice(0, 3);
 
   const heroTitle =
     lang === 'ar'
@@ -105,10 +105,10 @@ export default async function CityPageContent({ locale, citySlug }: Props) {
             }}
           >
             <div style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: 800, fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', color: '#F0B429', lineHeight: 1, letterSpacing: '-0.02em' }}>
-              {data.merchantCount}+
+              14
             </div>
             <div style={{ fontFamily: fontBody, fontSize: '15px', color: 'rgba(255,255,255,0.65)', marginTop: '8px' }}>
-              {lang === 'ar' ? `تجار في ${data.name} يثقون بـ MAGHAREBIT` : lang === 'en' ? `${data.name} merchants trust MAGHAREBIT` : `Commerces à ${data.name} font confiance à MAGHAREBIT`}
+              {lang === 'ar' ? `يوماً من التجربة المجانية لتجار ${data.name}، بدون بطاقة بنكية` : lang === 'en' ? `days of free trial for ${data.name} merchants, no credit card` : `jours d’essai gratuit pour les commerces de ${data.name}, sans carte bancaire`}
             </div>
           </div>
         </section>
@@ -170,11 +170,11 @@ export default async function CityPageContent({ locale, citySlug }: Props) {
               className="font-arabic font-bold text-white text-center"
               style={{ fontSize: 'clamp(1.4rem, 3vw, 1.85rem)', marginBottom: '32px' }}
             >
-              {lang === 'ar' ? `تجار يثقون بنا في ${data.name}` : lang === 'en' ? `Merchants trusting us in ${data.name}` : `Ils nous font confiance à ${data.name}`}
+              {lang === 'ar' ? `حالات استخدام شائعة في ${data.name}` : lang === 'en' ? `Common use cases in ${data.name}` : `Cas d’usage fréquents à ${data.name}`}
             </h2>
-            {localMerchants.length > 0 ? (
+            {useCases.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: '20px' }}>
-                {localMerchants.map((m, i) => (
+                {useCases.map((m, i) => (
                   <div
                     key={m.slug}
                     data-aos="fade-up"
@@ -188,16 +188,14 @@ export default async function CityPageContent({ locale, citySlug }: Props) {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '28px' }}>{m.sectorEmoji}</span>
+                      <span aria-hidden="true" style={{ fontSize: '28px' }}>{m.sectorEmoji}</span>
                       <div style={{ fontFamily: fontBody, fontWeight: 700, fontSize: '14px', color: '#fff' }}>
-                        {m.name}
+                        {USE_CASE_LABEL[lang]}{lang === 'fr' ? ' : ' : ': '}{m.name[lang]}
                       </div>
                     </div>
-                    {m.testimonial && (
-                      <p style={{ fontFamily: fontBody, fontSize: '13px', color: 'rgba(255,255,255,0.70)', lineHeight: 1.6, fontStyle: 'italic', margin: 0 }}>
-                        &ldquo;{m.testimonial.quote[lang]}&rdquo;
-                      </p>
-                    )}
+                    <p style={{ fontFamily: fontBody, fontSize: '13px', color: 'rgba(255,255,255,0.70)', lineHeight: 1.6, margin: 0 }}>
+                      {m.statement[lang]}
+                    </p>
                   </div>
                 ))}
               </div>

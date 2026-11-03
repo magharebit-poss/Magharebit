@@ -5,7 +5,7 @@ import AOSInit from '@/components/AOSInit';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/landing/Footer';
 import MoroccoMap from '@/components/MoroccoMap';
-import { MERCHANTS } from '@/data/merchants';
+import { USE_CASES, USE_CASE_LABEL } from '@/data/merchants';
 import { pageAlternates, ogBase } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -27,7 +27,7 @@ export default async function ClientsPage({ params }: { params: Promise<{ locale
   const isRTL = locale === 'ar';
   const fontBody = isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif';
 
-  const featured = MERCHANTS.filter((m) => m.testimonial);
+  const featured = USE_CASES;
   const stats = [
     { value: t('stat1_value'), label: t('stat1_label') },
     { value: t('stat2_value'), label: t('stat2_label') },
@@ -97,44 +97,6 @@ export default async function ClientsPage({ params }: { params: Promise<{ locale
           </div>
         </section>
 
-        {/* Logo grid placeholders */}
-        <section style={{ padding: '0 24px 80px' }}>
-          <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-              <h2 className="font-arabic font-bold text-white" style={{ fontSize: 'clamp(1.4rem, 3vw, 1.8rem)' }}>
-                {t('logos_title')}
-              </h2>
-            </div>
-            <div
-              className="grid grid-cols-3 md:grid-cols-6"
-              style={{ gap: '12px' }}
-              data-aos="fade-up"
-            >
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: '100%',
-                    height: '80px',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: fontBody,
-                    fontSize: '11px',
-                    color: 'rgba(255,255,255,0.30)',
-                    filter: 'grayscale(1)',
-                  }}
-                >
-                  [{t('logo_soon')}]
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* Featured case studies */}
         {featured.length > 0 && (
           <section style={{ padding: '0 24px 80px' }}>
@@ -162,55 +124,20 @@ export default async function ClientsPage({ params }: { params: Promise<{ locale
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '32px', lineHeight: 1 }}>{m.sectorEmoji}</span>
-                      <div>
-                        <div style={{ fontFamily: fontBody, fontWeight: 700, color: '#fff', fontSize: '15px' }}>
-                          {m.name}
-                        </div>
-                        <div style={{ fontFamily: fontBody, fontSize: '12px', color: 'rgba(255,255,255,0.50)' }}>
-                          {m.city} · {t('since')} {m.since} · {m.branches} {m.branches > 1 ? t('branches') : t('branch')}
-                        </div>
+                      <span aria-hidden="true" style={{ fontSize: '32px', lineHeight: 1 }}>{m.sectorEmoji}</span>
+                      <div style={{ fontFamily: fontBody, fontWeight: 700, color: '#fff', fontSize: '15px' }}>
+                        {USE_CASE_LABEL[locale]}{locale === 'fr' ? ' : ' : ': '}{m.name[locale]}
                       </div>
                     </div>
-                    {m.testimonial && (
-                      <p
-                        style={{
-                          fontFamily: fontBody,
-                          fontSize: '13px',
-                          color: 'rgba(255,255,255,0.75)',
-                          lineHeight: 1.6,
-                          fontStyle: 'italic',
-                          margin: 0,
-                        }}
-                      >
-                        &ldquo;{m.testimonial.quote[locale]}&rdquo;
-                      </p>
-                    )}
-                    {m.metrics && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                        {m.metrics.wasteReduction && (
-                          <span style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px' }}>
-                            🗑️ {m.metrics.wasteReduction}
-                          </span>
-                        )}
-                        {m.metrics.timesSaved && (
-                          <span style={{ background: 'rgba(240,180,41,0.15)', color: '#F0B429', fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px' }}>
-                            ⏱️ {m.metrics.timesSaved}
-                          </span>
-                        )}
-                        {m.metrics.salesIncrease && (
-                          <span style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E', fontFamily: 'Plus Jakarta Sans, sans-serif', fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px' }}>
-                            📈 {m.metrics.salesIncrease}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <p style={{ fontFamily: fontBody, fontSize: '13px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, margin: 0 }}>
+                      {m.statement[locale]}
+                    </p>
                     <div style={{ marginTop: 'auto', paddingTop: '8px' }}>
                       <Link
-                        href={`/${locale}/clients/${m.slug}`}
+                        href={`/${locale}/sectors/${m.slug}`}
                         style={{ fontFamily: fontBody, fontSize: '13px', color: '#F0B429', fontWeight: 600, textDecoration: 'none' }}
                       >
-                        {t('read_case')} →
+                        {t('read_case')} {isRTL ? '←' : '→'}
                       </Link>
                     </div>
                   </div>
