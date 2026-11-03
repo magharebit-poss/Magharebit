@@ -7,6 +7,8 @@
  *   `finally`. They never touch the existing dev tenants.
  */
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import 'dotenv/config';
 import pg from 'pg';
 import { afterAll, afterEach, beforeEach, describe, expect, test } from 'vitest';
@@ -72,6 +74,10 @@ const stockOf = async (db: SqlRunner, id: string): Promise<number> =>
   Number((await one<{ s: string }>(db, `select stock_quantity s from products where product_id=$1`, [id])).s);
 const shiftTotal = async (db: SqlRunner, id: string): Promise<number> =>
   Number((await one<{ t: string }>(db, `select total_sales_piastres t from shifts where shift_id=$1`, [id])).t);
+/** True once migration 052 has been applied (products.stock_quantity is NUMERIC instead of INTEGER). */
+const stockIsNumeric = async (db: SqlRunner): Promise<boolean> =>
+  (await one<{ data_type: string }>(db,
+    `select data_type from information_schema.columns where table_schema='public' and table_name='products' and column_name='stock_quantity'`)).data_type === 'numeric';
 const lastSeq = async (db: SqlRunner, t: string): Promise<number> =>
   Number((await db.query<{ s: string }>(`select last_seq s from tenant_receipt_counters where tenant_id=$1`, [t])).rows[0]?.s ?? 0);
 
@@ -253,9 +259,33 @@ describe.skipIf(!dbOk)('recordSale on greengo_dev (each test rolled back)', () =
       const r = await recordSaleInTx(c, { ...sale(s), lines, canonicalLines: lines.map(normalizeLineItem), grandTotalPiastres: Math.round(1000 * q), tenders: [{ method: 'cash', amountPiastres: Math.round(1000 * q) }] });
       expect(r.kind).toBe('created');
     }
-    // 5000 - 0.5 - 1.2 - 2.5 with the integer column rounding at each assignment: 5000, 4999, 4997.
-    expect(await stockOf(c, s.pA)).toBe(4997);
+    // Before migration 052 the INTEGER column rounds at each assignment (5000, 4999, 4999, 4997);
+    // once 052 is applied the column is NUMERIC(14,3) and the result is exact (4995.8).
+    expect(await stockOf(c, s.pA)).toBe((await stockIsNumeric(c)) ? 4995.8 : 4997);
     expect(await count(c, 'stock_variances', 'tenant_id=$1', [s.tenantId])).toBe(0);
+  });
+
+  test('with migration 052 applied: 1.2, 0.4 and 2.5 from 5000 leave exactly 4995.900; a fractional shortfall is exact too', async () => {
+    // Applies the DRAFT migration inside this test's own transaction (rolled back afterwards, so it never
+    // changes the dev database). It takes ACCESS EXCLUSIVE on products until the rollback, for a moment.
+    await c.query(readFileSync(resolve(process.cwd(), 'migrations/052_products_stock_numeric.sql'), 'utf8'));
+    await c.query(`update products set stock_quantity = 5000 where product_id=$1`, [s.pA]);
+    for (const q of [1.2, 0.4, 2.5]) {
+      const lines = [{ productId: s.pA, quantity: q, unitPricePiastres: 1000, lineTotalPiastres: Math.round(1000 * q), taxAmountPiastres: 0 }];
+      const r = await recordSaleInTx(c, { ...sale(s), lines, canonicalLines: lines.map(normalizeLineItem), grandTotalPiastres: Math.round(1000 * q), tenders: [{ method: 'cash', amountPiastres: Math.round(1000 * q) }] });
+      expect(r.kind).toBe('created');
+    }
+    const exact = await one<{ s: string }>(c, `select stock_quantity::text s from products where product_id=$1`, [s.pA]);
+    expect(exact.s).toBe('4995.900');
+    expect(await count(c, 'stock_variances', 'tenant_id=$1', [s.tenantId])).toBe(0);
+
+    // Shortfall with decimals: 1.000 on hand, 2.5 sold => stock 0.000, variance expected 2.5 / actual 1 / -1.5.
+    await c.query(`update products set stock_quantity = 1 where product_id=$1`, [s.pA]);
+    const lines = [{ productId: s.pA, quantity: 2.5, unitPricePiastres: 1000, lineTotalPiastres: 2500, taxAmountPiastres: 0 }];
+    await recordSaleInTx(c, { ...sale(s), lines, canonicalLines: lines.map(normalizeLineItem), grandTotalPiastres: 2500, tenders: [{ method: 'cash', amountPiastres: 2500 }] });
+    const v = await one<{ expected_qty: string; actual_qty: string; variance_qty: string }>(c, `select expected_qty::text, actual_qty::text, variance_qty::text from stock_variances where tenant_id=$1`, [s.tenantId]);
+    expect([v.expected_qty, v.actual_qty, v.variance_qty]).toEqual(['2.500', '1.000', '-1.500']);
+    expect((await one<{ s: string }>(c, `select stock_quantity::text s from products where product_id=$1`, [s.pA])).s).toBe('0.000');
   });
 
   test('a fractional quantity larger than the stock records the exact missing quantity', async () => {
