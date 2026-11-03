@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { createHash, randomUUID } from 'crypto';
 import { verifyPin } from '../../services/pin-hash.js';
 import { normalizeLineItem } from '../../services/sales/line-items.js';
+import { parseStockQuantity } from '../../services/products/stock-quantity.js';
 import {
   parseSaleIdentity,
   raiseVarianceAlerts,
@@ -165,7 +166,7 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
           is_bom,
           is_weighted,
           uom,
-          stock_quantity,
+          stock_quantity::float8 AS stock_quantity,
           low_stock_threshold,
           track_stock,
           COALESCE(is_perishable, false)        AS is_perishable,
@@ -3045,7 +3046,7 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
     const r = await fastify.pg.query(
       `SELECT
          p.product_id, p.name_ar, p.name_fr, p.uom,
-         p.stock_quantity, p.low_stock_threshold,
+         p.stock_quantity::float8 AS stock_quantity, p.low_stock_threshold,
          json_agg(json_build_object(
            'store_id', s.store_id,
            'name_ar',  s.name_ar,
@@ -3240,6 +3241,8 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
       } = request.body ?? {};
 
       if (!name_ar?.trim()) return reply.status(400).send({ error: 'name_ar is required' });
+      const sq = parseStockQuantity(stock_quantity);
+      if (!sq.ok) return reply.status(400).send({ error: sq.error });
 
       try {
         const r = await fastify.pg.query(
@@ -3249,7 +3252,7 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
               track_stock, is_weighted, is_bom, is_active)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,true)
            RETURNING product_id, name_ar, name_fr, category, barcode, plu_code,
-                     price_cents, cost_price_cents, stock_quantity, uom,
+                     price_cents, cost_price_cents, stock_quantity::float8 AS stock_quantity, uom,
                      track_stock, is_weighted, is_bom, is_active`,
           [
             tenantId,
@@ -3260,7 +3263,7 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
             plu_code ?? null,
             price_cents ?? 0,
             cost_price_cents ?? 0,
-            stock_quantity ?? 0,
+            sq.value ?? 0,
             uom ?? 'UNIT',
             track_stock ?? false,
             is_weighted ?? false,

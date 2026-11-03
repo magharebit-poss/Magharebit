@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { MultipartFile } from '@fastify/multipart';
 import { getStorageProvider } from '../../services/storage/provider-factory.js';
+import { parseStockQuantity, withNumericStock } from '../../services/products/stock-quantity.js';
 
 const MGMT_ROLES = ['MANAGER', 'SUPERVISOR'] as const;
 
@@ -92,7 +93,7 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
           `SELECT product_id, tenant_id, plu_code, barcode, name_ar, name_fr,
                   category, price_cents, is_bom, is_weighted, uom, is_active,
                   COALESCE(is_perishable, false) AS is_perishable,
-                  track_stock, stock_quantity, low_stock_threshold,
+                  track_stock, stock_quantity::float8 AS stock_quantity, low_stock_threshold,
                   current_markdown_percent,
                   image_thumb_path, image_detail_path,
                   description_ar, description_fr, sort_order, business_fields,
@@ -131,7 +132,7 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
           `SELECT product_id, tenant_id, plu_code, barcode, name_ar, name_fr,
                   category, price_cents, is_bom, is_weighted, uom, is_active,
                   COALESCE(is_perishable, false) AS is_perishable,
-                  track_stock, stock_quantity, low_stock_threshold,
+                  track_stock, stock_quantity::float8 AS stock_quantity, low_stock_threshold,
                   current_markdown_percent,
                   image_thumb_path, image_detail_path,
                   description_ar, description_fr, sort_order, business_fields,
@@ -229,7 +230,11 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
           }
           addSet('cost_price_cents', cost);
         }
-        if (body['stock_quantity']     !== undefined) addSet('stock_quantity',     Number(body['stock_quantity']));
+        if (body['stock_quantity']     !== undefined) {
+          const sq = parseStockQuantity(body['stock_quantity']);
+          if (!sq.ok) return reply.status(400).send({ error: sq.error });
+          addSet('stock_quantity', sq.value);
+        }
         if (body['uom']                !== undefined) addSet('uom',                body['uom']);
         if (body['track_stock']        !== undefined) addSet('track_stock',        Boolean(body['track_stock']));
         if (body['is_weighted']        !== undefined) addSet('is_weighted',        Boolean(body['is_weighted']));
@@ -244,7 +249,7 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
             params,
           );
           if (rows.length === 0) return reply.status(404).send({ error: 'Product not found' });
-          const r = rows[0]!;
+          const r = withNumericStock(rows[0]!);
           return reply.send({ ...r, thumb_url: imageUrl(r.image_thumb_path), detail_url: imageUrl(r.image_detail_path) });
         } catch (err: unknown) {
           fastify.log.error({ err }, '[products] update (json) failed');
@@ -325,7 +330,12 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
       addSet('uom', fields['uom'] || undefined);
       if (fields['is_perishable'] !== undefined) addSet('is_perishable', parseBool(fields['is_perishable']) ?? false);
       if (fields['track_stock'] !== undefined) addSet('track_stock', parseBool(fields['track_stock']) ?? false);
-      if (fields['stock_quantity'] !== undefined) addSet('stock_quantity', parseIntField(fields['stock_quantity']) ?? 0);
+      if (fields['stock_quantity'] !== undefined) {
+        // A decimal, not parseInt: parseInt truncated 1.5 to 1 and would undo the NUMERIC stock column.
+        const sq = parseStockQuantity(fields['stock_quantity']);
+        if (!sq.ok) return reply.status(400).send({ error: sq.error });
+        addSet('stock_quantity', sq.value ?? 0);
+      }
       if (fields['low_stock_threshold'] !== undefined) addSet('low_stock_threshold', parseIntField(fields['low_stock_threshold']) ?? 5);
       addSet('description_ar', fields['description_ar'] !== undefined ? (fields['description_ar'] || null) : undefined);
       addSet('description_fr', fields['description_fr'] !== undefined ? (fields['description_fr'] || null) : undefined);
@@ -342,7 +352,7 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
           params,
         );
         if (rows.length === 0) return reply.status(404).send({ error: 'Product not found' });
-        const r = rows[0]!;
+        const r = withNumericStock(rows[0]!);
         return reply.send({
           ...r,
           thumb_url: imageUrl(r.image_thumb_path),

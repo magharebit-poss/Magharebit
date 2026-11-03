@@ -8,7 +8,8 @@
 -- section 5) never rejects a real sale; it records the shortfall here and raises an alert.
 --
 -- Sign convention: variance_qty = actual_qty - expected_qty (a shortage / oversell is NEGATIVE).
--- Quantities are units for normal products and grams for weighted ones (same as products.stock_quantity).
+-- Quantities are units for normal products and kilograms for weighted ones (same as products.stock_quantity,
+-- see migration 052; this line originally said grams).
 -- variance_qty is GENERATED so it can never disagree with expected/actual.
 --
 -- Foreign keys: product is RESTRICT (an audit row must not vanish with a product; products are

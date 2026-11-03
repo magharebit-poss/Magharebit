@@ -19,7 +19,9 @@ ALTER TABLE products
 --                          badges and trigger low-stock alerts in the POS.
 --
 -- stock_quantity       →  current on-hand quantity (units for normal
---                          products, grams for is_weighted products).
+--                          products, KILOGRAMS for is_weighted products;
+--                          this file originally said grams, corrected to
+--                          match what the POS sends: see migration 052).
 --                          Decremented by POST /transactions.
 --                          Incremented by POST /returns (disposition=restock).
 --                          Never goes below 0 (GREATEST guard in application).
