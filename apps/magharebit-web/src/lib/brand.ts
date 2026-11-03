@@ -22,3 +22,10 @@ export const BRAND = {
 export function waUrl(text?: string): string {
   return text ? `${BRAND.contact.waLink}?text=${encodeURIComponent(text)}` : BRAND.contact.waLink;
 }
+
+/**
+ * Kitchen-display (KDS) claims on the site (home ecosystem tile, /features catalog). Requested by the coordinator
+ * (02/11/2026) but no KDS is described anywhere else in this site, its docs or the engineering rules: confirm it
+ * ships before launch, or set this to false to remove every KDS mention.
+ */
+export const SHOW_KDS = true;

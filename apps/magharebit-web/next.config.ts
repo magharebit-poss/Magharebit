@@ -41,10 +41,14 @@ const securityHeaders = [
   // 0 = off: the legacy browser XSS filter is removed from every modern browser and was itself exploitable
   { key: 'X-XSS-Protection',         value: '0' },
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+  // Deliberately NO Cross-Origin-Resource-Policy / COEP: the POS webviews (Tauri/Capacitor) load /api/stores/*/logo as a
+  // cross-origin <img>, and the demo uses YouTube/Vimeo iframes. Both would break.
+  { key: 'X-Permitted-Cross-Domain-Policies', value: 'none' },
+  { key: 'Origin-Agent-Cluster', value: '?1' },
   { key: 'Referrer-Policy',          value: 'strict-origin-when-cross-origin' },
   {
     key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=()',
+    value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), interest-cohort=()',
   },
   {
     key: 'Strict-Transport-Security',

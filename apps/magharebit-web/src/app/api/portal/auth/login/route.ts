@@ -18,8 +18,14 @@ import { verifyKeyChecksum } from '@/lib/license-key'
 import { licensesRepo } from '@/lib/repositories/licenses'
 import { setPortalSessionCookie } from '@/lib/portal-session'
 import { getDb } from '@/lib/mongodb'
+import { checkRateLimit } from '@/lib/rateLimit'
+import { clientIp } from '@/lib/client-ip'
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Brute-force guard (Cloudflare audit sweep): the checksum is public logic, so cap guesses per IP before any parsing or DB work.
+  if (!(await checkRateLimit(`portal-login:${clientIp(req)}`, 20, 10 * 60 * 1000))) {
+    return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
+  }
   let body: { identifier?: string; licenseKey?: string }
   try {
     body = await req.json()
@@ -34,6 +40,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   if (!identifier) {
     return NextResponse.json({ error: 'identifier_required' }, { status: 400 })
+  }
+  // Second bucket per account so a botnet rotating IPs still cannot hammer one identifier
+  if (!(await checkRateLimit(`portal-login-id:${identifier}`, 10, 10 * 60 * 1000))) {
+    return NextResponse.json({ error: 'rate_limited', retryAfter: 600 }, { status: 429 })
   }
   if (!rawKey) {
     return NextResponse.json({ error: 'license_key_required' }, { status: 400 })

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { DashboardScreen, ReceiptScreen } from './ScreenMockups';
 import { useLang, type Lang } from './useLang';
+import { SHOW_KDS } from '@/lib/brand';
 
 type TileId = 'offline' | 'checkout' | 'whatsapp' | 'darija' | 'nocontract' | 'stock' | 'setup' | 'data' | 'ecosystem';
 
@@ -20,16 +21,8 @@ interface Tile { id: TileId; title: string; body: string }
  */
 const DATA_HOSTED_IN_MOROCCO = false;
 
-/*
- * The "multi-screen ecosystem" tile (counter POS + tablet + kitchen display, KDS) was requested by the coordinator
- * (02/11/2026) as a differentiator. No KDS is mentioned anywhere else in this site, its docs or the engineering
- * rules, so this switch must be confirmed before launch: set it to false to remove the tile (and its photos).
- * Wording stays conservative: it names the screens, not capabilities such as automatic order routing.
- *
- * The photos are illustrations (labelled as such): none shows the MAGHAREBIT interface, and none may carry another
- * company's name, logo or contact details.
- */
-const SHOW_KDS = true;
+// KDS wording and the photos: see SHOW_KDS in lib/brand.ts. The photos are illustrations (labelled as such): none shows the
+// MAGHAREBIT interface, and none may carry another company's name, logo or contact details.
 
 /*
  * Law 09-08: the copy says "designed along the principles of", never "compliant" or "certified": no certification or
