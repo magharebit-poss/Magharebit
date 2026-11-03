@@ -41,7 +41,8 @@ async function main() {
     await db.collection('_test').deleteMany({ t: true })
     console.log('✅ Cleanup OK')
     console.log('\n🎉 MongoDB Atlas verified')
-  } catch (err: any) {
+  } catch (e) {
+    const err = e as Error
     console.error('❌ Failed:', err.message)
     if (err.message.includes('auth')) console.error('   → Check username/password in MONGODB_URI')
     if (err.message.includes('ENOTFOUND')) console.error('   → Check internet + Atlas IP whitelist')

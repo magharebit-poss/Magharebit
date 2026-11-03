@@ -60,7 +60,7 @@ export async function getDb(): Promise<Db | null> {
     cachedClient = client
     cachedDb = client.db(dbName)
     connectionFailedAt = null
-    console.log('[mongodb] connected to Atlas ✓')
+    console.log('[mongodb] connected ✓')
     return cachedDb
   } catch (err) {
     connectionFailedAt = Date.now()

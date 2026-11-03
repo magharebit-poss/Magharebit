@@ -4,7 +4,7 @@
 // Run AFTER phase5-api-e2e.mjs on the same database (it reuses that seed).
 // Env: APP_DIR, OUT (screenshots), DL (download dir), PROFILE, CHROME, BASE, MONGODB_DB (default magharebit_p5), LANGS
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 

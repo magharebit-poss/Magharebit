@@ -691,13 +691,6 @@ export default function SettingsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {[
             {
-              title: 'مسح بيانات اليوم',
-              desc: 'حذف جميع مبيعات ومعاملات اليوم الحالي',
-              label: 'مسح البيانات',
-              confirm: 'هل أنت متأكد من مسح بيانات اليوم؟ لا يمكن التراجع.',
-              action: () => { /* TODO: DELETE /api/portal/transactions?today=true */ },
-            },
-            {
               title: 'إعادة ضبط الإعدادات',
               desc: 'العودة للإعدادات الافتراضية',
               label: 'إعادة الضبط',
@@ -720,9 +713,9 @@ export default function SettingsPage() {
               <button
                 onClick={() => { if (window.confirm(item.confirm)) item.action(); }}
                 style={{
-                  background: item.label === 'مسح البيانات' ? '#DC2626' : '#FFFFFF',
-                  color: item.label === 'مسح البيانات' ? '#FFFFFF' : '#DC2626',
-                  border: item.label === 'مسح البيانات' ? 'none' : '1px solid #DC2626',
+                  background: '#FFFFFF',
+                  color: '#DC2626',
+                  border: '1px solid #DC2626',
                   borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 700,
                   cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', flexShrink: 0,
                 }}
