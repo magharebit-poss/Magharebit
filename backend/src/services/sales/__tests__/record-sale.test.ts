@@ -19,15 +19,15 @@ describe('chooseVarianceReason (fixed vocabulary)', () => {
   test('no marker, arrives later than the threshold -> late_sync', () => {
     expect(chooseVarianceReason({ soldAt: SOLD, receivedAt: at(LATE_SYNC_SECONDS + 1) })).toBe('late_sync');
   });
-  test('exactly at the threshold is still on time -> count_mismatch', () => {
-    expect(chooseVarianceReason({ soldAt: SOLD, receivedAt: at(LATE_SYNC_SECONDS) })).toBe('count_mismatch');
+  test('exactly at the threshold is still on time -> oversell_online', () => {
+    expect(chooseVarianceReason({ soldAt: SOLD, receivedAt: at(LATE_SYNC_SECONDS) })).toBe('oversell_online');
   });
-  test('on-time online sale that found less stock -> count_mismatch', () => {
-    expect(chooseVarianceReason({ soldAt: SOLD, receivedAt: at(2) })).toBe('count_mismatch');
-    expect(chooseVarianceReason({ localReceiptRef: null, soldAt: SOLD, receivedAt: at(0) })).toBe('count_mismatch');
+  test('on-time online sale that found less stock -> oversell_online', () => {
+    expect(chooseVarianceReason({ soldAt: SOLD, receivedAt: at(2) })).toBe('oversell_online');
+    expect(chooseVarianceReason({ localReceiptRef: null, soldAt: SOLD, receivedAt: at(0) })).toBe('oversell_online');
   });
   test('a sale dated in the future never counts as late', () => {
-    expect(chooseVarianceReason({ soldAt: at(60), receivedAt: SOLD })).toBe('count_mismatch');
+    expect(chooseVarianceReason({ soldAt: at(60), receivedAt: SOLD })).toBe('oversell_online');
   });
 });
 

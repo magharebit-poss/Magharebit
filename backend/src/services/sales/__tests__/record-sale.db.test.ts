@@ -154,7 +154,7 @@ describe.skipIf(!dbOk)('recordSale on greengo_dev (each test rolled back)', () =
     expect(Number(v.expected_qty)).toBe(8);
     expect(Number(v.actual_qty)).toBe(5);
     expect(Number(v.variance_qty)).toBe(-3);
-    expect(v.reason).toBe('count_mismatch');
+    expect(v.reason).toBe('oversell_online');
     expect(v.register_id).toBe(s.registerId);
     expect(v.transaction_id).toBe(r.sale.transactionId);
     expect(await shiftTotal(c, s.shiftId)).toBe(8000); // the sale itself stands
@@ -169,7 +169,7 @@ describe.skipIf(!dbOk)('recordSale on greengo_dev (each test rolled back)', () =
     };
     expect(await reasonFor({ localReceiptRef: 'LOCAL-ABCD1234' })).toBe('oversell_offline');
     expect(await reasonFor({ soldAt: new Date(Date.now() - 15 * 60_000) })).toBe('late_sync');
-    expect(await reasonFor({})).toBe('count_mismatch');
+    expect(await reasonFor({})).toBe('oversell_online');
   });
 
   test('stock already 0: variance has actual 0, and the alert is high severity', async () => {

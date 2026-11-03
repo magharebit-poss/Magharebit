@@ -46,23 +46,27 @@ export interface Tender {
 }
 
 // ── Variance reasons (fixed vocabulary; the column itself is free text) ─────────────────────────
-export type VarianceReason = 'oversell_offline' | 'late_sync' | 'count_mismatch';
+// The sale path can only produce these three. They are HEURISTICS on signals the client sends
+// (the LOCAL- reference and sold_at), not verified facts. The name `count_mismatch` is deliberately
+// NOT used here: it is reserved for a variance found by comparing a real stock-take (count) with the
+// system stock, which does not exist yet.
+//
+//   oversell_offline  how detected: the request carries a provisional LOCAL- receipt reference
+//                     (the sale was made while the register was offline).
+//   late_sync         how detected: no LOCAL- reference, but sold_at is more than LATE_SYNC_SECONDS
+//                     (300 s) older than the moment the server received the sale.
+//   oversell_online   how detected: the default. An on-time online sale found less stock than it needed.
+export type VarianceReason = 'oversell_offline' | 'late_sync' | 'oversell_online';
 
 /** A sale that reaches the server more than this long after it was made counts as a late sync. */
 export const LATE_SYNC_SECONDS = 300;
 
-/**
- * Why was stock short?
- *  - oversell_offline: the sale was made offline (it carries a provisional LOCAL- receipt reference);
- *  - late_sync:        no offline marker, but the sale arrived more than LATE_SYNC_SECONDS after sold_at;
- *  - count_mismatch:   an on-time online sale still found less stock than the system expected,
- *                      so the recorded stock count disagreed with the shelf.
- */
+/** Why was stock short? Checked in this order: LOCAL- reference, then sold_at lag, then the default. */
 export function chooseVarianceReason(i: { localReceiptRef?: string | null; soldAt: Date; receivedAt: Date }): VarianceReason {
   if (i.localReceiptRef) return 'oversell_offline';
   const lagSeconds = (i.receivedAt.getTime() - i.soldAt.getTime()) / 1000;
   if (lagSeconds > LATE_SYNC_SECONDS) return 'late_sync';
-  return 'count_mismatch';
+  return 'oversell_online';
 }
 
 // ── Identity fields (clientTxId, deviceId, localReceiptRef) ─────────────────────────────────────
