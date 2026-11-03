@@ -245,6 +245,28 @@ describe.skipIf(!dbOk)('recordSale on greengo_dev (each test rolled back)', () =
     expect(await lastSeq(c, s.tenantId)).toBe(0);
   });
 
+  test('a fractional (weighted) quantity completes the sale; it must not fail on the integer stock column', async () => {
+    // Regression: GREATEST(stock_quantity - $1, 0) inferred $1 as integer and rejected 0.5 (22P02).
+    await c.query(`update products set stock_quantity = 5000 where product_id=$1`, [s.pA]);
+    for (const q of [0.5, 1.2, 2.5]) {
+      const lines = [{ productId: s.pA, quantity: q, unitPricePiastres: 1000, lineTotalPiastres: Math.round(1000 * q), taxAmountPiastres: 0 }];
+      const r = await recordSaleInTx(c, { ...sale(s), lines, canonicalLines: lines.map(normalizeLineItem), grandTotalPiastres: Math.round(1000 * q), tenders: [{ method: 'cash', amountPiastres: Math.round(1000 * q) }] });
+      expect(r.kind).toBe('created');
+    }
+    // 5000 - 0.5 - 1.2 - 2.5 with the integer column rounding at each assignment: 5000, 4999, 4997.
+    expect(await stockOf(c, s.pA)).toBe(4997);
+    expect(await count(c, 'stock_variances', 'tenant_id=$1', [s.tenantId])).toBe(0);
+  });
+
+  test('a fractional quantity larger than the stock records the exact missing quantity', async () => {
+    await c.query(`update products set stock_quantity = 0 where product_id=$1`, [s.pA]);
+    const lines = [{ productId: s.pA, quantity: 0.5, unitPricePiastres: 1000, lineTotalPiastres: 500, taxAmountPiastres: 0 }];
+    const r = await recordSaleInTx(c, { ...sale(s), lines, canonicalLines: lines.map(normalizeLineItem), grandTotalPiastres: 500, tenders: [{ method: 'cash', amountPiastres: 500 }] });
+    expect(r.kind).toBe('created');
+    const v = await one<{ expected_qty: string; actual_qty: string; variance_qty: string }>(c, `select expected_qty, actual_qty, variance_qty from stock_variances where tenant_id=$1`, [s.tenantId]);
+    expect([Number(v.expected_qty), Number(v.actual_qty), Number(v.variance_qty)]).toEqual([0.5, 0, -0.5]);
+  });
+
   test('closed shift and unknown shift are reported and write nothing', async () => {
     await c.query(`update shifts set status='closed' where shift_id=$1`, [s.shiftId]);
     expect(await recordSaleInTx(c, sale(s))).toEqual({ kind: 'shift_not_open', status: 'closed' });

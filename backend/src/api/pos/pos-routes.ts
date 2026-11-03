@@ -625,7 +625,12 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
         return reply.send(response);
       } catch (err: unknown) {
         // Fixed message: never the database's text. Everything was rolled back, so a retry is safe.
-        request.log.error({ errName: err instanceof Error ? err.name : 'unknown' }, 'transactions: sale failed, rolled back');
+        // SQLSTATE and constraint name only (never the message, which can contain values), so a 500 is diagnosable.
+        const pgErr = err as { code?: string; constraint?: string };
+        request.log.error(
+          { errName: err instanceof Error ? err.name : 'unknown', pgCode: pgErr.code, pgConstraint: pgErr.constraint },
+          'transactions: sale failed, rolled back',
+        );
         return reply.status(500).send({ error: 'Internal error' });
       }
     },

@@ -260,7 +260,11 @@ export async function recordSaleInTx(db: SqlRunner, input: RecordSaleInput): Pro
     if (stock.rows.length === 0) continue; // unknown product or stock not tracked: nothing to deduct
     const available = Number(stock.rows[0]!.stock_quantity);
     await db.query(
-      `UPDATE products SET stock_quantity = GREATEST(stock_quantity - $1, 0)
+      // $1 must be cast: stock_quantity is INTEGER, so Postgres would otherwise infer $1 as an integer
+      // and reject a fractional (weighted) quantity such as 0.5 with 22P02, failing the whole sale.
+      // The result is rounded to an integer on assignment; the kg-versus-grams question for weighted
+      // stock is a separate audit and is deliberately not decided here.
+      `UPDATE products SET stock_quantity = GREATEST(stock_quantity - $1::numeric, 0)
         WHERE product_id = $2 AND tenant_id = $3 AND track_stock = true`,
       [qty, productId, shift.tenant_id],
     );
