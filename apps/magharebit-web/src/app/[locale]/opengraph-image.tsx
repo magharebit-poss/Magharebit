@@ -15,11 +15,44 @@ export const contentType = 'image/png';
 const CARD = {
   fr: { tagline: 'Caisse & gestion commerciale au Maroc', stats: [['14 jours', 'Essai gratuit'], ['Hors ligne', 'La vente continue'], ['AR · FR · EN', 'Trois langues']] },
   en: { tagline: 'POS & retail management in Morocco', stats: [['14 days', 'Free trial'], ['Offline', 'Keeps selling'], ['AR · FR · EN', 'Three languages']] },
+  ar: { tagline: 'الكاشير وإدارة التجارة في المغرب', stats: [['14 يوماً', 'تجربة مجانية'], ['بدون إنترنت', 'البيع لا يتوقف'], ['3 لغات', 'عربية · فرنسية · إنجليزية']] },
 } as const;
+
+/**
+ * Cairo Bold restricted to the glyphs of the card (Google Fonts `text=` subset, a few KB), fetched on the server when
+ * the card is rendered. Returns null on any failure (network, timeout, unexpected CSS) and the caller falls back to the
+ * French card, so a font outage can never break link previews. The old User-Agent makes Google answer with TrueType or WOFF,
+ * formats this renderer can read (it cannot load woff2).
+ */
+async function loadCairo(text: string): Promise<ArrayBuffer | null> {
+  try {
+    const cssRes = await fetch(`https://fonts.googleapis.com/css2?family=Cairo:wght@700&text=${encodeURIComponent(text)}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/11.0.696.0 Safari/534.24' },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!cssRes.ok) return null;
+    const url = (await cssRes.text()).match(/src: url\((.+?)\) format\('(?:opentype|truetype|woff)'\)/)?.[1];
+    if (!url) return null;
+    const fontRes = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    return fontRes.ok ? await fontRes.arrayBuffer() : null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function Image({ params }: { params: Promise<{ locale: string }> | { locale: string } }) {
   const { locale } = await params;
-  const c = locale === 'en' ? CARD.en : CARD.fr;
+  let cairo: ArrayBuffer | null = null;
+  if (locale === 'ar') cairo = await loadCairo([CARD.ar.tagline, ...CARD.ar.stats.flat()].join(''));
+  const arabic = locale === 'ar' && cairo !== null;
+  const c = arabic ? CARD.ar : locale === 'en' ? CARD.en : CARD.fr;
+  // The renderer lays text out left to right and does not reorder bidi runs: Arabic words are shaped correctly but
+  // would read backwards. So for the Arabic card the word order (and the order of the three stats) is reversed in
+  // the markup, which displays right-to-left. No Latin letters in this card's Cairo subset, or Cairo would take over
+  // the glyphs of the brand name too.
+  const arStyle = arabic ? ({ fontFamily: 'Cairo' } as const) : {};
+  const show = (s: string) => (arabic ? s.split(' ').reverse().join(' ') : s);
+  const stats = arabic ? [...c.stats].reverse() : c.stats;
   return new ImageResponse(
     (
       <div
@@ -78,11 +111,12 @@ export default async function Image({ params }: { params: Promise<{ locale: stri
         <div
           style={{
             fontSize: '24px',
+            ...arStyle,
             color: 'rgba(255,255,255,0.65)',
             marginBottom: '32px',
           }}
         >
-          {c.tagline}
+          {show(c.tagline)}
         </div>
 
         {/* Stats row */}
@@ -96,7 +130,7 @@ export default async function Image({ params }: { params: Promise<{ locale: stri
             padding: '20px 40px',
           }}
         >
-          {c.stats.map(([value, label]) => ({ value, label })).map((stat) => (
+          {stats.map(([value, label]) => ({ value, label })).map((stat) => (
             <div
               key={stat.label}
               style={{
@@ -106,17 +140,17 @@ export default async function Image({ params }: { params: Promise<{ locale: stri
                 gap: '4px',
               }}
             >
-              <span style={{ fontSize: '28px', fontWeight: 700, color: '#F0B429' }}>
-                {stat.value}
+              <span style={{ fontSize: '28px', fontWeight: 700, color: '#F0B429', ...arStyle }}>
+                {show(stat.value)}
               </span>
-              <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.55)' }}>
-                {stat.label}
+              <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.55)', ...arStyle }}>
+                {show(stat.label)}
               </span>
             </div>
           ))}
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, ...(arabic && cairo ? { fonts: [{ name: 'Cairo', data: cairo, weight: 700 as const, style: 'normal' as const }] } : {}) }
   );
 }

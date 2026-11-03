@@ -119,7 +119,7 @@ export default function Footer() {
             <ul className="space-y-3 list-none p-0">
               <li><a href={`/${l}/faq`} className="font-arabic text-sm text-white/55 hover:text-gold-400 transition-colors">{t('faq')}</a></li>
               <li><a href={`/${l}/demo`} className="font-arabic text-sm text-white/55 hover:text-gold-400 transition-colors">{t('help')}</a></li>
-              <li><a href={`/${l}/demo`} className="font-arabic text-sm text-white/55 hover:text-gold-400 transition-colors">{t('contact')}</a></li>
+              <li><a href={`/${l}/contact`} className="font-arabic text-sm text-white/55 hover:text-gold-400 transition-colors">{t('contact')}</a></li>
               <li><a href={`/${l}/privacy`} className="font-arabic text-sm text-white/55 hover:text-gold-400 transition-colors">{t('privacy')}</a></li>
               <li><a href={`/${l}/status`} className="font-arabic text-sm text-white/55 hover:text-gold-400 transition-colors">{t('status')}</a></li>
               <li><a href={`/${l}/changelog`} className="font-arabic text-sm text-white/55 hover:text-gold-400 transition-colors">{t('changelog')}</a></li>

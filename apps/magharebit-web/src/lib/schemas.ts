@@ -1,4 +1,5 @@
 import { SITE_URL, HREFLANG, type SiteLocale } from './seo'
+import { BRAND } from './brand'
 
 // JSON-LD schema generators for MAGHAREBIT pages.
 // Import and call these in layout.tsx / page.tsx to inject structured data
@@ -42,7 +43,7 @@ export function organizationSchema() {
     logo: 'https://magharebit.com/icon.svg',
     contactPoint: {
       '@type': 'ContactPoint',
-      telephone: '+212619522487',
+      telephone: BRAND.contact.phoneE164,
       contactType: 'customer service',
       availableLanguage: ['Arabic', 'French', 'English'],
     },
@@ -70,7 +71,7 @@ export function localBusinessSchema(
     name: 'MAGHAREBIT',
     description,
     url: `https://magharebit.com/${locale}/caisse-enregistreuse-${citySlug}`,
-    telephone: '+212619522487',
+    telephone: BRAND.contact.phoneE164,
     address: {
       '@type': 'PostalAddress',
       addressLocality: cityName,
@@ -137,7 +138,7 @@ export function siteGraph(locale: SiteLocale) {
         foundingLocation: MOROCCO,
         contactPoint: {
           '@type': 'ContactPoint',
-          telephone: '+212619522487',
+          telephone: BRAND.contact.phoneE164,
           contactType: 'customer service',
           areaServed: 'MA',
           availableLanguage: ['Arabic', 'French', 'English'],

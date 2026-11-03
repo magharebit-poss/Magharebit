@@ -206,17 +206,18 @@ export default function HeroSection() {
         </div>
 
         {/* Badge */}
+        {/* Same kicker language as /about: gold khatam star, small tracked caps (Latin) / plain (Arabic) */}
         <div
-          className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/[0.18] rounded-full px-5 py-2 mb-10"
+          className="inline-flex items-center gap-2 bg-[#F0B429]/10 backdrop-blur-sm border border-[#F0B429]/35 rounded-full px-5 py-2 mb-10"
         >
-          <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse" />
-          <span className="font-arabic text-sm text-white/88">{t('badge')}</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 text-gold-400" fill="currentColor"><path d="M12 1.5l2.6 4.2 4.8-1.1-1.1 4.8 4.2 2.6-4.2 2.6 1.1 4.8-4.8-1.1L12 22.5l-2.6-4.2-4.8 1.1 1.1-4.8L1.5 12l4.2-2.6-1.1-4.8 4.8 1.1z" /></svg>
+          <span className={`text-xs font-bold text-gold-400 ${isRTL ? 'font-arabic text-sm' : 'font-sans uppercase tracking-[0.14em]'}`}>{t('badge')}</span>
         </div>
 
-        {/* Headline */}
+        {/* Headline: Latin display face for fr/en (the Arabic serif stack made French look off), Arabic face for ar */}
         <h1
-          className="font-arabic font-bold leading-[1.2] mb-4"
-          style={{ letterSpacing: '-0.01em', lineHeight: '1.12' }}
+          className={`${isRTL ? 'font-arabic' : 'font-display'} font-extrabold leading-[1.2] mb-4 text-balance`}
+          style={{ letterSpacing: isRTL ? '-0.01em' : '-0.025em', lineHeight: '1.12' }}
         >
           <span
             className="block text-white"
@@ -241,7 +242,7 @@ export default function HeroSection() {
 
         {/* Subheadline */}
         <p
-          className="font-arabic text-white/65 max-w-[600px] mx-auto leading-[2] mb-10"
+          className={`${isRTL ? 'font-arabic leading-[2]' : 'font-sans leading-[1.8]'} text-white/70 max-w-[640px] mx-auto mb-10`}
           style={{ fontSize: 'clamp(1rem, 2.5vw, 1.2rem)' }}
         >
           {t('sub')}
@@ -261,7 +262,7 @@ export default function HeroSection() {
         >
           <a
             href={`/${locale}/auth/signup`}
-            className="font-arabic font-bold transition-all duration-200 hover:-translate-y-0.5"
+            className={`${isRTL ? 'font-arabic' : 'font-sans'} font-bold transition-all duration-200 hover:-translate-y-0.5`}
             style={{
               display: 'inline-flex',
               width: 'auto',
@@ -273,11 +274,11 @@ export default function HeroSection() {
               boxShadow: '0 6px 24px rgba(240,180,41,0.45)',
             }}
           >
-            {t('cta_primary')} ←
+            {t('cta_primary')} {isRTL ? '←' : '→'}
           </a>
           <button
             onClick={() => setVideoOpen(true)}
-            className="font-arabic font-medium transition-all duration-200"
+            className={`${isRTL ? 'font-arabic' : 'font-sans'} font-medium transition-all duration-200`}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
