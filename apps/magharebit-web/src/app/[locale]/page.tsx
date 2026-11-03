@@ -19,7 +19,7 @@ const ComparisonSection     = dynamic(() => import('@/components/landing/Compari
 const WhatsAppReportPreview = dynamic(() => import('@/components/landing/WhatsAppReportPreview'));
 const WasteCalculator       = dynamic(() => import('@/components/landing/WasteCalculator'));
 const PricingSection        = dynamic(() => import('@/components/landing/PricingSection'));
-const Testimonial           = dynamic(() => import('@/components/landing/Testimonial'));
+const ValueBlock            = dynamic(() => import('@/components/landing/ValueBlock'));
 const HomeFaqSection        = dynamic(() => import('@/components/landing/HomeFaqSection'));
 const DemoForm              = dynamic(() => import('@/components/landing/DemoForm'));
 const Footer                = dynamic(() => import('@/components/landing/Footer'));
@@ -76,7 +76,7 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
         <WhatsAppReportPreview />
         <WasteCalculator />
         <PricingSection />
-        <Testimonial />
+        <ValueBlock />
         <HomeFaqSection />
         <DemoForm />
       </main>

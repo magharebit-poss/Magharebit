@@ -327,12 +327,6 @@
     "next_4_title": "Support continu",
     "next_4_body": "Notre equipe reste disponible sur WhatsApp a tout moment"
   },
-  "testimonial": {
-    "quote": "Depuis que nous utilisons MAGHAREBIT POS, le suivi des stocks est devenu beaucoup plus facile et nous gagnons beaucoup de temps chaque jour. L'interface en arabe est excellente et convient parfaitement à notre équipe.",
-    "name": "Mohammed El Amrani",
-    "role": "Propriétaire, Boulangerie Al Amrani — Casablanca",
-    "initials": "MA"
-  },
   "cta": {
     "heading": "Prêt à transformer votre commerce ?",
     "sub": "Commencez votre essai gratuit de 14 jours. Sans carte bancaire.",
@@ -1312,5 +1306,19 @@
     "type_general": "Commerce général",
     "type_multi": "Plusieurs points de vente",
     "type_other": "Autre"
+  },
+  "value_block": {
+    "kicker": "Pourquoi MAGHAREBIT",
+    "title": "Rejoignez les commerçants marocains qui digitalisent leur gestion",
+    "sub": "Une caisse qui ne s’arrête pas quand internet coupe, vos chiffres du jour sur WhatsApp et des données protégées : essayez MAGHAREBIT 14 jours dans votre commerce.",
+    "p1_title": "Hors ligne d’abord",
+    "p1_text": "La vente continue sans internet et tout se synchronise au retour du réseau.",
+    "p2_title": "WhatsApp, sans application",
+    "p2_text": "Ticket numérique pour vos clients, rapport du soir pour vous.",
+    "p3_title": "Données protégées",
+    "p3_text": "Isolées par commerce, chiffrées sur l’appareil, conçues selon les principes de la loi 09-08.",
+    "cta": "Commencer l’essai gratuit",
+    "wa": "Écrire sur WhatsApp",
+    "note": "Sans engagement · Sans carte bancaire"
   }
 }

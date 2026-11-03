@@ -327,12 +327,6 @@
     "next_4_title": "Ongoing support",
     "next_4_body": "Our team on WhatsApp at any time"
   },
-  "testimonial": {
-    "quote": "Since using MAGHAREBIT POS, tracking inventory has become much easier and we save a lot of time every day. The Arabic interface is great and perfectly suits our team.",
-    "name": "Mohammed El Amrani",
-    "role": "Owner, Al Amrani Bakery — Casablanca",
-    "initials": "MA"
-  },
   "cta": {
     "heading": "Ready to transform your store?",
     "sub": "Start your free 14-day trial today. No credit card required.",
@@ -1312,5 +1306,19 @@
     "type_general": "General store",
     "type_multi": "Several points of sale",
     "type_other": "Other"
+  },
+  "value_block": {
+    "kicker": "Why MAGHAREBIT",
+    "title": "Join the Moroccan merchants who are digitising how they run their store",
+    "sub": "A till that keeps going when the internet drops, your daily figures on WhatsApp and protected data: try MAGHAREBIT for 14 days in your own store.",
+    "p1_title": "Offline first",
+    "p1_text": "Selling continues without internet and everything syncs when the network is back.",
+    "p2_title": "WhatsApp, no app to open",
+    "p2_text": "Digital receipts for your customers, the evening report for you.",
+    "p3_title": "Protected data",
+    "p3_text": "Isolated per store, encrypted on the device, designed along the principles of Law 09-08.",
+    "cta": "Start the free trial",
+    "wa": "Message us on WhatsApp",
+    "note": "No commitment · No credit card"
   }
 }

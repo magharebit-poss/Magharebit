@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function DemoPage({ params }: { params: Promise<{ locale: string }> }) {
   setRequestLocale((await params).locale);
   const t = await getTranslations('demo');
-  const tTest = await getTranslations('testimonial');
+  const tValue = await getTranslations('value_block');
   const locale = await getLocale();
   const isRTL = locale === 'ar';
   const fontBody = isRTL ? 'Noto Naskh Arabic, Cairo, serif' : 'Inter, sans-serif';
@@ -172,62 +172,18 @@ export default async function DemoPage({ params }: { params: Promise<{ locale: s
                 ))}
               </div>
 
-              {/* Mini testimonial card */}
-              <div
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '14px',
-                  padding: '20px 24px',
-                  marginBottom: '28px',
-                  direction: isRTL ? 'rtl' : 'ltr',
-                }}
-              >
-                <div style={{ display: 'flex', gap: '4px', marginBottom: '10px' }}>
-                  {[1,2,3,4,5].map(s => (
-                    <span key={s} style={{ color: '#F0B429', fontSize: '14px' }}>★</span>
-                  ))}
-                </div>
-                <p
-                  style={{
-                    fontFamily: fontBody,
-                    fontSize: '13px',
-                    color: 'rgba(255,255,255,0.70)',
-                    lineHeight: 1.65,
-                    marginBottom: '12px',
-                    fontStyle: 'italic',
-                  }}
-                >
-                  &ldquo;{tTest('quote').split('MAGHAREBIT POS')[0]}
-                  <strong style={{ color: '#F0B429', fontStyle: 'normal' }}>MAGHAREBIT POS</strong>
-                  {tTest('quote').split('MAGHAREBIT POS')[1]}&rdquo;
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexDirection: isRTL ? 'row-reverse' : 'row' }}>
-                  <div
-                    style={{
-                      width: '36px',
-                      height: '36px',
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #0F3D2A, #1a5c3a)',
-                      border: '2px solid rgba(240,180,41,0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      color: '#F0B429',
-                      flexShrink: 0,
-                      fontFamily: 'Plus Jakarta Sans, sans-serif',
-                    }}
-                  >
-                    {tTest('initials')}
-                  </div>
-                  <div style={{ textAlign: isRTL ? 'right' : 'left' }}>
-                    <div style={{ fontFamily: fontBody, fontSize: '13px', fontWeight: 600, color: '#FFFFFF' }}>{tTest('name')}</div>
-                    <div style={{ fontFamily: fontBody, fontSize: '11px', color: 'rgba(255,255,255,0.50)' }}>{tTest('role')}</div>
-                  </div>
-                </div>
-              </div>
+              {/* Value points (replaces the former named testimonial: no person, city, rating or figure) */}
+              <ul className="mb-7 space-y-3 rounded-[14px] border border-white/10 bg-white/[0.04] p-5" dir={isRTL ? 'rtl' : 'ltr'}>
+                {[1, 2, 3].map((i) => (
+                  <li key={i} className="flex gap-3">
+                    <span aria-hidden="true" className="mt-0.5 text-[#F0B429]">✓</span>
+                    <span>
+                      <span className="block text-sm font-semibold text-white">{tValue(`p${i}_title`)}</span>
+                      <span className="block text-[13px] leading-relaxed text-white/65">{tValue(`p${i}_text`)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
 
               {/* WhatsApp CTA */}
               <p style={{ fontFamily: fontBody, fontSize: '13px', color: 'rgba(255,255,255,0.50)', marginBottom: '10px', textAlign: isRTL ? 'right' : 'left' }}>

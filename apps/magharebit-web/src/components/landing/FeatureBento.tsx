@@ -1,10 +1,11 @@
 'use client';
 
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { DashboardScreen, ReceiptScreen } from './ScreenMockups';
 import { useLang, type Lang } from './useLang';
 
-type TileId = 'offline' | 'checkout' | 'whatsapp' | 'darija' | 'nocontract' | 'stock' | 'setup' | 'data';
+type TileId = 'offline' | 'checkout' | 'whatsapp' | 'darija' | 'nocontract' | 'stock' | 'setup' | 'data' | 'ecosystem';
 
 interface Tile { id: TileId; title: string; body: string }
 
@@ -19,9 +20,26 @@ interface Tile { id: TileId; title: string; body: string }
  */
 const DATA_HOSTED_IN_MOROCCO = false;
 
+/*
+ * The "multi-screen ecosystem" tile (counter POS + tablet + kitchen display, KDS) was requested by the coordinator
+ * (02/11/2026) as a differentiator. No KDS is mentioned anywhere else in this site, its docs or the engineering
+ * rules, so this switch must be confirmed before launch: set it to false to remove the tile (and its photos).
+ * Wording stays conservative: it names the screens, not capabilities such as automatic order routing.
+ *
+ * The photos are illustrations (labelled as such): none shows the MAGHAREBIT interface, and none may carry another
+ * company's name, logo or contact details.
+ */
+const SHOW_KDS = true;
+
+/*
+ * Law 09-08: the copy says "designed along the principles of", never "compliant" or "certified": no certification or
+ * CNDP filing is on record. "Offline first" promises selling without internet, not every payment method (see above).
+ */
+
 const COPY: Record<Lang, {
   badge: string; title: string; subtitle: string; more: string;
   tiles: Tile[]; dataMorocco: Tile; offline: { online: string; offline: string; synced: string };
+  eco: { illustration: string; pos: string; tablet: string; kds: string; alts: { pos: string; tablet: string; kds: string } };
 }> = {
   fr: {
     badge: 'Pourquoi MAGHAREBIT',
@@ -29,17 +47,19 @@ const COPY: Record<Lang, {
     subtitle: 'Internet qui coupe, paiement en espèces, arabe et français au quotidien : MAGHAREBIT part de la réalité de votre boutique.',
     more: 'En savoir plus',
     tiles: [
-      { id: 'offline', title: 'La vente ne s’arrête jamais', body: 'Coupure d’internet ? Vous continuez d’encaisser. Tout se synchronise tout seul dès que le réseau revient.' },
+      { id: 'offline', title: 'Hors ligne d’abord : la vente ne s’arrête jamais', body: 'Coupure d’internet ? Vous continuez d’encaisser, en espèces notamment, et tout se synchronise tout seul au retour du réseau.' },
       { id: 'checkout', title: 'Encaisser en quelques secondes', body: 'Code-barres, balance, espèces ou QR, et un ticket imprimé à votre nom.' },
-      { id: 'whatsapp', title: 'Votre journée, chaque soir sur WhatsApp', body: 'Ventes, marge et alertes de stock arrivent sur votre téléphone. Aucune application à ouvrir.' },
+      { id: 'whatsapp', title: 'Tickets WhatsApp automatiques', body: 'Le ticket numérique part sur WhatsApp chez votre client, et vos ventes, marge et alertes de stock arrivent chaque soir sur votre téléphone.' },
       { id: 'darija', title: 'Un support qui parle darija', body: 'Une équipe au Maroc qui vous répond dans votre langue, par téléphone ou WhatsApp.' },
       { id: 'nocontract', title: 'Sans engagement, sans surprise', body: 'Pas de contrat à signer, pas de frais cachés. Vous arrêtez quand vous voulez.' },
       { id: 'stock', title: 'Stock et ventes en temps réel', body: 'Chaque vente met le stock à jour. Vous savez ce qui se vend, et ce qu’il faut commander.' },
       { id: 'setup', title: 'Prêt en quelques minutes', body: 'Vous installez, vous ajoutez vos produits, vous vendez. Sans technicien.' },
-      { id: 'data', title: 'Vos données sous clé', body: 'Chiffrées sur l’appareil, et aucune donnée de carte bancaire n’est jamais enregistrée.' },
+      { id: 'data', title: 'Conçu selon la loi 09-08', body: 'Données isolées par commerce et chiffrées sur l’appareil, aucune donnée de carte enregistrée : les principes de la loi marocaine 09-08 dès la conception.' },
+      { id: 'ecosystem', title: 'Un écosystème multi-écrans : caisse + écran cuisine (KDS)', body: 'Caisse au comptoir, tablette en salle et écran cuisine : chaque écran a son rôle, sur une seule plateforme.' },
     ],
     dataMorocco: { id: 'data', title: 'Vos données restent au Maroc', body: 'Hébergées au Maroc, chiffrées, et aucune donnée de carte bancaire n’est jamais enregistrée.' },
     offline: { online: 'En ligne', offline: 'Hors ligne — la vente continue', synced: 'Synchronisé' },
+    eco: { illustration: 'Illustration', pos: 'Caisse', tablet: 'Tablette', kds: 'Écran cuisine (KDS)', alts: { pos: 'Illustration : caisse tactile sur un comptoir de restaurant', tablet: 'Illustration : prise de commande sur tablette', kds: 'Illustration : écran cuisine (KDS) affichant les commandes en cours' } },
   },
   ar: {
     badge: 'لماذا MAGHAREBIT',
@@ -47,17 +67,19 @@ const COPY: Record<Lang, {
     subtitle: 'إنترنت ينقطع، دفع نقدي، عربية وفرنسية كل يوم: MAGHAREBIT ينطلق من واقع متجرك.',
     more: 'المزيد',
     tiles: [
-      { id: 'offline', title: 'البيع لا يتوقف أبداً', body: 'انقطع الإنترنت؟ تواصل البيع، وتتم المزامنة تلقائياً فور عودة الشبكة.' },
+      { id: 'offline', title: 'بدون إنترنت أولاً: البيع لا يتوقف أبداً', body: 'انقطع الإنترنت؟ تواصل البيع، نقداً خصوصاً، وتتم المزامنة تلقائياً فور عودة الشبكة.' },
       { id: 'checkout', title: 'الدفع في ثوانٍ', body: 'باركود، ميزان، نقداً أو QR، ووصل مطبوع باسم متجرك.' },
-      { id: 'whatsapp', title: 'يومك كل مساء على واتساب', body: 'المبيعات والهامش وتنبيهات المخزون تصل إلى هاتفك، دون فتح أي تطبيق.' },
+      { id: 'whatsapp', title: 'وصولات واتساب تلقائية', body: 'يصل الوصل الرقمي إلى زبونك على واتساب، وتصلك المبيعات والهامش وتنبيهات المخزون كل مساء على هاتفك.' },
       { id: 'darija', title: 'دعم يتحدث الدارجة', body: 'فريق في المغرب يجيبك بلغتك، عبر الهاتف أو واتساب.' },
       { id: 'nocontract', title: 'بدون التزام، بدون مفاجآت', body: 'لا عقد توقّعه ولا رسوم خفية. توقّف متى شئت.' },
       { id: 'stock', title: 'المخزون والمبيعات لحظة بلحظة', body: 'كل بيع يُحدِّث المخزون. تعرف ما يُباع وما يجب طلبه.' },
       { id: 'setup', title: 'جاهز في دقائق', body: 'ثبّت، أضف منتجاتك، وابدأ البيع. بدون تقني.' },
-      { id: 'data', title: 'بياناتك في أمان', body: 'مشفّرة على الجهاز، ولا تُحفظ أي بيانات بطاقة بنكية أبداً.' },
+      { id: 'data', title: 'مصمم وفق القانون 09-08', body: 'بيانات معزولة لكل متجر ومشفّرة على الجهاز، ولا تُحفظ أي بيانات بطاقة: مبادئ القانون المغربي 09-08 منذ التصميم.' },
+      { id: 'ecosystem', title: 'منظومة متعددة الشاشات: صندوق + شاشة المطبخ (KDS)', body: 'صندوق على الكونتوار، ولوحة في القاعة، وشاشة للمطبخ: لكل شاشة دورها داخل منصة واحدة.' },
     ],
     dataMorocco: { id: 'data', title: 'بياناتك تبقى في المغرب', body: 'مستضافة في المغرب ومشفّرة، ولا تُحفظ أي بيانات بطاقة بنكية أبداً.' },
     offline: { online: 'متصل', offline: 'بدون إنترنت — البيع مستمر', synced: 'تمت المزامنة' },
+    eco: { illustration: 'صورة توضيحية', pos: 'الصندوق', tablet: 'اللوحة', kds: 'شاشة المطبخ (KDS)', alts: { pos: 'صورة توضيحية: صندوق بشاشة لمس على كونتوار مطعم', tablet: 'صورة توضيحية: أخذ طلب على لوحة', kds: 'صورة توضيحية: شاشة مطبخ (KDS) تعرض الطلبات الجارية' } },
   },
   en: {
     badge: 'Why MAGHAREBIT',
@@ -65,17 +87,19 @@ const COPY: Record<Lang, {
     subtitle: 'Patchy internet, cash payments, Arabic and French every day: MAGHAREBIT starts from how your shop really works.',
     more: 'Learn more',
     tiles: [
-      { id: 'offline', title: 'Selling never stops', body: 'Internet down? Keep ringing up sales. Everything syncs on its own when the network returns.' },
+      { id: 'offline', title: 'Offline first: selling never stops', body: 'Internet down? Keep ringing up sales, cash in particular, and everything syncs on its own when the network returns.' },
       { id: 'checkout', title: 'Check out in seconds', body: 'Barcode, scale, cash or QR, and a printed receipt with your name.' },
-      { id: 'whatsapp', title: 'Your day, every evening on WhatsApp', body: 'Sales, margin and stock alerts land on your phone. No app to open.' },
+      { id: 'whatsapp', title: 'Automatic WhatsApp receipts', body: 'The digital receipt goes to your customer on WhatsApp, and your sales, margin and stock alerts reach your phone every evening.' },
       { id: 'darija', title: 'Support that speaks Darija', body: 'A team in Morocco answers in your language, by phone or WhatsApp.' },
       { id: 'nocontract', title: 'No commitment, no surprises', body: 'No contract to sign, no hidden fees. Stop whenever you want.' },
       { id: 'stock', title: 'Real-time stock and sales', body: 'Every sale updates stock. You know what sells and what to reorder.' },
       { id: 'setup', title: 'Ready in minutes', body: 'Install, add your products, start selling. No technician needed.' },
-      { id: 'data', title: 'Your data under lock', body: 'Encrypted on the device, and no card data is ever stored.' },
+      { id: 'data', title: 'Designed along Law 09-08', body: 'Data isolated per store and encrypted on the device, no card data stored: the principles of Moroccan Law 09-08 from the design stage.' },
+      { id: 'ecosystem', title: 'A multi-screen ecosystem: till + kitchen display (KDS)', body: 'A till at the counter, a tablet on the floor and a kitchen display: each screen has its role, on one platform.' },
     ],
     dataMorocco: { id: 'data', title: 'Your data stays in Morocco', body: 'Hosted in Morocco, encrypted, and no card data is ever stored.' },
     offline: { online: 'Online', offline: 'Offline — selling continues', synced: 'Synced' },
+    eco: { illustration: 'Illustration', pos: 'Till', tablet: 'Tablet', kds: 'Kitchen display (KDS)', alts: { pos: 'Illustration: touchscreen till on a restaurant counter', tablet: 'Illustration: taking an order on a tablet', kds: 'Illustration: kitchen display (KDS) showing live orders' } },
   },
 };
 
@@ -89,9 +113,10 @@ const TARGET: Record<TileId, string | null> = {
   stock: '/features#inventory',
   setup: '/download',
   data: null,
+  ecosystem: null,
 };
 
-/** Grid placement on lg (12 columns): 7+5 / 4+4+4 / 6+3+3. md is 2 columns, the wide visual tiles span both. */
+/** Grid placement on lg (12 columns): 7+5 / 4+4+4 / 6+3+3 / 12 (ecosystem). md is 2 columns, the wide visual tiles span both. */
 const SPAN: Record<TileId, string> = {
   offline: 'md:col-span-2 lg:col-span-7',
   checkout: 'lg:col-span-5',
@@ -101,6 +126,7 @@ const SPAN: Record<TileId, string> = {
   stock: 'md:col-span-2 lg:col-span-6',
   setup: 'lg:col-span-3',
   data: 'lg:col-span-3',
+  ecosystem: 'md:col-span-2 lg:col-span-12',
 };
 
 const ICON: Record<TileId, ReactNode> = {
@@ -111,6 +137,7 @@ const ICON: Record<TileId, ReactNode> = {
   nocontract: <><path d="M14 3H6v18h12V7z" /><path d="M14 3v4h4M9 12l6 6M15 12l-6 6" /></>,
   stock: <><path d="M21 8 12 3 3 8v8l9 5 9-5z" /><path d="M3 8l9 5 9-5M12 13v8" /></>,
   setup: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
+  ecosystem: <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8M12 16v4" /></>,
   data: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></>,
 };
 
@@ -148,7 +175,8 @@ function WhatsAppBubbles() {
 export default function FeatureBento() {
   const { lang, isRTL, locale } = useLang();
   const c = COPY[lang];
-  const tiles = DATA_HOSTED_IN_MOROCCO ? c.tiles.map((t) => (t.id === 'data' ? c.dataMorocco : t)) : c.tiles;
+  const base = DATA_HOSTED_IN_MOROCCO ? c.tiles.map((t) => (t.id === 'data' ? c.dataMorocco : t)) : c.tiles;
+  const tiles = SHOW_KDS ? base : base.filter((t) => t.id !== 'ecosystem');
 
   const visual = (id: TileId): ReactNode => {
     if (id === 'offline') return <OfflineDemo labels={c.offline} />;
@@ -187,6 +215,20 @@ export default function FeatureBento() {
             const href = target === null ? null : target.startsWith('#') ? target : `/${locale}${target}`;
             const inner = (
               <>
+                {tile.id === 'ecosystem' && (
+                  <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {([['pos', '/media/pos-restaurant.jpg'], ['tablet', '/media/pos-tablet.jpg'], ['kds', '/media/kds-kitchen.jpg']] as const).map(([k, src]) => (
+                      <figure key={k} className="group/img relative aspect-[4/3] overflow-hidden rounded-2xl border border-[#E5E7EB] shadow-xl transition-colors duration-200 hover:border-[#B8860B]/70">
+                        <Image src={src} alt={c.eco.alts[k]} fill sizes="(min-width: 1100px) 340px, (min-width: 640px) 30vw, 92vw" className="object-cover" />
+                        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-[#0A2318]/75 via-transparent to-transparent" />
+                        <figcaption className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 p-3 text-sm font-semibold text-white">
+                          <span>{c.eco[k]}</span>
+                          <span className="rounded-full bg-black/40 px-2 py-0.5 text-[11px] font-medium text-white/80">{c.eco.illustration}</span>
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                )}
                 {v && (
                   <div aria-hidden="true" className="relative mb-5 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-brand-900 to-brand-950 ring-1 ring-white/5 sm:h-44">
                     <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 55% at 50% 55%, rgba(240,180,41,0.14), transparent 70%)' }} />
