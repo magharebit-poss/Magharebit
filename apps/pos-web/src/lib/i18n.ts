@@ -830,6 +830,48 @@ export interface Translations {
   nav: {
     branches: string;
     settings: string;
+    variances: string;
+  };
+  variances: {
+    title: string;
+    subtitle: string;
+    back: string;
+    loading: string;
+    empty: string;
+    errorLoad: string;
+    errorForbidden: string;
+    errorAcknowledge: string;
+    filterOpen: string;
+    filterAcknowledged: string;
+    filterAll: string;
+    colProduct: string;
+    colExpected: string;
+    colActual: string;
+    colMissing: string;
+    colReason: string;
+    colRegister: string;
+    colTime: string;
+    colAction: string;
+    acknowledge: string;
+    acknowledging: string;
+    acknowledgedLabel: string;
+    reasons: { oversell_offline: string; late_sync: string; oversell_online: string; unknown: string };
+    prev: string;
+    next: string;
+    range: string; // {from}-{to} / {total}
+    rejectedTitle: string;
+    rejectedHelp: string;
+    rejectedEmpty: string;
+    rejectedErrorLoad: string;
+    rejectedColReceipt: string;
+    rejectedColQueued: string;
+    rejectedColTotal: string;
+    rejectedColMethod: string;
+    rejectedColReason: string;
+    rejectedExport: string;
+    rejectedExportError: string;
+    rejectedReasons: { client_tx_id_conflict: string; invalid_sale: string; other: string };
+    methods: { cash: string; card: string; lana: string };
   };
   settings: {
     title: string;
@@ -1794,6 +1836,57 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
     nav: {
       branches: 'الفروع',
       settings: 'الإعدادات',
+      variances: 'فروقات المخزون',
+    },
+    variances: {
+      title: 'فروقات المخزون',
+      subtitle: 'عمليات بيع احتاجت كمية أكبر من المتوفر في المخزون. راجع كل حالة ثم أكّدها.',
+      back: 'العودة إلى نقطة البيع',
+      loading: 'جارٍ التحميل...',
+      empty: 'لا توجد فروقات للعرض.',
+      errorLoad: 'تعذّر تحميل الفروقات.',
+      errorForbidden: 'هذه الصفحة للمدراء فقط.',
+      errorAcknowledge: 'تعذّر التأكيد. أعد المحاولة.',
+      filterOpen: 'للمراجعة',
+      filterAcknowledged: 'تم تأكيدها',
+      filterAll: 'الكل',
+      colProduct: 'المنتج',
+      colExpected: 'المتوقع',
+      colActual: 'الفعلي',
+      colMissing: 'الناقص',
+      colReason: 'السبب',
+      colRegister: 'الصندوق',
+      colTime: 'الوقت',
+      colAction: 'إجراء',
+      acknowledge: 'تأكيد المراجعة',
+      acknowledging: 'جارٍ الحفظ...',
+      acknowledgedLabel: 'تمت المراجعة',
+      reasons: {
+        oversell_offline: 'بيع دون اتصال يفوق المخزون',
+        late_sync: 'مزامنة متأخرة',
+        oversell_online: 'بيع يفوق المخزون',
+        unknown: 'أخرى',
+      },
+      prev: 'السابق',
+      next: 'التالي',
+      range: '{from}-{to} من {total}',
+      rejectedTitle: 'مبيعات مرفوضة (على هذا الجهاز)',
+      rejectedHelp: 'مبيعات سُجّلت دون اتصال ورفضها الخادم. تبقى محفوظة هنا ولا تُحذف تلقائياً. راجعها مع المدير.',
+      rejectedEmpty: 'لا توجد مبيعات مرفوضة.',
+      rejectedErrorLoad: 'تعذّر قراءة المبيعات المرفوضة.',
+      rejectedColReceipt: 'رقم الإيصال المؤقت',
+      rejectedColQueued: 'وقت التسجيل',
+      rejectedColTotal: 'المجموع',
+      rejectedColMethod: 'طريقة الدفع',
+      rejectedColReason: 'سبب الرفض',
+      rejectedExport: 'تصدير CSV',
+      rejectedExportError: 'تعذّر إنشاء الملف.',
+      rejectedReasons: {
+        client_tx_id_conflict: 'المعرّف مستخدم لعملية مختلفة',
+        invalid_sale: 'بيانات غير صالحة',
+        other: 'أخرى',
+      },
+      methods: { cash: 'نقداً', card: 'بطاقة', lana: 'Lana' },
     },
     settings: {
       title: 'الإعدادات',
@@ -2859,6 +2952,57 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
     nav: {
       branches: 'Succursales',
       settings: 'Paramètres',
+      variances: 'Écarts de stock',
+    },
+    variances: {
+      title: 'Écarts de stock',
+      subtitle: 'Ventes qui ont demandé plus que le stock disponible. Vérifiez chacune puis validez-la.',
+      back: 'Retour à la caisse',
+      loading: 'Chargement...',
+      empty: 'Aucun écart à afficher.',
+      errorLoad: 'Impossible de charger les écarts.',
+      errorForbidden: 'Cette page est réservée aux managers.',
+      errorAcknowledge: 'Validation impossible. Réessayez.',
+      filterOpen: 'À vérifier',
+      filterAcknowledged: 'Validés',
+      filterAll: 'Tous',
+      colProduct: 'Produit',
+      colExpected: 'Attendu',
+      colActual: 'Réel',
+      colMissing: 'Manquant',
+      colReason: 'Motif',
+      colRegister: 'Caisse',
+      colTime: 'Heure',
+      colAction: 'Action',
+      acknowledge: 'Valider',
+      acknowledging: 'Enregistrement...',
+      acknowledgedLabel: 'Validé',
+      reasons: {
+        oversell_offline: 'Vendu hors ligne au-delà du stock',
+        late_sync: 'Synchronisation tardive',
+        oversell_online: 'Vendu au-delà du stock',
+        unknown: 'Autre',
+      },
+      prev: 'Précédent',
+      next: 'Suivant',
+      range: '{from}-{to} sur {total}',
+      rejectedTitle: 'Ventes refusées (sur cet appareil)',
+      rejectedHelp: "Ventes enregistrées hors ligne et refusées par le serveur. Elles restent ici et ne sont jamais supprimées automatiquement. À régulariser avec le manager.",
+      rejectedEmpty: 'Aucune vente refusée.',
+      rejectedErrorLoad: 'Impossible de lire les ventes refusées.',
+      rejectedColReceipt: 'N° provisoire',
+      rejectedColQueued: 'Mise en file',
+      rejectedColTotal: 'Total',
+      rejectedColMethod: 'Paiement',
+      rejectedColReason: 'Motif du refus',
+      rejectedExport: 'Exporter en CSV',
+      rejectedExportError: 'Impossible de créer le fichier.',
+      rejectedReasons: {
+        client_tx_id_conflict: 'Identifiant déjà utilisé par une autre vente',
+        invalid_sale: 'Données invalides',
+        other: 'Autre',
+      },
+      methods: { cash: 'Espèces', card: 'Carte', lana: 'Lana' },
     },
     settings: {
       title: 'Paramètres',
@@ -3924,6 +4068,57 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
     nav: {
       branches: 'Branches',
       settings: 'Settings',
+      variances: 'Stock variances',
+    },
+    variances: {
+      title: 'Stock variances',
+      subtitle: 'Sales that needed more than the stock on hand. Check each one, then acknowledge it.',
+      back: 'Back to POS',
+      loading: 'Loading...',
+      empty: 'No variances to show.',
+      errorLoad: 'Could not load the variances.',
+      errorForbidden: 'This page is for managers only.',
+      errorAcknowledge: 'Could not acknowledge. Try again.',
+      filterOpen: 'To review',
+      filterAcknowledged: 'Acknowledged',
+      filterAll: 'All',
+      colProduct: 'Product',
+      colExpected: 'Expected',
+      colActual: 'Actual',
+      colMissing: 'Missing',
+      colReason: 'Reason',
+      colRegister: 'Register',
+      colTime: 'Time',
+      colAction: 'Action',
+      acknowledge: 'Acknowledge',
+      acknowledging: 'Saving...',
+      acknowledgedLabel: 'Acknowledged',
+      reasons: {
+        oversell_offline: 'Sold offline beyond stock',
+        late_sync: 'Late sync',
+        oversell_online: 'Sold beyond stock',
+        unknown: 'Other',
+      },
+      prev: 'Previous',
+      next: 'Next',
+      range: '{from}-{to} of {total}',
+      rejectedTitle: 'Rejected sales (on this device)',
+      rejectedHelp: 'Sales recorded offline that the server refused. They stay here and are never deleted automatically. Resolve them with the manager.',
+      rejectedEmpty: 'No rejected sales.',
+      rejectedErrorLoad: 'Could not read the rejected sales.',
+      rejectedColReceipt: 'Provisional no.',
+      rejectedColQueued: 'Queued at',
+      rejectedColTotal: 'Total',
+      rejectedColMethod: 'Payment',
+      rejectedColReason: 'Rejection reason',
+      rejectedExport: 'Export CSV',
+      rejectedExportError: 'Could not create the file.',
+      rejectedReasons: {
+        client_tx_id_conflict: 'Id already used by a different sale',
+        invalid_sale: 'Invalid data',
+        other: 'Other',
+      },
+      methods: { cash: 'Cash', card: 'Card', lana: 'Lana' },
     },
     settings: {
       title: 'Settings',

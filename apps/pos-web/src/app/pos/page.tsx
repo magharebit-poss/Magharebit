@@ -35,6 +35,7 @@ import { printData, getStatus as getPrinterStatus } from '../../lib/printer/prin
 import { buildReceipt } from '../../lib/printer/receipt-builder';
 import { buildPrintInfo, DEFAULT_TIME_ZONE, type ReceiptPrintInfo } from '../../lib/printer/receipt-format';
 import { completeSale, createSaleIdHolder } from '../../lib/sale-identity';
+import { canViewVariances } from '../../lib/variances';
 import type { FloorTable } from '../../components/cafe/TableMap';
 import type { SelectedModifier } from '../../components/cafe/ModifierPicker';
 
@@ -1158,6 +1159,16 @@ export default function POSPage() {
                 className="border border-[#E2E8F0] text-[#64748B] text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#F1F5F9] transition-colors flex items-center gap-2"
               >
                 ⚙️
+              </button>
+            )}
+            {canViewVariances(cashierRole) && (
+              <button
+                onClick={() => router.push('/variances')}
+                title={t.nav.variances}
+                aria-label={t.nav.variances}
+                className="border border-[#E2E8F0] text-[#64748B] text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#F1F5F9] transition-colors flex items-center gap-2"
+              >
+                📉
               </button>
             )}
             {modules.tables && (

@@ -45,6 +45,9 @@
   --color-ink-muted: #6B7280;   /* text secondary */
   --color-surface-light: #F8F9FA;
 
+  /* Error (AGENTS.md design system: #D32F2F). Not yet in brand-tokens.json: add it there too to keep parity. */
+  --color-danger: #D32F2F;      /* error text / alerts on light surfaces */
+
   /* Typography */
   --font-display: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
   --font-arabic-display: 'Cairo', system-ui, sans-serif;
