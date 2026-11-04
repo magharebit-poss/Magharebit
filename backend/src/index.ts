@@ -64,10 +64,10 @@ import { mlRoutes } from './api/ml/ml-routes.js';
 import { trainModels } from './services/ml/model-trainer.js';
 import { validateLicense, startLicenseRevalidation, injectMockLicense } from './services/license-engine.js';
 import cron from 'node-cron';
+import { resolveDatabaseUrl } from './utils/database-url.js';
 
 const PORT = Number(process.env['PORT'] ?? 3001);
 const HOST = process.env['HOST'] ?? '0.0.0.0';
-const DATABASE_URL = process.env['DATABASE_URL'] ?? 'postgres://greengo:localdev@localhost:5432/greengo_dev';
 // Required. HS256 signing secret for all JWTs. No fallback — see boot guard below.
 const JWT_SECRET = process.env['JWT_SECRET'];
 const IS_PRODUCTION = process.env['NODE_ENV'] === 'production';
@@ -82,6 +82,16 @@ async function main() {
   }
   if (!LICENSE_KEY) {
     console.error('[FATAL] LICENSE_KEY environment variable is required but not set. Refusing to start.');
+    process.exit(1);
+  }
+
+  // Fail fast: the local dev database (with its well-known password) is assumed only on a developer
+  // machine. In production, staging or any unknown environment a missing DATABASE_URL stops the server.
+  let databaseUrl: string;
+  try {
+    databaseUrl = resolveDatabaseUrl(process.env);
+  } catch (err) {
+    console.error(`[FATAL] ${err instanceof Error ? err.message : 'DATABASE_URL is invalid.'} Refusing to start.`);
     process.exit(1);
   }
 
@@ -121,7 +131,7 @@ async function main() {
   });
 
   // PostgreSQL connection pool
-  const pool = new pg.Pool({ connectionString: DATABASE_URL, options: '-c client_encoding=UTF8' });
+  const pool = new pg.Pool({ connectionString: databaseUrl, options: '-c client_encoding=UTF8' });
   app.decorate('pg', pool);
 
   // ── Static file serving for product images ─────────────────────────────────
