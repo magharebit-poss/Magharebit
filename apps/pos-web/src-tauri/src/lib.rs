@@ -26,6 +26,8 @@ pub fn run() {
       local_store::get_pending_transactions,
       local_store::mark_transaction_synced,
       local_store::mark_transaction_failed,
+      local_store::mark_transaction_rejected,
+      local_store::list_rejected_transactions,
       scale_terminal::scale_connect,
       scale_terminal::scale_read_weight,
       scale_terminal::scale_disconnect,

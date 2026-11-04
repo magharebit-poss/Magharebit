@@ -74,6 +74,37 @@ export async function markTransactionFailed(
   return invoke('mark_transaction_failed', { localId, error });
 }
 
+/**
+ * The server refused this queued sale for good (409 id conflict, 400 invalid). Stops retries and parks
+ * the row for a manager; it is left out of the drain and the badge and is never deleted automatically.
+ * `reason` must be a short code (letters, digits, _ - . : and at most 200 characters), never free text.
+ */
+export async function markTransactionRejected(
+  localId: string,
+  reason: string,
+): Promise<void> {
+  if (!isTauri()) return;
+  return invoke('mark_transaction_rejected', { localId, reason });
+}
+
+/** Rejected sales for the manager view, oldest first. No auth token is included. */
+export async function listRejectedTransactions(
+  tenantId: string,
+): Promise<RejectedTransaction[]> {
+  if (!isTauri()) return [];
+  return invoke('list_rejected_transactions', { tenantId });
+}
+
+export interface RejectedTransaction {
+  local_id: string;
+  tenant_id: string;
+  shift_id: string;
+  payload_json: string;
+  created_at: number;
+  retry_count: number;
+  reject_reason: string | null;
+}
+
 export interface PendingTransaction {
   local_id: string;
   tenant_id: string;

@@ -8,7 +8,9 @@ import {
   getPendingCount,
   markTransactionSynced,
   markTransactionFailed,
+  markTransactionRejected,
 } from './offline-queue';
+import { classifySaleStatus } from './sale-identity';
 
 const DRAIN_INTERVAL_MS = 30_000;
 const MAX_RETRY_COUNT = 5;
@@ -71,9 +73,19 @@ export async function drainOnce(
         },
         body: JSON.stringify(payload),
       });
-      if (res.ok) {
+      const verdict = classifySaleStatus(res.status);
+      if (verdict === 'ok') {
+        // 200 with replayed:true (the sale already reached the server) is a success like any other.
         const data = (await res.json().catch(() => ({}))) as unknown;
         await markTransactionSynced(tx.local_id, JSON.stringify(data));
+      } else if (verdict === 'conflict' || verdict === 'invalid') {
+        // 409 (the id belongs to a different sale) or 400 (the server will never accept this body):
+        // a retry cannot change the answer. Reject it: the row stays for a manager, out of the drain
+        // and the badge, and is never deleted automatically.
+        await markTransactionRejected(
+          tx.local_id,
+          verdict === 'conflict' ? 'client_tx_id_conflict' : 'invalid_sale',
+        );
       } else {
         const err = await res.text().catch(() => `HTTP ${res.status}`);
         await markTransactionFailed(tx.local_id, err);
