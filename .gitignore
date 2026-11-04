@@ -5,6 +5,8 @@ dist/
 *.sqlite
 .env
 .env.*
+# Templates with placeholders only (no real values) are meant to be committed.
+!.env.example
 build/
 *.apk
 *.aab

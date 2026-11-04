@@ -1,0 +1,118 @@
+# GreenGo POS — Local Development Infrastructure
+#
+# Services:
+#   postgres   — PostgreSQL 17 with pg_uuidv7
+#   pgbouncer  — Connection pooler
+#   loki       — Log aggregation (Grafana Loki) — dev/staging only
+#   grafana    — Metrics dashboard (host port 3030; 3000 is Next.js, 3001 is the backend)
+#
+# Secrets: copy infra/.env.example to infra/.env (git-ignored) and fill in the passwords.
+# Compose refuses to start while POSTGRES_PASSWORD, CLICKHOUSE_PASSWORD or GRAFANA_ADMIN_PASSWORD is empty.
+#
+# Usage:
+#   docker-compose up -d
+#   LOKI_ENDPOINT=http://localhost:3100 node backend/dist/server.js
+#
+# Production: Loki endpoint supplied via LOKI_ENDPOINT env var.
+# Loki and Grafana services are for local development only.
+# Do not deploy this docker-compose.yml to production.
+
+version: '3.9'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: greengo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in infra/.env (copy infra/.env.example)}
+      POSTGRES_DB: greengo_dev
+    ports:
+      - '127.0.0.1:5432:5432'   # loopback only: reachable from this machine, not from the LAN
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U greengo']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.1-p0
+    environment:
+      DB_USER: greengo
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in infra/.env (copy infra/.env.example)}
+      DB_HOST: postgres
+      DB_NAME: greengo_dev
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 100
+      DEFAULT_POOL_SIZE: 20
+    ports:
+      - '127.0.0.1:6432:5432'   # loopback only
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Tier 4 — ClickHouse analytics OLAP store (dev + staging)
+  # ---------------------------------------------------------------------------
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: infra-clickhouse-1
+    ports:
+      - '127.0.0.1:8123:8123'   # HTTP interface (used by @clickhouse/client); loopback only
+      - '127.0.0.1:9000:9000'   # Native TCP (optional); loopback only
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/config:/etc/clickhouse-server/config.d
+      - ./clickhouse/initdb:/docker-entrypoint-initdb.d
+    environment:
+      CLICKHOUSE_DB: magharebit_analytics
+      CLICKHOUSE_USER: magharebit
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?Set CLICKHOUSE_PASSWORD in infra/.env (copy infra/.env.example)}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://localhost:8123/ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # S4-002: Loki log aggregation — development and staging only
+  # ---------------------------------------------------------------------------
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - '127.0.0.1:3100:3100'   # loopback only (Loki has no authentication)
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+    # No healthcheck: the Loki image has no shell (/bin/sh) and no wget, so a CMD-SHELL probe can never
+    # succeed and left the container permanently "unhealthy". Check it from the host instead:
+    #   curl http://127.0.0.1:3100/ready
+
+  # ---------------------------------------------------------------------------
+  # S4-002: Grafana dashboard — host port 3030 (3000 is the Next.js dev server, 3001 the backend API)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - '3030:3000'
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in infra/.env (copy infra/.env.example)}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      loki:
+        condition: service_started   # Loki has no healthcheck (see above); start order only
+
+volumes:
+  postgres_data:
+  loki_data:
+  grafana_data:
+  clickhouse_data:
