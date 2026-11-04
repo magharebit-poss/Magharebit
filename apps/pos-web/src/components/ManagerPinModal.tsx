@@ -1,14 +1,10 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { TOKEN_KEY } from '../lib/api';
 import { useLanguage } from '../context/LanguageContext';
+import { requestManagerOverride, type ManagerOverrideResult } from '../lib/manager-override';
 
-export interface ManagerOverrideResult {
-  authorized: true;
-  manager_id: string;
-  action: string;
-}
+export type { ManagerOverrideResult };
 
 interface Props {
   action: string;           // e.g. 'discount_over_limit'
@@ -40,37 +36,16 @@ export default function ManagerPinModal({
     setError(null);
 
     try {
-      const token = sessionStorage.getItem(TOKEN_KEY) ?? '';
-      const res = await fetch('/api/auth/manager-override', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          managerPin: pin,
-          action,
-          referenceId,
-          note,
-        }),
-      });
+      const attempt = await requestManagerOverride({ pin, action, referenceId, note });
 
-      const data = (await res.json()) as
-        | ManagerOverrideResult
-        | { error: string; message?: string };
-
-      if (!res.ok || !('authorized' in data)) {
-        const msg =
-          'message' in data
-            ? (data as { message: string }).message
-            : t.managerPin.invalidPin;
-        setError(msg);
+      if (!attempt.ok) {
+        setError(attempt.message ?? t.managerPin.invalidPin);
         setPin('');
         inputRef.current?.focus();
         return;
       }
 
-      onAuthorized(data as ManagerOverrideResult);
+      onAuthorized(attempt.result);
     } catch {
       setError(t.managerPin.errorConnection);
       setPin('');
