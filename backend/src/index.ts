@@ -49,6 +49,7 @@ import { supplierRoutes, purchaseOrderRoutes } from './api/suppliers/supplier-ro
 import { invoiceOcrRoutes } from './api/suppliers/invoice-ocr-routes.js';
 import { kdsRoutes } from './api/kds/kds-routes.js';
 import { productRoutes } from './api/products/product-routes.js';
+import { stockVarianceRoutes } from './api/stock-variances/stock-variance-routes.js';
 import { tenantRoutes } from './api/tenants/tenant-routes.js';
 import { syncRoutes } from './api/sync/sync-routes.js';
 import { digestRoutes } from './api/digest/digest-routes.js';
@@ -323,6 +324,12 @@ async function main() {
   await app.register(async (scope) => {
     await scope.register(rateLimit, { max: 60, timeWindow: '1 minute' });
     await scope.register(digestRoutes);
+  });
+
+  // Stock variance scope — manager view of oversells and the acknowledge action.
+  await app.register(async (scope) => {
+    await scope.register(rateLimit, { max: 120, timeWindow: '1 minute' });
+    await scope.register(stockVarianceRoutes);
   });
 
   // Integrations settings scope — per-tenant credentials (SUPERVISOR/OWNER write).
