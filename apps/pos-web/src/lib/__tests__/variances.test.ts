@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { TRANSLATIONS } from '../i18n';
+import { listRejectedTransactions, type RejectedTransaction } from '../offline-queue';
 import {
   PAGE_SIZE,
+  REJECTED_CSV_COLUMNS,
   applyAcknowledged,
   buildVarianceQuery,
   canViewVariances,
+  csvCell,
   formatQuantity,
   formatVarianceTime,
   missingQuantity,
@@ -12,6 +15,10 @@ import {
   quantityWithUnit,
   reasonKey,
   reasonLabel,
+  rejectedExportFileName,
+  rejectedReasonKey,
+  rejectedToCsv,
+  summarizeRejected,
   unitLabel,
   type StockVariance,
 } from '../variances';
@@ -21,6 +28,15 @@ const variance = (id: string, over: Partial<StockVariance> = {}): StockVariance 
   expected_qty: 5000, actual_qty: 4995.9, variance_qty: -4.1, missing_qty: 4.1, reason: 'oversell_online',
   register_id: 'r-1', register_name: 'Caisse 1', transaction_id: 't-1', detected_at: '2026-11-04T10:00:00Z',
   acknowledged_by: null, acknowledged_by_name_ar: null, acknowledged_by_name_fr: null, acknowledged_at: null, ...over,
+});
+
+const rejected = (over: Partial<RejectedTransaction> = {}): RejectedTransaction => ({
+  local_id: 'q-1', tenant_id: 't-1', shift_id: 's-1', created_at: 1_793_790_000, retry_count: 0, reject_reason: 'client_tx_id_conflict',
+  payload_json: JSON.stringify({
+    clientTxId: '5b0f6d8e-2f4b-4c1a-9d3e-7a1b2c3d4e5f', localReceiptRef: 'LOCAL-ABCD1234',
+    paymentMethod: 'cash', grandTotalPiastres: 4250, lines: [{ productId: 'a' }, { productId: 'b' }],
+  }),
+  ...over,
 });
 
 describe('who may open the page', () => {
@@ -171,5 +187,93 @@ describe('after acknowledging', () => {
     applyAcknowledged(rows, 3, 'a', ack, 'all');
     applyAcknowledged(rows, 3, 'a', ack, 'open');
     expect(JSON.stringify(rows)).toBe(copy);
+  });
+});
+
+describe('rejected sales (Tauri only)', () => {
+  it('outside Tauri the list is empty: the browser has nothing to show', async () => {
+    expect(await listRejectedTransactions('t-1')).toEqual([]);
+  });
+
+  it('summarises a queued sale from its payload, without any token', () => {
+    const s = summarizeRejected(rejected());
+    expect(s).toMatchObject({
+      localId: 'q-1', shiftId: 's-1', reason: 'client_tx_id_conflict', retryCount: 0,
+      totalPiastres: 4250, paymentMethod: 'cash', lineCount: 2,
+      clientTxId: '5b0f6d8e-2f4b-4c1a-9d3e-7a1b2c3d4e5f', localReceiptRef: 'LOCAL-ABCD1234',
+    });
+    expect(s.createdAt).toBe(new Date(1_793_790_000 * 1000).toISOString());
+    expect(Object.keys(s).join(',').toLowerCase()).not.toContain('token');
+  });
+
+  it('a corrupt, empty or odd payload never throws and leaves the fields empty', () => {
+    for (const payload of ['not json', '', '[]', 'null', '"text"', '{"grandTotalPiastres":"12","lines":"x"}']) {
+      const s = summarizeRejected(rejected({ payload_json: payload }));
+      expect(s.totalPiastres, payload).toBeNull();
+      expect(s.lineCount, payload).toBeNull();
+      expect(s.localId).toBe('q-1');
+    }
+  });
+
+  it('a missing reason or time is shown empty, not invented', () => {
+    const s = summarizeRejected(rejected({ reject_reason: null, created_at: Number.NaN }));
+    expect(s.reason).toBe('');
+    expect(s.createdAt).toBe('');
+  });
+
+  it('reason codes map to labels; anything else is "other"', () => {
+    expect(rejectedReasonKey('client_tx_id_conflict')).toBe('client_tx_id_conflict');
+    expect(rejectedReasonKey('invalid_sale')).toBe('invalid_sale');
+    for (const o of ['', null, undefined, 'x']) expect(rejectedReasonKey(o as string | null | undefined)).toBe('other');
+    for (const lang of ['ar', 'fr', 'en'] as const) {
+      for (const k of ['client_tx_id_conflict', 'invalid_sale', 'other'] as const) {
+        expect(TRANSLATIONS[lang].variances.rejectedReasons[k], `${lang}.${k}`).toBeTruthy();
+      }
+    }
+  });
+});
+
+describe('CSV export', () => {
+  it('plain values stay plain; commas, quotes and line breaks are quoted and escaped', () => {
+    expect(csvCell('abc')).toBe('abc');
+    expect(csvCell(42)).toBe('42');
+    expect(csvCell(null)).toBe('');
+    expect(csvCell(undefined)).toBe('');
+    expect(csvCell('a,b')).toBe('"a,b"');
+    expect(csvCell('say "hi"')).toBe('"say ""hi"""');
+    expect(csvCell('line1\nline2')).toBe('"line1\nline2"');
+  });
+
+  it('a value a spreadsheet would run as a formula is kept as text', () => {
+    for (const evil of ['=1+1', '+SUM(A1)', '-2+3', '@cmd', '\t=1', '=HYPERLINK("http://x","y")']) {
+      expect(csvCell(evil).replace(/^"/, '').startsWith("'"), evil).toBe(true);
+    }
+  });
+
+  it('header, one row per sale, CRLF line ends, total in MAD with 2 decimals', () => {
+    const csv = rejectedToCsv([summarizeRejected(rejected()), summarizeRejected(rejected({ local_id: 'q-2', payload_json: 'bad' }))]);
+    const lines = csv.split('\r\n');
+    expect(lines[0]).toBe(REJECTED_CSV_COLUMNS.join(','));
+    expect(lines).toHaveLength(4); // header, 2 rows, trailing empty after the final CRLF
+    expect(lines[3]).toBe('');
+    expect(lines[1]).toContain('LOCAL-ABCD1234');
+    expect(lines[1]).toContain(',42.50,cash,2,client_tx_id_conflict,0');
+    expect(lines[2]).toContain('q-2'); // an unreadable payload still exports, with blank amounts
+    expect(lines[2]).toContain(',,,,');
+  });
+
+  it('the export has no token or payload column', () => {
+    const header = REJECTED_CSV_COLUMNS.join(',').toLowerCase();
+    expect(header).not.toContain('token');
+    expect(header).not.toContain('payload');
+  });
+
+  it('a hostile reason cannot become a formula', () => {
+    const csv = rejectedToCsv([summarizeRejected(rejected({ reject_reason: '=cmd|\' /C calc\'!A0' }))]);
+    expect(csv).toContain("'=cmd");
+  });
+
+  it('file name from the UTC date and time', () => {
+    expect(rejectedExportFileName(new Date('2026-11-04T09:05:00Z'))).toBe('rejected-sales-20261104-0905.csv');
   });
 });

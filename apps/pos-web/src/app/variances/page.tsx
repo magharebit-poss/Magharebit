@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '../../context/LanguageContext';
 import { BrandLockup } from '../../components/brand/BrandLockup';
+import RejectedSalesPanel from '../../components/RejectedSalesPanel';
 import { apiFetch, getToken } from '../../lib/api';
 import { pickName } from '../../lib/names';
 import { DEFAULT_TIME_ZONE } from '../../lib/printer/receipt-format';
@@ -26,6 +27,7 @@ import {
   type VarianceListResponse,
 } from '../../lib/variances';
 
+const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID ?? '';
 const TIME_ZONE = process.env.NEXT_PUBLIC_TENANT_TIMEZONE || DEFAULT_TIME_ZONE;
 
 const STATUSES: StatusFilter[] = ['open', 'acknowledged', 'all'];
@@ -35,6 +37,7 @@ export default function VariancesPage() {
   const { t, lang, dir } = useLanguage();
   const tv = t.variances;
 
+  const [role, setRole] = useState('');
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<StatusFilter>('open');
   const [offset, setOffset] = useState(0);
@@ -49,6 +52,7 @@ export default function VariancesPage() {
     const r = sessionStorage.getItem('greengo_cashier_role') ?? '';
     if (!getToken()) { router.replace('/'); return; }
     if (!canViewVariances(r)) { router.replace('/pos'); return; }
+    setRole(r);
     setReady(true);
   }, [router]);
 
@@ -240,6 +244,8 @@ export default function VariancesPage() {
             {tv.next}
           </button>
         </div>
+
+        <RejectedSalesPanel tenantId={TENANT_ID} timeZone={TIME_ZONE} role={role} />
       </div>
     </main>
   );
