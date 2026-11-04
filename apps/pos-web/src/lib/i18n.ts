@@ -197,6 +197,8 @@ export interface Translations {
     cancel: string;
     errorFailed: string;
     errorGeneric: string;
+    errorSaleConflict: string;
+    errorSaleInvalid: string;
     exactAmount: string;
   };
   shiftClose: {
@@ -515,6 +517,18 @@ export interface Translations {
     terminalUnavailable: string; // cashier-facing unavailable message
     retry: string;            // "Réessayer"
     cancel: string;           // "Annuler"
+    unsavedTitle: string;     // approved by the terminal, sale not saved
+    unsavedBody: string;
+    unsavedCloseWarning: string;
+    retrySaving: string;
+    cancelAndVoid: string;
+    voidTitle: string;
+    voidBody: string;         // {ref} and {amount} placeholders
+    voidDone: string;
+    saveErrorConflict: string;
+    saveErrorInvalid: string;
+    saveErrorServer: string;  // {n} = HTTP status
+    saveErrorNetwork: string;
   };
   returns: {
     buttonLabel: string;      // "Retour" / "مرتجع" / "Return"
@@ -566,6 +580,26 @@ export interface Translations {
     recording: string;        // While saving transaction: "Enregistrement..."
     expired: string;          // QR timed out: "QR expiré"
     errorRecovery: string;    // Payment OK but DB write failed — manual recovery hint
+    sessionLabel: string;     // label before the Lana session id
+    unknownTitle: string;     // status checks keep failing: payment cannot be confirmed
+    unknownBody: string;
+    checkStatus: string;
+    unknownStillUnreachable: string;
+    cancelWithPin: string;
+    unknownVoidTitle: string;
+    unknownVoidBody: string;  // {ref} and {amount} placeholders
+    unsavedTitle: string;     // Lana debited the wallet, sale not saved
+    unsavedBody: string;
+    unsavedCloseWarning: string;
+    retrySaving: string;
+    cancelAndVoid: string;
+    voidTitle: string;
+    voidBody: string;         // {ref} and {amount} placeholders
+    voidDone: string;
+    saveErrorConflict: string;
+    saveErrorInvalid: string;
+    saveErrorServer: string;  // {n} = HTTP status
+    saveErrorNetwork: string;
   };
   stock: {
     inStock: string;          // Green badge: "En stock" / "متوفر"
@@ -1098,6 +1132,8 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       cancel: 'إلغاء',
       errorFailed: 'فشلت العملية',
       errorGeneric: 'خطأ',
+      errorSaleConflict: 'هذه العملية سُجّلت مسبقاً بمحتوى مختلف. لا تُعد المحاولة: ألغِ السلة وابدأ عملية جديدة، وراجع تقرير الوردية.',
+      errorSaleInvalid: 'رُفضت العملية بسبب بيانات غير صالحة. راجع السلة وحاول مجدداً.',
       exactAmount: 'المبلغ بالضبط',
     },
     shiftClose: {
@@ -1439,6 +1475,18 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       terminalUnavailable: 'الطرفية غير متاحة — تحقق من التوصيل',
       retry: 'أعد المحاولة',
       cancel: 'إلغاء',
+      unsavedTitle: 'تمت الموافقة على البطاقة - لم تُسجَّل العملية بعد',
+      unsavedBody: 'تم خصم المبلغ من بطاقة الزبون. لا تخصم من البطاقة مرة أخرى.',
+      unsavedCloseWarning: 'الإغلاق دون حفظ يتطلب رمز PIN للمدير. لا يتم إبطال الموافقة تلقائياً.',
+      retrySaving: 'إعادة محاولة الحفظ',
+      cancelAndVoid: 'إلغاء وإبطال الموافقة',
+      voidTitle: 'أبطل الموافقة من الطرفية',
+      voidBody: 'وافق المدير. أبطل الآن الموافقة {ref} بمبلغ {amount} من طرفية البطاقة، ثم اضغط تم.',
+      voidDone: 'تم',
+      saveErrorConflict: 'هذا الرقم سُجّل مسبقاً لعملية مختلفة. لا تُعد المحاولة. نادِ المدير: أبطل الموافقة أو سوِّ العملية يدوياً.',
+      saveErrorInvalid: 'رفض الخادم العملية بسبب بيانات غير صالحة. نادِ المدير ولا تخصم من البطاقة مرة أخرى.',
+      saveErrorServer: 'تعذّر على الخادم حفظ العملية (HTTP {n}). أعد محاولة الحفظ.',
+      saveErrorNetwork: 'تعذّر الاتصال بالخادم. تحقق من الاتصال ثم أعد محاولة الحفظ.',
     },
     returns: {
       buttonLabel: 'مرتجع',
@@ -1490,6 +1538,26 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       recording: 'جارٍ التسجيل...',
       expired: 'انتهت صلاحية رمز QR',
       errorRecovery: 'تم الدفع لكن فشل التسجيل. اتصل بالدعم.',
+      sessionLabel: 'الجلسة:',
+      unknownTitle: 'تعذّر تأكيد الدفع',
+      unknownBody: 'انقطع الاتصال بالخادم. قد يكون الزبون قد دفع بالفعل، لذا لا تنشئ رمز QR جديداً. نواصل التحقق تلقائياً.',
+      checkStatus: 'تحقق من حالة الدفع',
+      unknownStillUnreachable: 'ما زال الاتصال بالخادم متعذراً. تحقق من الاتصال وأعد المحاولة.',
+      cancelWithPin: 'إلغاء (يتطلب PIN المدير)',
+      unknownVoidTitle: 'تحقق من الدفع في Lana قبل المغادرة',
+      unknownVoidBody: 'وافق المدير على الإلغاء. تحقق من جلسة Lana رقم {ref} بقيمة {amount}. إذا خُصم المبلغ من الزبون فأعده إليه. لم تُفرَّغ السلة.',
+      unsavedTitle: 'تم استلام دفع Lana - لم تُسجَّل العملية بعد',
+      unsavedBody: 'تم خصم المبلغ من محفظة Lana الخاصة بالزبون. لا تطلب منه الدفع مرة أخرى.',
+      unsavedCloseWarning: 'الإغلاق دون حفظ يتطلب رمز PIN للمدير. لا يُرَدّ مبلغ Lana تلقائياً وتبقى السلة كما هي.',
+      retrySaving: 'إعادة محاولة الحفظ',
+      cancelAndVoid: 'إلغاء وإبطال الدفع',
+      voidTitle: 'أعِد مبلغ دفع Lana',
+      voidBody: 'وافق المدير. أعِد الآن مبلغ جلسة Lana رقم {ref} بقيمة {amount} من Lana، ثم اضغط تم. لم تُفرَّغ السلة.',
+      voidDone: 'تم',
+      saveErrorConflict: 'هذا الرقم سُجّل مسبقاً لعملية مختلفة. لا تُعد المحاولة ولا تطلب من الزبون الدفع مرة أخرى. نادِ المدير.',
+      saveErrorInvalid: 'رفض الخادم العملية بسبب بيانات غير صالحة. نادِ المدير، فالزبون دفع بالفعل.',
+      saveErrorServer: 'تعذّر على الخادم حفظ العملية (HTTP {n}). أعد محاولة الحفظ.',
+      saveErrorNetwork: 'تعذّر الاتصال بالخادم. تحقق من الاتصال ثم أعد محاولة الحفظ.',
     },
     stock: {
       inStock: 'متوفر',
@@ -2129,6 +2197,8 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       cancel: 'Annuler',
       errorFailed: 'Échec de la transaction',
       errorGeneric: 'Erreur',
+      errorSaleConflict: "Cette vente a déjà été enregistrée avec un contenu différent. Ne réessayez pas : videz le panier, démarrez une nouvelle vente et vérifiez le rapport de caisse.",
+      errorSaleInvalid: 'La vente a été refusée (données invalides). Vérifiez le panier et réessayez.',
       exactAmount: 'Montant exact',
     },
     shiftClose: {
@@ -2470,6 +2540,18 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       terminalUnavailable: 'Terminal non disponible — vérifiez la connexion',
       retry: 'Réessayer',
       cancel: 'Annuler',
+      unsavedTitle: 'Carte approuvée - vente non enregistrée',
+      unsavedBody: 'La carte du client a été débitée. Ne la débitez pas une deuxième fois.',
+      unsavedCloseWarning: "Fermer sans enregistrer demande le PIN d'un manager. L'autorisation n'est pas annulée automatiquement.",
+      retrySaving: "Réessayer l'enregistrement",
+      cancelAndVoid: "Annuler et annuler l'autorisation",
+      voidTitle: "Annulez l'autorisation sur le terminal",
+      voidBody: "Un manager a validé. Annulez maintenant l'autorisation {ref} de {amount} sur le terminal, puis appuyez sur Terminé.",
+      voidDone: 'Terminé',
+      saveErrorConflict: "Cet identifiant est déjà enregistré pour une autre vente. Ne réessayez pas. Appelez un manager : annulez l'autorisation ou régularisez manuellement.",
+      saveErrorInvalid: 'Le serveur a refusé la vente (données invalides). Appelez un manager et ne débitez pas la carte une deuxième fois.',
+      saveErrorServer: "Le serveur n'a pas pu enregistrer la vente (HTTP {n}). Réessayez l'enregistrement.",
+      saveErrorNetwork: "Impossible de joindre le serveur. Vérifiez la connexion puis réessayez l'enregistrement.",
     },
     returns: {
       buttonLabel: 'Retour',
@@ -2521,6 +2603,26 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       recording: 'Enregistrement...',
       expired: 'QR expiré',
       errorRecovery: 'Paiement reçu mais enregistrement échoué. Contactez le support.',
+      sessionLabel: 'Session :',
+      unknownTitle: 'Paiement non confirmé',
+      unknownBody: "Contact perdu avec le serveur. Le client a peut-être déjà payé : ne générez PAS de nouveau QR. Nous continuons à vérifier automatiquement.",
+      checkStatus: 'Vérifier le statut du paiement',
+      unknownStillUnreachable: 'Toujours impossible de joindre le serveur. Vérifiez la connexion et réessayez.',
+      cancelWithPin: 'Annuler (PIN manager requis)',
+      unknownVoidTitle: 'Vérifiez le paiement dans Lana avant de partir',
+      unknownVoidBody: "Un manager a validé l'annulation. Vérifiez la session Lana {ref} de {amount}. Si le client a été débité, remboursez-le. Le panier n'a pas été vidé.",
+      unsavedTitle: 'Paiement Lana reçu - vente non enregistrée',
+      unsavedBody: "Le portefeuille Lana du client a été débité. Ne lui demandez pas de payer une deuxième fois.",
+      unsavedCloseWarning: "Fermer sans enregistrer demande le PIN d'un manager. Le paiement Lana n'est pas remboursé automatiquement et le panier reste inchangé.",
+      retrySaving: "Réessayer l'enregistrement",
+      cancelAndVoid: 'Annuler et annuler le paiement',
+      voidTitle: 'Remboursez le paiement Lana',
+      voidBody: "Un manager a validé. Remboursez maintenant la session Lana {ref} de {amount} depuis Lana, puis appuyez sur Terminé. Le panier n'a pas été vidé.",
+      voidDone: 'Terminé',
+      saveErrorConflict: "Cet identifiant est déjà enregistré pour une autre vente. Ne réessayez pas et ne redemandez pas le paiement au client. Appelez un manager.",
+      saveErrorInvalid: 'Le serveur a refusé la vente (données invalides). Appelez un manager : le client a déjà payé.',
+      saveErrorServer: "Le serveur n'a pas pu enregistrer la vente (HTTP {n}). Réessayez l'enregistrement.",
+      saveErrorNetwork: "Impossible de joindre le serveur. Vérifiez la connexion puis réessayez l'enregistrement.",
     },
     stock: {
       inStock: 'En stock',
@@ -3160,6 +3262,8 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       cancel: 'Cancel',
       errorFailed: 'Transaction failed',
       errorGeneric: 'Error',
+      errorSaleConflict: 'This sale was already recorded with different contents. Do not retry: clear the cart, start a new sale and check the shift report.',
+      errorSaleInvalid: 'The sale was rejected (invalid data). Check the cart and try again.',
       exactAmount: 'Exact amount',
     },
     shiftClose: {
@@ -3501,6 +3605,18 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       terminalUnavailable: 'Terminal unavailable — check connection',
       retry: 'Retry',
       cancel: 'Cancel',
+      unsavedTitle: 'Card approved - sale not saved yet',
+      unsavedBody: "The customer's card has been charged. Do not charge the card again.",
+      unsavedCloseWarning: 'Closing without saving needs a manager PIN. The approval is not voided automatically.',
+      retrySaving: 'Retry saving',
+      cancelAndVoid: 'Cancel and void approval',
+      voidTitle: 'Void the approval on the terminal',
+      voidBody: 'A manager approved. Void approval {ref} for {amount} on the card terminal now, then tap Done.',
+      voidDone: 'Done',
+      saveErrorConflict: 'This id is already recorded for a different sale. Do not retry. Call a manager: void the approval or reconcile manually.',
+      saveErrorInvalid: 'The server rejected the sale (invalid data). Call a manager and do not charge the card again.',
+      saveErrorServer: 'The server could not save the sale (HTTP {n}). Retry saving.',
+      saveErrorNetwork: 'Could not reach the server. Check the connection, then retry saving.',
     },
     returns: {
       buttonLabel: 'Return',
@@ -3552,6 +3668,26 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       recording: 'Recording...',
       expired: 'QR expired',
       errorRecovery: 'Payment received but recording failed. Contact support.',
+      sessionLabel: 'Session:',
+      unknownTitle: 'Cannot confirm the payment',
+      unknownBody: 'Contact with the server was lost. The customer may already have paid, so do NOT generate a new QR code. We keep checking automatically.',
+      checkStatus: 'Check payment status',
+      unknownStillUnreachable: 'Still unable to reach the server. Check the connection and try again.',
+      cancelWithPin: 'Cancel (manager PIN required)',
+      unknownVoidTitle: 'Check the payment in Lana before leaving',
+      unknownVoidBody: 'A manager approved cancelling. Check Lana session {ref} for {amount}. If the customer was charged, refund it. The cart has not been cleared.',
+      unsavedTitle: 'Lana payment received - sale not saved yet',
+      unsavedBody: "The customer's Lana wallet has been debited. Do not ask them to pay again.",
+      unsavedCloseWarning: 'Closing without saving needs a manager PIN. The Lana payment is not refunded automatically and the cart stays as it is.',
+      retrySaving: 'Retry saving',
+      cancelAndVoid: 'Cancel and void payment',
+      voidTitle: 'Refund the Lana payment',
+      voidBody: 'A manager approved. Refund Lana session {ref} for {amount} from Lana now, then tap Done. The cart has not been cleared.',
+      voidDone: 'Done',
+      saveErrorConflict: 'This id is already recorded for a different sale. Do not retry and do not ask the customer to pay again. Call a manager.',
+      saveErrorInvalid: 'The server rejected the sale (invalid data). Call a manager: the customer has already paid.',
+      saveErrorServer: 'The server could not save the sale (HTTP {n}). Retry saving.',
+      saveErrorNetwork: 'Could not reach the server. Check the connection, then retry saving.',
     },
     stock: {
       inStock: 'In stock',
