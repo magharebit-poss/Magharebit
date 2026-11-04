@@ -10,17 +10,27 @@ import { getMerchantBranding } from '../lib/branding';
 import Receipt, { type ReceiptData } from './Receipt';
 import type { CustomerProfile } from './CustomerLookupModal';
 import { buildPrintInfo, type ReceiptPrintInfo } from '../lib/printer/receipt-format';
+import type { SaleResponse } from '../lib/sale-identity';
+import type { HeldSale } from '../lib/card-approval';
+import { useHeldPayment } from '../hooks/useHeldPayment';
+import HeldPaymentPanel from './HeldPaymentPanel';
+import ManagerPinModal from './ManagerPinModal';
+import {
+  canGenerateNewQr,
+  interpretPoll,
+  reduceCancel,
+  type CancelStep,
+  type LanaScreen,
+  type PollReading,
+} from '../lib/lana-poll';
 
 // ── Modal states ─────────────────────────────────────────────────────────────
+// IDLE · GENERATING (initiate in flight) · QR_DISPLAY (polling, countdown) ·
+// STATUS_UNKNOWN (status checks keep failing: the customer may have paid, no new QR) ·
+// PAID (recording) · PAID_UNSAVED (money taken, sale not saved) · SUCCESS ·
+// EXPIRED (the SERVER confirmed expiry: a new QR is safe) · ERROR (initiate failed: no QR was shown)
 
-type ModalState =
-  | 'IDLE'        // cashier about to initiate
-  | 'GENERATING'  // POST /payments/lana/initiate in flight
-  | 'QR_DISPLAY'  // QR shown; polling every 2s; countdown running
-  | 'PAID'        // poll detected status=paid; recording transaction
-  | 'SUCCESS'     // transaction recorded → receipt rendered
-  | 'EXPIRED'     // QR timed out — cashier can regenerate
-  | 'ERROR';      // unrecoverable error
+type ModalState = LanaScreen;
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -29,6 +39,8 @@ interface LanaPaymentModalProps {
   cartLines: CartLine[];
   cartDiscount?: Discount;
   shiftId: string;
+  /** One id per sale, created by the page and reused on every retry of this sale. */
+  clientTxId: string;
   customer?: CustomerProfile | null;
   onClose: () => void;   // cancel / close without payment
   onSuccess: (info?: ReceiptPrintInfo) => void; // cart cleared → new sale; info feeds the thermal receipt
@@ -81,6 +93,7 @@ export default function LanaPaymentModal({
   cartLines,
   cartDiscount,
   shiftId,
+  clientTxId,
   customer,
   onClose,
   onSuccess,
@@ -101,81 +114,127 @@ export default function LanaPaymentModal({
 
   const timeoutSeconds = readTimeoutSeconds();
 
-  // Track consecutive poll failures to avoid thrashing on transient network errors.
+  // Consecutive failed status checks (see lib/lana-poll): from the third, the screen says "cannot confirm".
   const consecutiveFailuresRef = useRef(0);
+  // Cancelling while the payment status is unknown needs a manager PIN (none -> pin -> authorized).
+  const [cancelStep, setCancelStep] = useState<CancelStep>('none');
+  const cancelStepRef = useRef<CancelStep>('none');
+  cancelStepRef.current = cancelStep;
+  const [checking, setChecking] = useState(false);
+  const [stillUnreachable, setStillUnreachable] = useState(false);
+  // A paid session records its sale once, whichever check sees "paid" first.
+  const recordStartedRef = useRef(false);
 
   // ── Record transaction after Lana confirms payment ────────────────────────
 
-  const recordTransaction = async (sid: string) => {
-    try {
-      const res = await apiFetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shiftId,
-          soldAt: new Date().toISOString(),
-          lines: cartLines.map((l) => ({
-            productId: l.product.product_id,
-            quantity: l.quantity,
-            unitPricePiastres: l.unitPricePiastres,
-            lineTotalPiastres: l.lineTotalPiastres,
-            taxRate: l.taxRate,
-            taxAmountPiastres: l.taxAmountPiastres,
-            discount: l.discount ?? null,
-          })),
-          cartDiscount: cartDiscount ?? null,
-          paymentMethod: 'lana',
-          grandTotalPiastres: totalPiastres,
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        transactionId?: string;
-        receiptNumber?: string;
-        serverTimestamp?: string;
-        soldAt?: string;
-        totalPiastres?: number;
-      };
-      if (!res.ok) {
-        throw new Error(data.error ?? `HTTP ${res.status}`);
-      }
-      const cashierName =
-        typeof window !== 'undefined'
-          ? (sessionStorage.getItem('greengo_cashier_name') ?? '')
-          : '';
-      if (customer?.customerId && data.transactionId) {
-        void issueStamp(customer.customerId, data.transactionId, onStampComplete);
-      }
-      const ct = computeCartTotals(cartLines, cartDiscount);
-      setPrintInfo(buildPrintInfo({
-        serverReceiptNumber: data.receiptNumber,
-        serverSoldAt: data.soldAt ?? data.serverTimestamp,
-        localId: data.transactionId ?? crypto.randomUUID(),
-        nowIso: new Date().toISOString(),
-      }));
-      setReceipt({
-        receiptNumber: data.receiptNumber ?? '—',
-        timestamp: data.serverTimestamp ?? new Date().toISOString(),
-        cashierName,
-        lines: cartLines,
-        totalDiscountPiastres: ct.totalDiscountPiastres,
-        totalPiastres: data.totalPiastres ?? totalPiastres,
-        paymentMethod: 'lana',
-        branding: getMerchantBranding(),
-      });
-    } catch (err: unknown) {
-      console.error('[LanaPaymentModal] transaction record failed:', err);
-      // Payment was received by Lana but DB write failed.
-      // Show session ID so the manager can reconcile manually.
-      setErrorMessage(`${t.lana.errorRecovery} (session: ${sid})`);
-      setModalState('ERROR');
+  const showSavedReceipt = (data: SaleResponse) => {
+    const cashierName =
+      typeof window !== 'undefined'
+        ? (sessionStorage.getItem('greengo_cashier_name') ?? '')
+        : '';
+    if (customer?.customerId && data.transactionId) {
+      void issueStamp(customer.customerId, data.transactionId, onStampComplete);
     }
+    const ct = computeCartTotals(cartLines, cartDiscount);
+    setPrintInfo(buildPrintInfo({
+      serverReceiptNumber: data.receiptNumber,
+      serverSoldAt: data.soldAt ?? data.serverTimestamp,
+      localId: data.transactionId ?? crypto.randomUUID(),
+      nowIso: new Date().toISOString(),
+    }));
+    setReceipt({
+      receiptNumber: data.receiptNumber ?? '—',
+      timestamp: data.serverTimestamp ?? new Date().toISOString(),
+      cashierName,
+      lines: cartLines,
+      totalDiscountPiastres: ct.totalDiscountPiastres,
+      totalPiastres: data.totalPiastres ?? totalPiastres,
+      paymentMethod: 'lana',
+      branding: getMerchantBranding(),
+    });
   };
 
-  // ── Polling + countdown while QR is displayed ─────────────────────────────
+  // Lana already took the money, so a failed save keeps the payment on screen (PAID_UNSAVED) with a
+  // retry that re-posts the same sale and never calls Lana again. Shared with the card modal.
+  const held = useHeldPayment(showSavedReceipt);
+
+  const recordTransaction = async (sid: string) => {
+    const sale: HeldSale = {
+      clientTxId,
+      // The Lana session id is the reference a manager needs to refund the payment.
+      approval: { code: sid, maskedPan: null, amountPiastres: totalPiastres },
+      body: {
+        shiftId,
+        soldAt: new Date().toISOString(),
+        lines: cartLines.map((l) => ({
+          productId: l.product.product_id,
+          quantity: l.quantity,
+          unitPricePiastres: l.unitPricePiastres,
+          lineTotalPiastres: l.lineTotalPiastres,
+          taxRate: l.taxRate,
+          taxAmountPiastres: l.taxAmountPiastres,
+          discount: l.discount ?? null,
+        })),
+        cartDiscount: cartDiscount ?? null,
+        paymentMethod: 'lana',
+        grandTotalPiastres: totalPiastres,
+      },
+    };
+    held.hold(sale);
+    await saveHeld();
+  };
+
+  const saveHeld = async () => {
+    if ((await held.trySave()) === 'unsaved') setModalState('PAID_UNSAVED');
+  };
+
+  // ── Polling + countdown while a QR is on screen ───────────────────────────
+
+  // One status check. A failed check never ends the session and never offers a new QR: the customer
+  // may have paid, so "no answer" is not "not paid". Returns whether the server answered.
+  const pollOnce = async (sid: string): Promise<boolean> => {
+    let reading: PollReading;
+    try {
+      const res = await apiFetch(`/api/payments/lana/status/${sid}`, { cache: 'no-store' } as RequestInit);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as { status: string };
+      reading = { ok: true, status: data.status };
+    } catch {
+      reading = { ok: false };
+    }
+    const step = interpretPoll(consecutiveFailuresRef.current, reading);
+    consecutiveFailuresRef.current = step.failures;
+
+    if (step.screen === 'paid') {
+      // Money received: always record the sale, and only once, even if a manager started to cancel.
+      if (!recordStartedRef.current) {
+        recordStartedRef.current = true;
+        setCancelStep('none');
+        setModalState('PAID');
+        void recordTransaction(sid);
+      }
+      return reading.ok;
+    }
+    if (cancelStepRef.current === 'authorized') return reading.ok; // a manager already decided to cancel
+    if (step.screen === 'expired') {
+      setModalState((s) => (s === 'QR_DISPLAY' || s === 'STATUS_UNKNOWN' ? 'EXPIRED' : s));
+    } else if (step.screen === 'waiting') {
+      setModalState((s) => (s === 'STATUS_UNKNOWN' ? 'QR_DISPLAY' : s));
+    } else if (step.screen === 'unknown') {
+      setModalState((s) => (s === 'QR_DISPLAY' ? 'STATUS_UNKNOWN' : s));
+    }
+    return reading.ok;
+  };
+
+  // Polling continues in STATUS_UNKNOWN, and the effect does not restart when the screen switches
+  // between QR_DISPLAY and STATUS_UNKNOWN (so the failure count and countdown are kept).
+  const polling =
+    sessionId !== null &&
+    (modalState === 'QR_DISPLAY' || modalState === 'STATUS_UNKNOWN') &&
+    cancelStep !== 'authorized';
 
   useEffect(() => {
-    if (modalState !== 'QR_DISPLAY' || !sessionId) return;
+    if (!polling || !sessionId) return;
 
     consecutiveFailuresRef.current = 0;
     setCountdown(timeoutSeconds);
@@ -187,37 +246,7 @@ export default function LanaPaymentModal({
 
     // Poll status every 2 seconds.
     const pollInterval = setInterval(() => {
-      void (async () => {
-        try {
-          const res = await apiFetch(
-            `/api/payments/lana/status/${sessionId}`,
-            { cache: 'no-store' } as RequestInit
-          );
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-          const data = (await res.json()) as { status: string };
-          consecutiveFailuresRef.current = 0;
-
-          if (data.status === 'paid') {
-            clearInterval(pollInterval);
-            clearInterval(countdownInterval);
-            setModalState('PAID');
-            void recordTransaction(sessionId);
-          } else if (data.status === 'expired') {
-            clearInterval(pollInterval);
-            clearInterval(countdownInterval);
-            setModalState('EXPIRED');
-          }
-        } catch {
-          consecutiveFailuresRef.current += 1;
-          if (consecutiveFailuresRef.current >= 3) {
-            clearInterval(pollInterval);
-            clearInterval(countdownInterval);
-            setErrorMessage(t.payment.errorGeneric);
-            setModalState('ERROR');
-          }
-        }
-      })();
+      void pollOnce(sessionId);
     }, 2000);
 
     // MANDATORY cleanup — prevents stale intervals after unmount or state change.
@@ -226,11 +255,36 @@ export default function LanaPaymentModal({
       clearInterval(countdownInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalState, sessionId]);
+  }, [polling, sessionId]);
+
+  const handleCheckStatus = async () => {
+    if (!sessionId) return;
+    setChecking(true);
+    setStillUnreachable(false);
+    const answered = await pollOnce(sessionId);
+    setChecking(false);
+    setStillUnreachable(!answered);
+  };
+
+  // An unconfirmed payment must not be dropped silently by closing the browser.
+  const holdingUnknown = modalState === 'STATUS_UNKNOWN' && cancelStep !== 'authorized';
+  useEffect(() => {
+    if (!holdingUnknown) return;
+    const warn = (ev: BeforeUnloadEvent) => { ev.preventDefault(); ev.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [holdingUnknown]);
 
   // ── Initiate Lana payment ─────────────────────────────────────────────────
 
   const handleInitiate = async () => {
+    // Never replace a QR code the customer may still pay: only before the first one, after the server
+    // confirmed expiry, or after an initiate that produced no QR.
+    if (!canGenerateNewQr(modalState, sessionId !== null && modalState !== 'EXPIRED')) return;
+    recordStartedRef.current = false;
+    consecutiveFailuresRef.current = 0;
+    setCancelStep('none');
+    setStillUnreachable(false);
     setModalState('GENERATING');
     setErrorMessage(null);
     setQrDataUrl(null);
@@ -293,16 +347,35 @@ export default function LanaPaymentModal({
     modalState === 'EXPIRED' ||
     modalState === 'ERROR';
 
+  // With a taken-but-unsaved payment on hold, closing is not allowed until a manager authorises the void.
+  const showCloseButton =
+    canClose ||
+    (modalState === 'PAID_UNSAVED' && held.state?.step !== 'pin' && !held.saving) ||
+    (modalState === 'STATUS_UNKNOWN' && cancelStep !== 'pin' && !checking);
+  const handleCloseClick = () => {
+    if (modalState === 'STATUS_UNKNOWN') {
+      // Leaving with an unconfirmed payment needs a manager PIN first.
+      if (cancelStep === 'authorized') onClose();
+      else setCancelStep((s) => reduceCancel(s, 'REQUEST'));
+      return;
+    }
+    if (modalState !== 'PAID_UNSAVED' || held.state?.step === 'void_authorized') {
+      onClose();
+      return;
+    }
+    held.dispatch({ type: 'REQUEST_CLOSE' });
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl relative">
 
-        {/* Close × — only in states where the cashier can safely abort */}
-        {canClose && (
+        {/* Close × — only in states where the cashier can safely abort (manager PIN first if a payment is held) */}
+        {showCloseButton && (
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             className="absolute top-4 end-4 text-[#94A3B8] hover:text-[#0F172A] text-2xl leading-none"
             aria-label={t.card.cancel}
           >
@@ -370,6 +443,69 @@ export default function LanaPaymentModal({
           </div>
         )}
 
+        {/* ── STATUS_UNKNOWN: checks keep failing, the customer may have paid. No new QR. ── */}
+        {modalState === 'STATUS_UNKNOWN' && sessionId && cancelStep !== 'authorized' && (
+          <div className="flex flex-col gap-4">
+            <div className="rounded-xl bg-[#FFF8E1] border border-[#F0B429] p-3 text-center">
+              <p className="text-base font-bold text-[#8A5A00]">{t.lana.unknownTitle}</p>
+              <p className="text-sm text-[#8A5A00] mt-1">{t.lana.unknownBody}</p>
+            </div>
+            <p className="text-sm text-[#0F172A] text-center font-mono" dir="ltr">
+              {t.lana.sessionLabel} {sessionId}
+            </p>
+            {stillUnreachable && (
+              <p
+                role="alert"
+                className="text-sm font-semibold text-[#D32F2F] bg-red-50 border border-red-200 rounded-lg p-3 text-center"
+              >
+                {t.lana.unknownStillUnreachable}
+              </p>
+            )}
+            <button
+              onClick={() => void handleCheckStatus()}
+              disabled={checking || cancelStep === 'pin'}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors"
+            >
+              {checking ? t.payment.processing : t.lana.checkStatus}
+            </button>
+            <button
+              onClick={() => setCancelStep((s) => reduceCancel(s, 'REQUEST'))}
+              disabled={checking || cancelStep === 'pin'}
+              className="w-full py-2 text-sm font-medium text-[#D32F2F] hover:underline disabled:opacity-50"
+            >
+              {t.lana.cancelWithPin}
+            </button>
+            {cancelStep === 'pin' && (
+              <ManagerPinModal
+                action="lana_status_unknown_cancel"
+                referenceId={clientTxId}
+                note="lana payment status unknown: manager authorised cancel"
+                onAuthorized={() => setCancelStep((s) => reduceCancel(s, 'AUTHORIZED'))}
+                onCancel={() => setCancelStep((s) => reduceCancel(s, 'CANCELLED'))}
+              />
+            )}
+          </div>
+        )}
+
+        {/* After the manager PIN: the cart stays; the payment must be checked in Lana by hand. */}
+        {modalState === 'STATUS_UNKNOWN' && sessionId && cancelStep === 'authorized' && (
+          <div className="flex flex-col gap-4">
+            <p className="text-base font-bold text-[#0F172A] text-center">{t.lana.unknownVoidTitle}</p>
+            <p className="text-sm text-[#0F172A] text-center">
+              {t.lana.unknownVoidBody
+                .replace('{ref}', sessionId)
+                .replace('{amount}', formatPrice(totalPiastres))}
+            </p>
+            <p className="text-2xl text-[#0F172A] text-center font-mono font-bold" dir="ltr">{sessionId}</p>
+            <button
+              onClick={() => { setCancelStep((s) => reduceCancel(s, 'DONE')); onClose(); }}
+              className="w-full bg-[#1A5276] hover:bg-[#154360] text-white font-semibold py-3 rounded-xl transition-colors"
+            >
+              {t.lana.voidDone}
+            </button>
+          </div>
+        )}
+
         {/* ── PAID — brief confirmation while transaction is recorded ── */}
         {modalState === 'PAID' && (
           <div className="flex flex-col items-center gap-4 py-2">
@@ -388,6 +524,23 @@ export default function LanaPaymentModal({
             <div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mt-1" />
             <p className="text-xs text-[#94A3B8]">{t.lana.recording}</p>
           </div>
+        )}
+
+        {/* ── PAID_UNSAVED: Lana took the money, the sale was not saved ─────────── */}
+        {modalState === 'PAID_UNSAVED' && held.state && (
+          <HeldPaymentPanel
+            state={held.state}
+            saving={held.saving}
+            labels={t.lana}
+            referenceLabel={t.lana.sessionLabel}
+            processingLabel={t.payment.processing}
+            voidAction="lana_payment_void"
+            voidNote="lana payment not saved: manager authorised close"
+            clientTxId={clientTxId}
+            onRetry={() => void saveHeld()}
+            dispatch={held.dispatch}
+            onClose={onClose}
+          />
         )}
 
         {/* ── EXPIRED ────────────────────────────────────────────────── */}
@@ -426,12 +579,22 @@ export default function LanaPaymentModal({
                 </pre>
               </details>
             )}
-            <button
-              onClick={() => void handleInitiate()}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors"
-            >
-              {t.lana.generate}
-            </button>
+            {canGenerateNewQr(modalState, sessionId !== null) ? (
+              <button
+                onClick={() => void handleInitiate()}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors"
+              >
+                {t.lana.generate}
+              </button>
+            ) : (
+              // A QR was shown and its outcome is not confirmed: check it, never replace it.
+              <button
+                onClick={() => setModalState('STATUS_UNKNOWN')}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors"
+              >
+                {t.lana.checkStatus}
+              </button>
+            )}
             <button
               onClick={onClose}
               className="w-full py-2 text-sm text-[#64748B] hover:text-[#0F172A]"

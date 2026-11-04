@@ -34,6 +34,7 @@ import { useTenantModules } from '../../hooks/useTenantModules';
 import { printData, getStatus as getPrinterStatus } from '../../lib/printer/printer-manager';
 import { buildReceipt } from '../../lib/printer/receipt-builder';
 import { buildPrintInfo, DEFAULT_TIME_ZONE, type ReceiptPrintInfo } from '../../lib/printer/receipt-format';
+import { completeSale, createSaleIdHolder } from '../../lib/sale-identity';
 import type { FloorTable } from '../../components/cafe/TableMap';
 import type { SelectedModifier } from '../../components/cafe/ModifierPicker';
 
@@ -484,6 +485,12 @@ export default function POSPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [cartDiscount, setCartDiscount] = useState<Discount | undefined>(undefined);
+  // One id per sale: created when a payment modal first needs it, reused on every retry, dropped after
+  // a successful sale or when the cart is emptied (a different cart is a different sale).
+  const [saleIdHolder] = useState(() => createSaleIdHolder());
+  useEffect(() => {
+    if (cart.length === 0) saleIdHolder.reset();
+  }, [cart.length, saleIdHolder]);
   // Which discount editor is open: a specific line, or the whole cart.
   const [discountTarget, setDiscountTarget] = useState<
     { kind: 'line'; lineId: string } | { kind: 'cart' } | null
@@ -790,8 +797,10 @@ export default function POSPage() {
     }
   };
 
+  const finishSale = (print?: () => void) => completeSale(saleIdHolder, print);
+
   const handlePaymentSuccess = (info?: ReceiptPrintInfo) => {
-    void printReceipt('cash', info);
+    finishSale(() => void printReceipt('cash', info));
     setCart([]);
     setActiveOrderId(null);
     setCartDiscount(undefined);
@@ -799,7 +808,7 @@ export default function POSPage() {
   };
 
   const handleCardPaymentSuccess = (info?: ReceiptPrintInfo) => {
-    void printReceipt('card', info);
+    finishSale(() => void printReceipt('card', info));
     setCart([]);
     setActiveOrderId(null);
     setCartDiscount(undefined);
@@ -807,7 +816,7 @@ export default function POSPage() {
   };
 
   const handleLanaPaymentSuccess = (info?: ReceiptPrintInfo) => {
-    void printReceipt('lana', info);
+    finishSale(() => void printReceipt('lana', info));
     setCart([]);
     setActiveOrderId(null);
     setCartDiscount(undefined);
@@ -815,6 +824,7 @@ export default function POSPage() {
   };
 
   const handleSplitPaymentSuccess = () => {
+    finishSale();
     setCart([]);
     setActiveOrderId(null);
     setCartDiscount(undefined);
@@ -1479,6 +1489,7 @@ export default function POSPage() {
           cartLines={cart}
           cartDiscount={cartDiscount}
           shiftId={shiftId}
+          clientTxId={saleIdHolder.get()}
           customer={customer}
           onClose={() => setShowPayment(false)}
           onSuccess={handlePaymentSuccess}
@@ -1493,6 +1504,7 @@ export default function POSPage() {
           cartLines={cart}
           cartDiscount={cartDiscount}
           shiftId={shiftId}
+          clientTxId={saleIdHolder.get()}
           customer={customer}
           onClose={() => setShowCardModal(false)}
           onSuccess={handleCardPaymentSuccess}
@@ -1507,6 +1519,7 @@ export default function POSPage() {
           cartLines={cart}
           cartDiscount={cartDiscount}
           shiftId={shiftId}
+          clientTxId={saleIdHolder.get()}
           customer={customer}
           onClose={() => setShowLanaModal(false)}
           onSuccess={handleLanaPaymentSuccess}
@@ -1521,6 +1534,7 @@ export default function POSPage() {
           cartLines={cart}
           cartDiscount={cartDiscount}
           shiftId={shiftId}
+          clientTxId={saleIdHolder.get()}
           onClose={() => setShowSplitModal(false)}
           onSuccess={handleSplitPaymentSuccess}
         />

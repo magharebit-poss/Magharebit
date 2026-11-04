@@ -15,6 +15,10 @@ import {
 } from '../lib/card-terminal';
 import type { CustomerProfile } from './CustomerLookupModal';
 import { buildPrintInfo, type ReceiptPrintInfo } from '../lib/printer/receipt-format';
+import type { SaleResponse } from '../lib/sale-identity';
+import type { HeldSale } from '../lib/card-approval';
+import { useHeldPayment } from '../hooks/useHeldPayment';
+import HeldPaymentPanel from './HeldPaymentPanel';
 
 // ── Modal states ─────────────────────────────────────────────────────────────
 
@@ -24,6 +28,7 @@ type ModalState =
   | 'WAITING_CUSTOMER' // terminal ready, waiting for card
   | 'PROCESSING'       // card presented, terminal processing
   | 'APPROVED'         // terminal approved, recording transaction
+  | 'APPROVED_UNSAVED' // terminal approved, the sale could not be saved: the approval is kept
   | 'DECLINED'         // terminal declined
   | 'TIMEOUT'          // no response within timeout window
   | 'ERROR';           // terminal unavailable or command failed
@@ -35,6 +40,8 @@ interface CardPaymentModalProps {
   cartLines: CartLine[];
   cartDiscount?: Discount;
   shiftId: string;
+  /** One id per sale, created by the page. Unlike the terminal reference it does not change on retry. */
+  clientTxId: string;
   customer?: CustomerProfile | null;
   onClose: () => void;   // cancel / close without payment
   onSuccess: (info?: ReceiptPrintInfo) => void; // cart cleared → new sale; info feeds the thermal receipt
@@ -87,6 +94,7 @@ export default function CardPaymentModal({
   cartLines,
   cartDiscount,
   shiftId,
+  clientTxId,
   customer,
   onClose,
   onSuccess,
@@ -123,71 +131,63 @@ export default function CardPaymentModal({
 
   // ── Transaction recording ─────────────────────────────────────────────────
 
-  const recordTransaction = async (code: string, pan: string | null) => {
-    try {
-      const res = await apiFetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          shiftId,
-          soldAt: new Date().toISOString(),
-          lines: cartLines.map((l) => ({
-            productId: l.product.product_id,
-            quantity: l.quantity,
-            unitPricePiastres: l.unitPricePiastres,
-            lineTotalPiastres: l.lineTotalPiastres,
-            taxRate: l.taxRate,
-            taxAmountPiastres: l.taxAmountPiastres,
-            discount: l.discount ?? null,
-          })),
-          cartDiscount: cartDiscount ?? null,
-          paymentMethod: 'card',
-          grandTotalPiastres: totalPiastres,
-          approvalCode: code,
-          maskedPan: pan,
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        transactionId?: string;
-        receiptNumber?: string;
-        serverTimestamp?: string;
-        soldAt?: string;
-        totalPiastres?: number;
-        paymentMethod?: 'cash' | 'card' | 'lana';
-      };
-      if (!res.ok) {
-        throw new Error(data.error ?? `HTTP ${res.status}`);
-      }
-      const cashierName =
-        typeof window !== 'undefined'
-          ? (sessionStorage.getItem('greengo_cashier_name') ?? '')
-          : '';
-      if (customer?.customerId && data.transactionId) {
-        void issueStamp(customer.customerId, data.transactionId, onStampComplete);
-      }
-      const ct = computeCartTotals(cartLines, cartDiscount);
-      setPrintInfo(buildPrintInfo({
-        serverReceiptNumber: data.receiptNumber,
-        serverSoldAt: data.soldAt ?? data.serverTimestamp,
-        localId: data.transactionId ?? crypto.randomUUID(),
-        nowIso: new Date().toISOString(),
-      }));
-      setReceipt({
-        receiptNumber: data.receiptNumber ?? '—',
-        timestamp: data.serverTimestamp ?? new Date().toISOString(),
-        cashierName,
-        lines: cartLines,
-        totalDiscountPiastres: ct.totalDiscountPiastres,
-        totalPiastres: data.totalPiastres ?? totalPiastres,
-        paymentMethod: 'card',
-        branding: getMerchantBranding(),
-      });
-    } catch (err: unknown) {
-      console.error('[CardPaymentModal] transaction record failed:', err);
-      setErrorMessage(err instanceof Error ? err.message : t.payment.errorGeneric);
-      setModalState('ERROR');
+  // The approved sale is frozen at approval time. Every retry re-posts exactly this body with the same
+  // clientTxId and never goes back to the terminal. Held in memory only; never logged.
+  const buildHeldSale = (code: string, maskedCard: string | null): HeldSale => ({
+    clientTxId,
+    approval: { code, maskedPan: maskedCard, amountPiastres: totalPiastres },
+    body: {
+      shiftId,
+      soldAt: new Date().toISOString(),
+      lines: cartLines.map((l) => ({
+        productId: l.product.product_id,
+        quantity: l.quantity,
+        unitPricePiastres: l.unitPricePiastres,
+        lineTotalPiastres: l.lineTotalPiastres,
+        taxRate: l.taxRate,
+        taxAmountPiastres: l.taxAmountPiastres,
+        discount: l.discount ?? null,
+      })),
+      cartDiscount: cartDiscount ?? null,
+      paymentMethod: 'card',
+      grandTotalPiastres: totalPiastres,
+      approvalCode: code,
+      maskedPan: maskedCard,
+    },
+  });
+
+  const showSavedReceipt = (data: SaleResponse) => {
+    const cashierName =
+      typeof window !== 'undefined'
+        ? (sessionStorage.getItem('greengo_cashier_name') ?? '')
+        : '';
+    if (customer?.customerId && data.transactionId) {
+      void issueStamp(customer.customerId, data.transactionId, onStampComplete);
     }
+    const ct = computeCartTotals(cartLines, cartDiscount);
+    setPrintInfo(buildPrintInfo({
+      serverReceiptNumber: data.receiptNumber,
+      serverSoldAt: data.soldAt ?? data.serverTimestamp,
+      localId: data.transactionId ?? crypto.randomUUID(),
+      nowIso: new Date().toISOString(),
+    }));
+    setReceipt({
+      receiptNumber: data.receiptNumber ?? '—',
+      timestamp: data.serverTimestamp ?? new Date().toISOString(),
+      cashierName,
+      lines: cartLines,
+      totalDiscountPiastres: ct.totalDiscountPiastres,
+      totalPiastres: data.totalPiastres ?? totalPiastres,
+      paymentMethod: 'card',
+      branding: getMerchantBranding(),
+    });
+  };
+
+  // Shared with the Lana modal. A replay (200, replayed:true) is a normal success. A failure keeps the
+  // approval on screen in APPROVED_UNSAVED; it never reaches the terminal or the terminal-unavailable screen.
+  const held = useHeldPayment(showSavedReceipt);
+  const saveHeld = async () => {
+    if ((await held.trySave()) === 'unsaved') setModalState('APPROVED_UNSAVED');
   };
 
   // ── Terminal flow ─────────────────────────────────────────────────────────
@@ -221,12 +221,13 @@ export default function CardPaymentModal({
       switch (response.status) {
         case 'Approved': {
           const code = response.approval_code;
-          const pan = response.masked_pan ?? null;
+          const maskedCard = response.masked_pan ?? null;
           setApprovalCode(code);
+          held.hold(buildHeldSale(code, maskedCard));
           setModalState('APPROVED');
-          // Show APPROVED screen for 1.5 s, then record the transaction.
+          // Show APPROVED screen for 1.5 s, then save the sale.
           setTimeout(() => {
-            void recordTransaction(code, pan);
+            void saveHeld();
           }, 1500);
           break;
         }
@@ -282,16 +283,27 @@ export default function CardPaymentModal({
     modalState === 'TIMEOUT' ||
     modalState === 'ERROR';
 
+  // With an unsaved approval on hold, closing is not allowed until a manager authorises the void.
+  const showCloseButton =
+    canClose || (modalState === 'APPROVED_UNSAVED' && held.state?.step !== 'pin' && !held.saving);
+  const handleCloseClick = () => {
+    if (modalState !== 'APPROVED_UNSAVED' || held.state?.step === 'void_authorized') {
+      onClose();
+      return;
+    }
+    held.dispatch({ type: 'REQUEST_CLOSE' });
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl relative">
 
-        {/* Close × — only in states where the cashier can abort */}
-        {canClose && (
+        {/* Close × — only in states where the cashier can abort (manager PIN first if an approval is held) */}
+        {showCloseButton && (
           <button
-            onClick={onClose}
+            onClick={handleCloseClick}
             className="absolute top-4 end-4 text-[#94A3B8] hover:text-[#0F172A] text-2xl leading-none"
             aria-label={t.card.cancel}
           >
@@ -427,6 +439,23 @@ export default function CardPaymentModal({
             {/* Spinner while recording transaction */}
             <div className="w-6 h-6 border-2 border-[#2E8B57] border-t-transparent rounded-full animate-spin mt-1" />
           </div>
+        )}
+
+        {/* ── APPROVED_UNSAVED: the card was charged, the sale was not saved ───────── */}
+        {modalState === 'APPROVED_UNSAVED' && held.state && (
+          <HeldPaymentPanel
+            state={held.state}
+            saving={held.saving}
+            labels={t.card}
+            referenceLabel={t.card.approvalCode}
+            processingLabel={t.payment.processing}
+            voidAction="card_approval_void"
+            voidNote="card approval not saved: manager authorised close"
+            clientTxId={clientTxId}
+            onRetry={() => void saveHeld()}
+            dispatch={held.dispatch}
+            onClose={onClose}
+          />
         )}
 
         {/* ── DECLINED ─────────────────────────────────────────────────── */}

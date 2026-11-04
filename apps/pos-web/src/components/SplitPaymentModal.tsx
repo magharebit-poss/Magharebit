@@ -5,6 +5,7 @@ import { formatPrice } from '../lib/cart';
 import type { CartLine, Discount } from '../lib/cart';
 import { useLanguage } from '../context/LanguageContext';
 import { apiFetch } from '../lib/api';
+import { buildSaleIdentity, postSale } from '../lib/sale-identity';
 
 interface PaymentMethodConfig {
   method: string;
@@ -26,6 +27,8 @@ interface SplitPaymentModalProps {
   cartLines: CartLine[];
   cartDiscount?: Discount;
   shiftId: string;
+  /** One id per sale, created by the page and reused on every retry of this sale. */
+  clientTxId: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -44,6 +47,7 @@ export default function SplitPaymentModal({
   cartLines,
   cartDiscount,
   shiftId,
+  clientTxId,
   onClose,
   onSuccess,
 }: SplitPaymentModalProps) {
@@ -112,10 +116,8 @@ export default function SplitPaymentModal({
     setSubmitting(true);
     setError(null);
     try {
-      const res = await apiFetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const outcome = await postSale(
+        {
           shiftId,
           soldAt: new Date().toISOString(),
           lines: cartLines.map((l) => ({
@@ -133,11 +135,13 @@ export default function SplitPaymentModal({
             method: te.method,
             amountPiastres: madToPiastres(te.amountMad),
           })),
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; ok?: boolean };
-      if (!res.ok) {
-        setError(data.error ?? t.split.errorStatus.replace('{n}', String(res.status)));
+        },
+        await buildSaleIdentity(clientTxId),
+      );
+      if (outcome.kind === 'conflict') { setError(t.payment.errorSaleConflict); return; }
+      if (outcome.kind === 'invalid') { setError(t.payment.errorSaleInvalid); return; }
+      if (outcome.kind === 'failed') {
+        setError(outcome.error ?? t.split.errorStatus.replace('{n}', String(outcome.status)));
         return;
       }
       onSuccess();

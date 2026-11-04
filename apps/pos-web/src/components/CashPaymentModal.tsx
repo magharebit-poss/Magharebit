@@ -9,7 +9,8 @@ import { getMerchantBranding } from '../lib/branding';
 import Receipt, { type ReceiptData } from './Receipt';
 import { isTauri, isBackendReachable, queueTransactionLocally } from '../lib/offline-queue';
 import type { CustomerProfile } from './CustomerLookupModal';
-import { buildPrintInfo, type ReceiptPrintInfo } from '../lib/printer/receipt-format';
+import { buildPrintInfo, provisionalReceiptNumber, type ReceiptPrintInfo } from '../lib/printer/receipt-format';
+import { buildSaleIdentity, postSale } from '../lib/sale-identity';
 
 const BACKEND_URL = process.env['NEXT_PUBLIC_BACKEND_URL'] ?? 'http://localhost:3001';
 const TENANT_ID = process.env['NEXT_PUBLIC_TENANT_ID'] ?? '';
@@ -19,6 +20,8 @@ interface CashPaymentModalProps {
   cartLines: CartLine[];
   cartDiscount?: Discount;
   shiftId: string;
+  /** One id per sale, created by the page and reused on every retry of this sale. */
+  clientTxId: string;
   customer?: CustomerProfile | null;
   onClose: () => void;
   /** Called on "New sale" with what the thermal receipt needs (server number and sold_at, cash and change). */
@@ -53,6 +56,7 @@ export default function CashPaymentModal({
   cartLines,
   cartDiscount,
   shiftId,
+  clientTxId,
   customer,
   onClose,
   onSuccess,
@@ -98,7 +102,11 @@ export default function CashPaymentModal({
         // Capture sale time at the moment of queuing so offline sales retain
         // their real timestamp when synced later.
         const soldAt = new Date().toISOString();
+        // The same LOCAL- number goes on the provisional receipt and with the queued sale, and the
+        // queued payload carries clientTxId, so the sync after reconnect is a replay, not a duplicate.
+        const identity = await buildSaleIdentity(clientTxId, { localReceiptRef: provisionalReceiptNumber(localId) });
         const txPayload = {
+          ...identity,
           shiftId,
           soldAt,
           lines: cartLines.map((l) => ({
@@ -138,10 +146,10 @@ export default function CashPaymentModal({
         return;
       }
       // ── Online path (normal) ────────────────────────────────────────────────
-      const res = await apiFetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // A retry after a failure re-sends the same clientTxId: the server answers a replay (200,
+      // replayed:true) with the original sale, a changed cart with 409. Neither is retried here.
+      const outcome = await postSale(
+        {
           shiftId,
           soldAt: new Date().toISOString(),
           lines: cartLines.map((l) => ({
@@ -157,21 +165,13 @@ export default function CashPaymentModal({
           paymentMethod: 'cash',
           grandTotalPiastres: totalPiastres,
           cashPaidPiastres: paidPiastres,
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        transactionId?: string;
-        ok?: boolean;
-        receiptNumber?: string;
-        serverTimestamp?: string;
-        soldAt?: string;
-        totalPiastres?: number;
-        paymentMethod?: 'cash' | 'card' | 'lana';
-      };
-      if (!res.ok) {
-        throw new Error(data.error ?? `HTTP ${res.status}`);
-      }
+        },
+        await buildSaleIdentity(clientTxId),
+      );
+      if (outcome.kind === 'conflict') throw new Error(t.payment.errorSaleConflict);
+      if (outcome.kind === 'invalid') throw new Error(t.payment.errorSaleInvalid);
+      if (outcome.kind === 'failed') throw new Error(outcome.error ?? `HTTP ${outcome.status}`);
+      const data = outcome.data;
       if (!data.transactionId) {
         throw new Error('No transactionId in response — transaction may not have saved');
       }
