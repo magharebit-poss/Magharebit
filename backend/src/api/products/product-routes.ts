@@ -252,8 +252,15 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
           const r = withNumericStock(rows[0]!);
           return reply.send({ ...r, thumb_url: imageUrl(r.image_thumb_path), detail_url: imageUrl(r.image_detail_path) });
         } catch (err: unknown) {
-          fastify.log.error({ err }, '[products] update (json) failed');
-          return reply.status(500).send({ error: 'Internal error' });
+          const pg = err as { code?: string; constraint?: string };
+          fastify.log.error({ errName: (err as Error)?.name, pgCode: pg.code, pgConstraint: pg.constraint }, '[products] update (json) failed');
+          if (pg.code === '23505') {
+            const c = pg.constraint ?? '';
+            if (c.includes('barcode')) return reply.status(409).send({ error: 'barcode_duplicate' });
+            if (c.includes('plu')) return reply.status(409).send({ error: 'plu_duplicate' });
+            return reply.status(409).send({ error: 'unique_constraint_violation' });
+          }
+          return reply.status(500).send({ error: 'internal_error' });
         }
       }
 
@@ -290,9 +297,8 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
             newThumbPath = result.thumbPath;
             newDetailPath = result.detailPath;
           } catch (err: unknown) {
-            return reply.status(422).send({
-              error: err instanceof Error ? err.message : 'Image processing failed',
-            });
+            fastify.log.error({ err }, '[products] image processing failed');
+            return reply.status(422).send({ error: 'image_processing_failed' });
           }
         }
       }
@@ -359,8 +365,15 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
           detail_url: imageUrl(r.image_detail_path),
         });
       } catch (err: unknown) {
-        fastify.log.error({ err }, '[products] update failed');
-        return reply.status(500).send({ error: 'Internal error' });
+        const pg = err as { code?: string; constraint?: string };
+        fastify.log.error({ errName: (err as Error)?.name, pgCode: pg.code, pgConstraint: pg.constraint }, '[products] update failed');
+        if (pg.code === '23505') {
+          const c = pg.constraint ?? '';
+          if (c.includes('barcode')) return reply.status(409).send({ error: 'barcode_duplicate' });
+          if (c.includes('plu')) return reply.status(409).send({ error: 'plu_duplicate' });
+          return reply.status(409).send({ error: 'unique_constraint_violation' });
+        }
+        return reply.status(500).send({ error: 'internal_error' });
       }
     },
   );
@@ -446,10 +459,9 @@ export async function productRoutes(fastify: FastifyInstance): Promise<void> {
           detailPath: result.detailPath,
         });
       } catch (err: unknown) {
+        const isUnsupported = err instanceof Error && err.message.startsWith('Unsupported');
         fastify.log.error({ err }, '[products] image upload failed');
-        return reply.status(err instanceof Error && err.message.startsWith('Unsupported') ? 422 : 500).send({
-          error: err instanceof Error ? err.message : 'Image processing failed',
-        });
+        return reply.status(isUnsupported ? 422 : 500).send({ error: isUnsupported ? 'image_type_unsupported' : 'internal_error' });
       }
     },
   );

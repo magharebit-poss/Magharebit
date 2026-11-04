@@ -3241,6 +3241,7 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
       } = request.body ?? {};
 
       if (!name_ar?.trim()) return reply.status(400).send({ error: 'name_ar is required' });
+      if (!category?.trim()) return reply.status(400).send({ error: 'category_required' });
       const sq = parseStockQuantity(stock_quantity);
       if (!sq.ok) return reply.status(400).send({ error: sq.error });
 
@@ -3258,7 +3259,7 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
             tenantId,
             name_ar.trim(),
             name_fr?.trim() ?? null,
-            category ?? null,
+            category.trim(),
             barcode ?? null,
             plu_code ?? null,
             price_cents ?? 0,
@@ -3272,8 +3273,15 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
         );
         return reply.status(201).send(r.rows[0]);
       } catch (err: unknown) {
-        fastify.log.error({ err }, '[products] insert failed');
-        return reply.status(500).send({ error: err instanceof Error ? err.message : 'Internal error' });
+        const pg = err as { code?: string; constraint?: string };
+        fastify.log.error({ errName: (err as Error)?.name, pgCode: pg.code, pgConstraint: pg.constraint }, '[products] insert failed');
+        if (pg.code === '23505') {
+          const c = pg.constraint ?? '';
+          if (c.includes('barcode')) return reply.status(409).send({ error: 'barcode_duplicate' });
+          if (c.includes('plu')) return reply.status(409).send({ error: 'plu_duplicate' });
+          return reply.status(409).send({ error: 'unique_constraint_violation' });
+        }
+        return reply.status(500).send({ error: 'internal_error' });
       }
     },
   );
