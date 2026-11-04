@@ -8,8 +8,9 @@
  *   - Response body serializer does not log body
  */
 
+import { describe, test, expect } from 'vitest';
 import pino from 'pino';
-import { createLogger } from '../logger';
+import { createLogger, REDACT_PATHS } from '../logger';
 import { logSyncBatchResult } from '../sync-metrics';
 
 // ---------------------------------------------------------------------------
@@ -82,6 +83,119 @@ describe('Pino redact paths', () => {
     log.info({ registerId: 'reg-001', tenantId: 'tenant-001', event: 'sync' });
     expect(logs[0]?.['registerId']).toBe('reg-001');
     expect(logs[0]?.['tenantId']).toBe('tenant-001');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Production REDACT_PATHS (imported from logger.ts, not a local copy)
+// ---------------------------------------------------------------------------
+
+describe('Production REDACT_PATHS on a real pino instance', () => {
+  const CENSOR = '[REDACTED]';
+  const SECRET = 'sk-live-should-never-appear-in-a-log';
+
+  function prodLogger(captures: CapturedLog[]) {
+    return pino(
+      { level: 'debug', redact: { paths: REDACT_PATHS, censor: CENSOR } },
+      { write(chunk: string) { captures.push(JSON.parse(chunk) as CapturedLog); } },
+    );
+  }
+
+  test('req.body.ai_key, green_token and green_instance_id are redacted', () => {
+    const logs: CapturedLog[] = [];
+    prodLogger(logs).info({
+      req: { body: { ai_key: SECRET, green_token: SECRET, green_instance_id: SECRET, store_name: 'Atlas' } },
+    });
+    const body = (logs[0]?.['req'] as { body: Record<string, unknown> }).body;
+    expect(body['ai_key']).toBe(CENSOR);
+    expect(body['green_token']).toBe(CENSOR);
+    expect(body['green_instance_id']).toBe(CENSOR);
+    expect(body['store_name']).toBe('Atlas');
+    expect(JSON.stringify(logs[0])).not.toContain(SECRET);
+  });
+
+  test('nested *.ai_key, *.apiKey, *.apiToken, *.green_token, *.green_instance_id are redacted', () => {
+    const logs: CapturedLog[] = [];
+    prodLogger(logs).info({
+      settings: { ai_key: SECRET, green_token: SECRET, green_instance_id: SECRET },
+      provider: { apiKey: SECRET, apiToken: SECRET, name: 'greenapi' },
+    });
+    const settings = logs[0]?.['settings'] as Record<string, unknown>;
+    const provider = logs[0]?.['provider'] as Record<string, unknown>;
+    expect(settings['ai_key']).toBe(CENSOR);
+    expect(settings['green_token']).toBe(CENSOR);
+    expect(settings['green_instance_id']).toBe(CENSOR);
+    expect(provider['apiKey']).toBe(CENSOR);
+    expect(provider['apiToken']).toBe(CENSOR);
+    expect(provider['name']).toBe('greenapi');
+    expect(JSON.stringify(logs[0])).not.toContain(SECRET);
+  });
+
+  const SECRET_KEYS = ['ai_key', 'green_token', 'green_instance_id', 'apiKey', 'apiToken'] as const;
+
+  test('top-level secrets are redacted', () => {
+    const logs: CapturedLog[] = [];
+    const raw: string[] = [];
+    const l = pino({ redact: { paths: REDACT_PATHS, censor: CENSOR } }, { write(c: string) { raw.push(c); logs.push(JSON.parse(c) as CapturedLog); } });
+    l.info({ ai_key: SECRET, green_token: SECRET, green_instance_id: SECRET, apiKey: SECRET, apiToken: SECRET, tenant_id: 't-1', name: 'Atlas' });
+    for (const k of SECRET_KEYS) expect(logs[0]?.[k], k).toBe(CENSOR);
+    expect(logs[0]?.['tenant_id']).toBe('t-1');
+    expect(logs[0]?.['name']).toBe('Atlas');
+    expect(raw.join('')).not.toContain(SECRET);
+  });
+
+  test('one-level nested secrets are redacted and siblings untouched', () => {
+    const raw: string[] = [];
+    const l = pino({ redact: { paths: REDACT_PATHS, censor: CENSOR } }, { write(c: string) { raw.push(c); } });
+    l.info({ settings: { ai_key: SECRET, green_token: SECRET, green_instance_id: SECRET, apiKey: SECRET, apiToken: SECRET, tenant_id: 't-1', name: 'Atlas' } });
+    const s = (JSON.parse(raw[0]!) as { settings: Record<string, unknown> }).settings;
+    for (const k of SECRET_KEYS) expect(s[k], k).toBe(CENSOR);
+    expect(s['tenant_id']).toBe('t-1');
+    expect(s['name']).toBe('Atlas');
+    expect(raw.join('')).not.toContain(SECRET);
+  });
+
+  test('two-level nested secrets are redacted and siblings untouched', () => {
+    const raw: string[] = [];
+    const l = pino({ redact: { paths: REDACT_PATHS, censor: CENSOR } }, { write(c: string) { raw.push(c); } });
+    l.info({ ctx: { integrations: { ai_key: SECRET, green_token: SECRET, green_instance_id: SECRET, apiKey: SECRET, apiToken: SECRET, tenant_id: 't-1', name: 'Atlas' } } });
+    const s = (JSON.parse(raw[0]!) as { ctx: { integrations: Record<string, unknown> } }).ctx.integrations;
+    for (const k of SECRET_KEYS) expect(s[k], k).toBe(CENSOR);
+    expect(s['tenant_id']).toBe('t-1');
+    expect(s['name']).toBe('Atlas');
+    expect(raw.join('')).not.toContain(SECRET);
+  });
+
+  test('req.body secrets: no secret value anywhere in the output string', () => {
+    const raw: string[] = [];
+    const l = pino({ redact: { paths: REDACT_PATHS, censor: CENSOR } }, { write(c: string) { raw.push(c); } });
+    l.info({ req: { body: { ai_key: SECRET, green_token: SECRET, green_instance_id: SECRET, tenant_id: 't-1' } } });
+    expect(raw.join('')).not.toContain(SECRET);
+    expect(raw.join('')).toContain('t-1');
+  });
+
+  test('authorization and x-api-key headers are redacted', () => {
+    const logs: CapturedLog[] = [];
+    prodLogger(logs).info({ req: { headers: { authorization: `Bearer ${SECRET}`, 'x-api-key': SECRET, accept: 'application/json' } } });
+    const headers = (logs[0]?.['req'] as { headers: Record<string, unknown> }).headers;
+    expect(headers['authorization']).toBe(CENSOR);
+    expect(headers['x-api-key']).toBe(CENSOR);
+    expect(headers['accept']).toBe('application/json');
+  });
+
+  test('normal fields are untouched', () => {
+    const logs: CapturedLog[] = [];
+    prodLogger(logs).info({ registerId: 'reg-001', tenantId: 'tenant-001', event: 'sync', req: { body: { quantity: 2, productId: 'p-1' } } });
+    expect(logs[0]?.['registerId']).toBe('reg-001');
+    expect(logs[0]?.['tenantId']).toBe('tenant-001');
+    expect(logs[0]?.['event']).toBe('sync');
+    expect((logs[0]?.['req'] as { body: Record<string, unknown> }).body).toEqual({ quantity: 2, productId: 'p-1' });
+  });
+
+  test('every integration secret path is present in REDACT_PATHS (guards against silent removal)', () => {
+    for (const p of ['req.body.ai_key', 'req.body.green_token', 'req.body.green_instance_id', '*.ai_key', '*.apiKey', '*.apiToken']) {
+      expect(REDACT_PATHS).toContain(p);
+    }
   });
 });
 

@@ -1,3 +1,4 @@
+import { describe, test, expect } from 'vitest';
 import { checkSubscriptionExpiry } from '../subscription-cron';
 import type { DbClient } from '../../db/index';
 

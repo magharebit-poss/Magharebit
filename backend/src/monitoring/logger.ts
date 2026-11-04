@@ -67,6 +67,18 @@ export const REDACT_PATHS: string[] = [
   '*.green_instance_id',
   '*.apiKey',
   '*.apiToken',
+  // pino wildcards match exactly one level each: '*.x' is one level under a parent,
+  // '*.*.x' is two. Top-level keys need their own entry. Deeper nesting is not covered.
+  'ai_key',
+  'green_token',
+  'green_instance_id',
+  'apiKey',
+  'apiToken',
+  '*.*.ai_key',
+  '*.*.green_token',
+  '*.*.green_instance_id',
+  '*.*.apiKey',
+  '*.*.apiToken',
 
   // Response body mirrors
   'res.body.masterSecret',
