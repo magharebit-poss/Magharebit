@@ -3240,10 +3240,14 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
         uom, track_stock, is_weighted, is_bom,
       } = request.body ?? {};
 
-      if (!name_ar?.trim()) return reply.status(400).send({ error: 'name_ar is required' });
+      const nameAr = name_ar?.trim();
+      if (!nameAr) return reply.status(400).send({ error: 'name_required' });
       if (!category?.trim()) return reply.status(400).send({ error: 'category_required' });
       const sq = parseStockQuantity(stock_quantity);
       if (!sq.ok) return reply.status(400).send({ error: sq.error });
+
+      // name_fr is NOT NULL in the schema; fall back to name_ar when the caller omits it.
+      const nameFrValue = name_fr?.trim() || nameAr;
 
       try {
         const r = await fastify.pg.query(
@@ -3257,8 +3261,8 @@ export async function posRoutes(fastify: FastifyInstance): Promise<void> {
                      track_stock, is_weighted, is_bom, is_active`,
           [
             tenantId,
-            name_ar.trim(),
-            name_fr?.trim() ?? null,
+            nameAr,
+            nameFrValue,
             category.trim(),
             barcode ?? null,
             plu_code ?? null,

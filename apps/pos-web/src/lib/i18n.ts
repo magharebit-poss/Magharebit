@@ -94,6 +94,7 @@ export interface Translations {
     addButton: string;
     inactiveBadge: string;
     errorNameRequired: string;
+    errorCategoryRequired: string;
     errorSave: string;
     errorConnection: string;
     successAdd: string;
@@ -1989,6 +1990,7 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       addButton: 'إضافة',
       inactiveBadge: 'موقوف',
       errorNameRequired: 'الاسم بالعربية مطلوب',
+      errorCategoryRequired: 'الفئة مطلوبة',
       errorSave: 'فشل الحفظ',
       errorConnection: 'تعذر الاتصال بالخادم',
       successAdd: 'تم إضافة المنتج بنجاح ✓',
@@ -3019,6 +3021,7 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       addButton: 'Ajouter',
       inactiveBadge: 'Inactif',
       errorNameRequired: 'Le nom en arabe est requis',
+      errorCategoryRequired: 'La catégorie est obligatoire',
       errorSave: 'Échec de la sauvegarde',
       errorConnection: 'Impossible de contacter le serveur',
       successAdd: 'Produit ajouté avec succès ✓',
@@ -4049,6 +4052,7 @@ export const TRANSLATIONS: Record<Lang, Translations> = {
       addButton: 'Add',
       inactiveBadge: 'Inactive',
       errorNameRequired: 'Arabic name is required',
+      errorCategoryRequired: 'Category is required',
       errorSave: 'Save failed',
       errorConnection: 'Could not connect to server',
       successAdd: 'Product added ✓',

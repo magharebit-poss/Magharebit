@@ -100,6 +100,26 @@ describe.skipIf(!dbOk)('POST /products and PATCH /products/:id — error handlin
     assertNoDbLeak(res.json());
   });
 
+  test('POST /products: missing name_ar returns 400 name_required', async () => {
+    const res = await app.inject({ method: 'POST', url: '/products', payload: { category: 'fruit', stock_quantity: 0 } });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toBe('name_required');
+    assertNoDbLeak(res.json());
+  });
+
+  test('POST /products: missing name_fr falls back to name_ar and succeeds', async () => {
+    const res = await app.inject({ method: 'POST', url: '/products', payload: { name_ar: 'برتقال', category: 'fruit', stock_quantity: 0 } });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().name_fr).toBe('برتقال');
+    assertNoDbLeak(res.json());
+  });
+
+  test('POST /products: empty name_fr falls back to name_ar', async () => {
+    const res = await app.inject({ method: 'POST', url: '/products', payload: { name_ar: 'تفاح', name_fr: '', category: 'fruit', stock_quantity: 0 } });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().name_fr).toBe('تفاح');
+  });
+
   test('POST /products: invalid stock_quantity returns 400 without db text', async () => {
     for (const bad of ['abc', -1, 'NaN', '1e3', '1,5']) {
       const res = await app.inject({ method: 'POST', url: '/products', payload: { name_ar: 'تفاح', category: 'fruit', stock_quantity: bad } });

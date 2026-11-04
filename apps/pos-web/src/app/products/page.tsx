@@ -239,11 +239,12 @@ export default function ProductsPage() {
   async function handleSave() {
     setError(''); setSuccess('');
     if (!nameAr.trim()) { setError(tp.errorNameRequired); return; }
+    if (!category) { setError(tp.errorCategoryRequired); return; }
 
     const body = {
       name_ar:          nameAr.trim(),
       name_fr:          nameFr.trim() || null,
-      category:         category || null,
+      category:         category,
       barcode:          barcode.trim() || null,
       plu_code:         pluCode.trim() || null,
       price_cents:      CENTS(priceMAD),
@@ -264,7 +265,14 @@ export default function ProductsPage() {
         body: JSON.stringify(body),
       });
       const data = (await res.json()) as { error?: string; product_id?: string };
-      if (!res.ok) { setError(data.error ?? tp.errorSave); return; }
+      if (!res.ok) {
+        const errorMap: Record<string, string> = {
+          category_required: tp.errorCategoryRequired,
+          name_required:     tp.errorNameRequired,
+        };
+        setError(errorMap[data.error ?? ''] ?? tp.errorSave);
+        return;
+      }
 
       // A new product exists only now, so a picked image is uploaded after creation.
       let imageFailed = false;
@@ -569,13 +577,15 @@ export default function ProductsPage() {
 
             <div style={{ marginBottom: '0.9rem' }}>
               <label style={{ display: 'block', color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', marginBottom: '0.3rem' }}>
-                {tp.category}
+                {tp.category} <span style={{ color: '#F0B429' }}>*</span>
               </label>
               <select
                 value={category} onChange={(e) => setCategory(e.target.value)}
+                required
                 style={{
                   width: '100%', padding: '0.65rem 0.85rem', background: '#0A2318',
-                  border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px',
+                  border: `1px solid ${category ? 'rgba(255,255,255,0.15)' : 'rgba(240,180,41,0.6)'}`,
+                  borderRadius: '10px',
                   color: category ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: '0.88rem', outline: 'none',
                 }}
               >
